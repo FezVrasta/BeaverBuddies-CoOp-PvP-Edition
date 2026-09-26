@@ -2,7 +2,8 @@
   "TemplateCollectionSpec": {
     "CollectionId": "Buildings.Folktails",
     "Blueprints#append": [
-      "Buildings/TradingPost/TradingPost.Folktails.blueprint"
+      "Buildings/TradingPost/TradingPost.Folktails.blueprint",
+      "Buildings/PowerLimiter/PowerLimiter.Folktails.blueprint"
     ]
   }
 }

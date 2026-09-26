@@ -2,7 +2,8 @@
   "TemplateCollectionSpec": {
     "CollectionId": "Buildings.IronTeeth",
     "Blueprints#append": [
-      "Buildings/TradingPost/TradingPost.IronTeeth.blueprint"
+      "Buildings/TradingPost/TradingPost.IronTeeth.blueprint",
+      "Buildings/PowerLimiter/PowerLimiter.IronTeeth.blueprint"
     ]
   }
 }
