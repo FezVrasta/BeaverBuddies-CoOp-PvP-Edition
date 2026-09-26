@@ -115,3 +115,7 @@ BeaverBuddies.Trading.Status.Traded,"แลกเปลี่ยนแล้ว�
 BeaverBuddies.Trading.AddTrade,"เพิ่มการแลกเปลี่ยน",""
 BeaverBuddies.Trading.RemoveTrade,"ลบ",""
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"มีเพียง {0} ที่เปลี่ยนการแลกเปลี่ยนฝั่งนี้ได้",""
+BeaverBuddies.Trading.Status.AwaitingOtherSide,"กำลังรอให้อีกฝั่งยอมรับการแลกเปลี่ยนนี้",""
+BeaverBuddies.Trading.Offers,"ข้อเสนอจากอีกฝั่ง",""
+BeaverBuddies.Trading.OfferText,"เขาให้ {0} {1} แลกกับ {2} {3} ของคุณ",""
+BeaverBuddies.Trading.Accept,"ยอมรับ",""

@@ -119,3 +119,7 @@ BeaverBuddies.Trading.Status.Traded,"Échange effectué dans la dernière heure.
 BeaverBuddies.Trading.AddTrade,"Ajouter un échange",""
 BeaverBuddies.Trading.RemoveTrade,"Retirer",""
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Seul {0} peut modifier les échanges de ce côté.",""
+BeaverBuddies.Trading.Status.AwaitingOtherSide,"En attente de l'accord de l'autre côté.",""
+BeaverBuddies.Trading.Offers,"Offres de l'autre côté",""
+BeaverBuddies.Trading.OfferText,"Ils donnent {0} {1} contre vos {2} {3}.",""
+BeaverBuddies.Trading.Accept,"Accepter",""

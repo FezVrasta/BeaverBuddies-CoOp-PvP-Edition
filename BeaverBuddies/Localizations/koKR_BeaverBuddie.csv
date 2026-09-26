@@ -115,3 +115,7 @@ BeaverBuddies.Trading.Status.Traded,"지난 1시간 동안 교환했습니다.",
 BeaverBuddies.Trading.AddTrade,"교환 추가",""
 BeaverBuddies.Trading.RemoveTrade,"삭제",""
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"이쪽의 교환은 {0}만 바꿀 수 있습니다.",""
+BeaverBuddies.Trading.Status.AwaitingOtherSide,"상대편이 이 교환을 수락하기를 기다리는 중입니다.",""
+BeaverBuddies.Trading.Offers,"상대편의 제안",""
+BeaverBuddies.Trading.OfferText,"상대가 {0} {1}을(를) 주고 당신의 {2} {3}을(를) 받습니다.",""
+BeaverBuddies.Trading.Accept,"수락",""

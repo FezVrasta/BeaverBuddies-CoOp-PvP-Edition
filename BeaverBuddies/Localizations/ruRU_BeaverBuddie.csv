@@ -115,3 +115,7 @@ BeaverBuddies.Trading.Status.Traded,"Обмен за последний час �
 BeaverBuddies.Trading.AddTrade,"Добавить обмен",""
 BeaverBuddies.Trading.RemoveTrade,"Убрать",""
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Только {0} может менять обмены на этой стороне.",""
+BeaverBuddies.Trading.Status.AwaitingOtherSide,"Ждёт, пока другая сторона примет этот обмен.",""
+BeaverBuddies.Trading.Offers,"Предложения другой стороны",""
+BeaverBuddies.Trading.OfferText,"Они дают {0} {1} за ваши {2} {3}.",""
+BeaverBuddies.Trading.Accept,"Принять",""

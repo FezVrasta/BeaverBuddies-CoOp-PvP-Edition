@@ -33,6 +33,7 @@ namespace BeaverBuddies.Trading
         NoSpaceHere,
         NoSpaceThere,
         Traded,
+        AwaitingOtherSide,
     }
 
     /**
@@ -52,6 +53,21 @@ namespace BeaverBuddies.Trading
 
         public bool IsConfigured => !string.IsNullOrEmpty(giveGood) && !string.IsNullOrEmpty(getGood)
             && giveGood != getGood && giveAmount > 0 && getAmount > 0;
+
+        /**
+         * True if other is the same deal seen from the other side.
+         */
+        public bool Mirrors(TradeRule other)
+        {
+            return IsConfigured && other != null && other.IsConfigured
+                && giveGood == other.getGood && giveAmount == other.getAmount
+                && getGood == other.giveGood && getAmount == other.giveAmount;
+        }
+
+        public TradeRule Mirror()
+        {
+            return new TradeRule() { giveGood = getGood, giveAmount = getAmount, getGood = giveGood, getAmount = giveAmount };
+        }
 
         public TradeRule Copy()
         {
@@ -79,10 +95,11 @@ namespace BeaverBuddies.Trading
 
     /**
      * A trading post is a district crossing that also swaps goods between
-     * the districts on its two sides: once per hour, each of its trades
-     * runs once if this side's district has the goods to give, the other
-     * side has the goods to give back, and both have room for what they
-     * receive.
+     * the districts on its two sides. A trade only runs when both halves
+     * list it (each from its own side), so neither side can take goods
+     * from the other without agreeing. Once per hour, each agreed trade
+     * runs once if both districts have the goods and room for what they
+     * receive. Only one of the two halves runs a pair, so it happens once.
      *
      * Goods move straight between stockpiles, picked in entity ID order,
      * so every co-op player gets the same result.
@@ -191,10 +208,56 @@ namespace BeaverBuddies.Trading
             return owner == null || owner == playerID;
         }
 
+        /**
+         * The other half of this trading post, if it's a trading post too.
+         */
+        public DistrictTrade Linked => _linkedBuilding.IsLinked
+            ? _linkedBuilding._linked.GetComponent<DistrictTrade>()
+            : null;
+
+        /**
+         * For each of this side's trades, the index of the matching trade
+         * on the other half, or -1 if the other side hasn't agreed to it.
+         */
+        public int[] MatchRules()
+        {
+            var matches = Enumerable.Repeat(-1, _rules.Count).ToArray();
+            DistrictTrade linked = Linked;
+            if (linked == null) return matches;
+            var used = new bool[linked._rules.Count];
+            for (int i = 0; i < _rules.Count; i++)
+            {
+                for (int j = 0; j < linked._rules.Count; j++)
+                {
+                    if (used[j] || !_rules[i].Mirrors(linked._rules[j])) continue;
+                    matches[i] = j;
+                    used[j] = true;
+                    break;
+                }
+            }
+            return matches;
+        }
+
+        /**
+         * The half with the lower entity ID runs the agreed trades, so each
+         * pair runs once and every machine picks the same half.
+         */
+        private bool IsLeader(DistrictTrade linked)
+        {
+            return GetComponent<EntityComponent>().EntityId.CompareTo(linked.GetComponent<EntityComponent>().EntityId) < 0;
+        }
+
         public TradeStatus GetStatus(int index)
         {
-            if (index < _statuses.Count) return _statuses[index];
-            return _rules[index].IsConfigured ? TradeStatus.NotConnected : TradeStatus.NotConfigured;
+            TradeRule rule = _rules[index];
+            if (!rule.IsConfigured) return TradeStatus.NotConfigured;
+            DistrictTrade linked = Linked;
+            if (linked == null) return TradeStatus.NotConnected;
+            int match = MatchRules()[index];
+            if (match < 0) return TradeStatus.AwaitingOtherSide;
+            // The other half runs this pair, so show its result
+            if (!IsLeader(linked)) return match < linked._statuses.Count ? linked._statuses[match] : TradeStatus.NotConnected;
+            return index < _statuses.Count ? _statuses[index] : TradeStatus.NotConnected;
         }
 
         public override void Tick()
@@ -204,9 +267,19 @@ namespace BeaverBuddies.Trading
             _lastTradeHour = hour;
 
             _statuses.Clear();
-            foreach (TradeRule rule in _rules)
+            DistrictTrade linked = Linked;
+            int[] matches = MatchRules();
+            bool leader = linked != null && IsLeader(linked);
+            for (int i = 0; i < _rules.Count; i++)
             {
-                _statuses.Add(TryTrade(rule));
+                TradeStatus status;
+                if (!_rules[i].IsConfigured) status = TradeStatus.NotConfigured;
+                else if (linked == null) status = TradeStatus.NotConnected;
+                else if (matches[i] < 0) status = TradeStatus.AwaitingOtherSide;
+                // The other half runs agreed trades
+                else if (!leader) status = TradeStatus.NotConnected;
+                else status = TryTrade(_rules[i]);
+                _statuses.Add(status);
             }
         }
 

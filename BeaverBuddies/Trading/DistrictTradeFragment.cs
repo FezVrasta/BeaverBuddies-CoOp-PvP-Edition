@@ -17,7 +17,8 @@ namespace BeaverBuddies.Trading
     /**
      * Entity panel section of the trading post: one box per trade with
      * what this side gives, what it gets back and why the last trade
-     * didn't happen, plus a button to add more.
+     * didn't happen, a button to add more, and the other side's offers
+     * this side hasn't agreed to yet.
      */
     public class DistrictTradeFragment : IEntityPanelFragment
     {
@@ -33,6 +34,9 @@ namespace BeaverBuddies.Trading
         private VisualElement _addBox;
         private Button _addButton;
         private Label _locked;
+        private VisualElement _offersBox;
+        private VisualElement _offersList;
+        private string _offersKey;
         private readonly List<RuleView> _ruleViews = new();
         private DistrictTrade _trade;
         private List<string> _goodItems;
@@ -66,6 +70,14 @@ namespace BeaverBuddies.Trading
             _addBox.Add(_addButton);
             _root.Add(_addBox);
 
+            _offersBox = CreateSubPanel();
+            var offersTitle = new Label(RegisteredLocalizationService.T("BeaverBuddies.Trading.Offers"));
+            offersTitle.AddToClassList("entity-panel__text");
+            _offersBox.Add(offersTitle);
+            _offersList = new VisualElement();
+            _offersBox.Add(_offersList);
+            _root.Add(_offersBox);
+
             _root.ToggleDisplayStyle(visible: false);
             return _root;
         }
@@ -78,6 +90,7 @@ namespace BeaverBuddies.Trading
         public void ClearFragment()
         {
             _trade = null;
+            _offersKey = null;
             _root.ToggleDisplayStyle(visible: false);
         }
 
@@ -106,6 +119,7 @@ namespace BeaverBuddies.Trading
             }
             _addBox.ToggleDisplayStyle(editable);
             _addButton.SetEnabled(_trade.Rules.Count < DistrictTrade.MaxRules);
+            UpdateOffers(editable);
         }
 
         private void RebuildRuleViews()
@@ -120,7 +134,58 @@ namespace BeaverBuddies.Trading
             }
         }
 
+        /**
+         * The other side's trades that this side hasn't agreed to, shown
+         * from this side's point of view with a button to accept them.
+         */
+        private void UpdateOffers(bool editable)
+        {
+            DistrictTrade linked = _trade.Linked;
+            var offers = new List<TradeRule>();
+            if (linked != null)
+            {
+                var matched = new HashSet<int>(_trade.MatchRules().Where(j => j >= 0));
+                for (int j = 0; j < linked.Rules.Count; j++)
+                {
+                    if (!matched.Contains(j) && linked.Rules[j].IsConfigured) offers.Add(linked.Rules[j].Mirror());
+                }
+            }
+
+            _offersBox.ToggleDisplayStyle(offers.Count > 0);
+            string key = editable + "|" + string.Join(";", offers.Select(o => o.Serialize()));
+            if (key == _offersKey) return;
+            _offersKey = key;
+
+            _offersList.Clear();
+            foreach (TradeRule offer in offers)
+            {
+                var row = new VisualElement();
+                var text = new Label(string.Format(RegisteredLocalizationService.T("BeaverBuddies.Trading.OfferText"),
+                    offer.getAmount, DescribeGood(offer.getGood), offer.giveAmount, DescribeGood(offer.giveGood)));
+                text.AddToClassList("entity-panel__text");
+                text.style.whiteSpace = WhiteSpace.Normal;
+                row.Add(text);
+                if (editable)
+                {
+                    var buttons = new VisualElement();
+                    buttons.AddToClassList("entity-panel__button-wrapper");
+                    TradeRule accepted = offer;
+                    buttons.Add(CreateButton("BeaverBuddies.Trading.Accept", narrow: true, () => AcceptOffer(accepted)));
+                    row.Add(buttons);
+                }
+                _offersList.Add(row);
+            }
+        }
+
         // ---- Changes, always sent as a whole new list of trades ----
+
+        private void AcceptOffer(TradeRule offer)
+        {
+            if (!CanEdit || _trade.Rules.Count >= DistrictTrade.MaxRules) return;
+            List<TradeRule> rules = CopyRules();
+            rules.Add(offer.Copy());
+            DistrictTradeRulesSetEvent.SetRules(_trade, rules);
+        }
 
         private List<TradeRule> CopyRules()
         {
