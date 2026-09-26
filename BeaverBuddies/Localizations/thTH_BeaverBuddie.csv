@@ -146,3 +146,8 @@ BeaverBuddies.PowerLimiter.NotConnected,"เชื่อมต่อเครื
 BeaverBuddies.BorderProtection.Blocked,"สิ่งนี้เป็นของเขตของ {0}",""
 BeaverBuddies.Settings.BorderProtection,"การป้องกันเขตแดน",""
 BeaverBuddies.Settings.BorderProtection.Tooltip,"เมื่อคุณเป็นโฮสต์ ผู้เล่นจะรื้อถอน หยุดชั่วคราว หรือเปลี่ยนการตั้งค่าของอาคารและบีเวอร์ในเขตของคนอื่นไม่ได้",""
+BeaverBuddies.Settings.MixedFactions,"ฝ่ายผสม",""
+BeaverBuddies.Settings.MixedFactions.Tooltip,"เมื่อคุณเป็นโฮสต์เกมร่วมมือใหม่ (หรือโหลดเกมที่ไม่มีการตั้งค่านี้) จะมีทั้งสองฝ่าย และผู้เล่นแต่ละคนสร้างด้วยฝ่ายของตัวเอง บันทึกไปกับเกม",""
+BeaverBuddies.Settings.MyFaction,"ฝ่ายของฉัน",""
+BeaverBuddies.Settings.MyFaction.Tooltip,"ฝ่ายที่คุณใช้สร้างในเกมฝ่ายผสม ศูนย์กลางเขตแรกของฝ่ายที่ยังไม่มีบนแผนที่จะเป็นจุดเริ่มต้นฟรี มีผลเมื่อโหลดเกม",""
+BeaverBuddies.Settings.MyFaction.Host,"ฝ่ายของโฮสต์",""

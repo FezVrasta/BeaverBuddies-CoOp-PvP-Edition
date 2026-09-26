@@ -19,6 +19,7 @@ namespace BeaverBuddies.Factions
         public static void Configure(IContainerDefinition containerDefinition)
         {
             containerDefinition.Bind<CharacterFactionUpdater>().AsTransient();
+            containerDefinition.Bind<SettlementFounding>().AsSingleton();
             containerDefinition.MultiBind<TemplateModule>().ToProvider<TemplateModuleProvider>().AsSingleton();
         }
     }

@@ -146,3 +146,8 @@ BeaverBuddies.PowerLimiter.NotConnected,"Під'єднайте мережу з �
 BeaverBuddies.BorderProtection.Blocked,"Це належить району гравця {0}.",""
 BeaverBuddies.Settings.BorderProtection,"Захист кордонів",""
 BeaverBuddies.Settings.BorderProtection.Tooltip,"Коли ви хост, гравці не можуть зносити, ставити на паузу чи змінювати налаштування будівель і бобрів у районах інших гравців.",""
+BeaverBuddies.Settings.MixedFactions,"Змішані фракції",""
+BeaverBuddies.Settings.MixedFactions.Tooltip,"Коли ви хост нової кооперативної гри (або завантажуєте гру без цього налаштування), у ній є обидві фракції, і кожен гравець будує своєю. Зберігається разом із грою.",""
+BeaverBuddies.Settings.MyFaction,"Моя фракція",""
+BeaverBuddies.Settings.MyFaction.Tooltip,"Фракція, якою ви будуєте у грі зі змішаними фракціями. Ваш перший центр району фракції, якої ще немає на мапі, — безкоштовний старт. Діє після завантаження гри.",""
+BeaverBuddies.Settings.MyFaction.Host,"Фракція хоста",""

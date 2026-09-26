@@ -146,3 +146,8 @@ BeaverBuddies.PowerLimiter.NotConnected,"両側に動力網をつないでくだ
 BeaverBuddies.BorderProtection.Blocked,"これは{0}の地区のものです。",""
 BeaverBuddies.Settings.BorderProtection,"境界の保護",""
 BeaverBuddies.Settings.BorderProtection.Tooltip,"ホストの場合、他のプレイヤーの地区にある建物やビーバーを解体、一時停止、設定変更できなくなります。",""
+BeaverBuddies.Settings.MixedFactions,"混合勢力",""
+BeaverBuddies.Settings.MixedFactions.Tooltip,"新しい協力プレイをホストするとき（またはこの設定のないセーブを読み込むとき）、両方の勢力が存在し、各プレイヤーは自分の勢力で建設します。ゲームと一緒に保存されます。",""
+BeaverBuddies.Settings.MyFaction,"自分の勢力",""
+BeaverBuddies.Settings.MyFaction.Tooltip,"混合勢力のゲームで建設に使う勢力です。マップにまだない勢力の最初の地区センターは無料のスタートになります。ゲームの読み込み時に反映されます。",""
+BeaverBuddies.Settings.MyFaction.Host,"ホストの勢力",""

@@ -146,3 +146,8 @@ BeaverBuddies.PowerLimiter.NotConnected,"Schließe auf beiden Seiten ein Netz an
 BeaverBuddies.BorderProtection.Blocked,"Das gehört zum Bezirk von {0}.",""
 BeaverBuddies.Settings.BorderProtection,"Grenzschutz",""
 BeaverBuddies.Settings.BorderProtection.Tooltip,"Wenn du hostest, können Spieler Gebäude und Biber in Bezirken anderer Spieler nicht abreißen, pausieren oder umstellen.",""
+BeaverBuddies.Settings.MixedFactions,"Gemischte Fraktionen",""
+BeaverBuddies.Settings.MixedFactions.Tooltip,"Wenn du ein neues Koop-Spiel hostest (oder eines ohne diese Einstellung lädst), gibt es beide Fraktionen und jeder Spieler baut mit seiner eigenen. Wird mit dem Spiel gespeichert.",""
+BeaverBuddies.Settings.MyFaction,"Meine Fraktion",""
+BeaverBuddies.Settings.MyFaction.Tooltip,"Die Fraktion, mit der du in einem Spiel mit gemischten Fraktionen baust. Dein erstes Bezirkszentrum einer Fraktion, die noch nicht auf der Karte ist, ist ein kostenloser Start. Gilt ab dem Laden des Spiels.",""
+BeaverBuddies.Settings.MyFaction.Host,"Fraktion des Hosts",""

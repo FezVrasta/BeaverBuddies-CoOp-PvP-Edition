@@ -146,3 +146,8 @@ BeaverBuddies.PowerLimiter.NotConnected,"양쪽에 동력망을 연결하세요.
 BeaverBuddies.BorderProtection.Blocked,"이것은 {0}의 구역에 속해 있습니다.",""
 BeaverBuddies.Settings.BorderProtection,"경계 보호",""
 BeaverBuddies.Settings.BorderProtection.Tooltip,"호스트일 때 다른 플레이어의 구역에 있는 건물과 비버를 철거, 일시정지하거나 설정을 바꿀 수 없습니다.",""
+BeaverBuddies.Settings.MixedFactions,"혼합 세력",""
+BeaverBuddies.Settings.MixedFactions.Tooltip,"새 협동 게임을 호스트하거나(또는 이 설정 없이 저장된 게임을 불러오면) 두 세력이 모두 존재하고 각 플레이어는 자신의 세력으로 건설합니다. 게임과 함께 저장됩니다.",""
+BeaverBuddies.Settings.MyFaction,"내 세력",""
+BeaverBuddies.Settings.MyFaction.Tooltip,"혼합 세력 게임에서 건설에 쓰는 세력입니다. 아직 지도에 없는 세력의 첫 구역 센터는 무료로 시작합니다. 게임을 불러올 때 적용됩니다.",""
+BeaverBuddies.Settings.MyFaction.Host,"호스트의 세력",""

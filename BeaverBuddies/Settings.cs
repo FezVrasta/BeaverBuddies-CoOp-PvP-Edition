@@ -111,6 +111,15 @@ namespace BeaverBuddies
                 ).SetLocalizedTooltip("BeaverBuddies.Settings.MixedFactions.Tooltip")
         );
 
+        public LimitedStringModSetting MyFactionSetting { get; } =
+            new(0, new[] {
+                new LimitedStringModSettingValue("", "BeaverBuddies.Settings.MyFaction.Host"),
+                new LimitedStringModSettingValue("Folktails", "Faction.Folktails.DisplayName"),
+                new LimitedStringModSettingValue("IronTeeth", "Faction.IronTeeth.DisplayName"),
+            }, ModSettingDescriptor.CreateLocalized("BeaverBuddies.Settings.MyFaction")
+                .SetLocalizedTooltip("BeaverBuddies.Settings.MyFaction.Tooltip")
+        );
+
         public ModSetting<bool> AllowDevToolsInCoop { get; } =
             new(true,
                 ModSettingDescriptor.CreateLocalized(
@@ -183,6 +192,7 @@ namespace BeaverBuddies
         public static bool SciencePerPlayer => instance?.SciencePerPlayerSetting.Value ?? true;
         public static bool DistrictSpecializations => instance?.DistrictSpecializationsSetting.Value ?? true;
         public static bool BorderProtection => instance?.BorderProtectionSetting.Value ?? true;
+        public static string MyFaction => instance?.MyFactionSetting?.Value ?? "";
         public static bool MixedFactions => instance?.MixedFactionsSetting.Value ?? false;
         public static bool ShowOwnerColors => instance?.ShowOwnerColorsSetting.Value ?? true;
         public static bool TopBarShowsOwnDistricts => instance?.TopBarShowsOwnDistrictsSetting.Value ?? true;

@@ -62,9 +62,13 @@ namespace BeaverBuddies.Events
             {
                 builder.AddInitComponent(new DuplicationInit(duplicationSource));
             }
-            using (Players.PlacedBy.Placing(playerID))
+            // A faction's first District Center in a mixed game is a free start
+            if (Factions.SettlementFounding.Instance?.TryFound(buildingSpec, builder, placement, playerID) != true)
             {
-                placer.Place(builder, placement);
+                using (Players.PlacedBy.Placing(playerID))
+                {
+                    placer.Place(builder, placement);
+                }
             }
             Players.DistrictOwnershipService.Instance?.OnBuildingPlaced(placement.Coordinates, playerID);
         }
