@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"Nicht genug Güter im anderen Be
 BeaverBuddies.Trading.Status.NoSpaceHere,"Kein Platz mehr in den Lagern dieses Bezirks.",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"Kein Platz mehr in den Lagern des anderen Bezirks.",""
 BeaverBuddies.Trading.Status.Traded,"In der letzten Stunde gehandelt.",""
+BeaverBuddies.Trading.AddTrade,"Handel hinzufügen",""
+BeaverBuddies.Trading.RemoveTrade,"Entfernen",""

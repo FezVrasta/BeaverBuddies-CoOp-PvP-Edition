@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"Non ci sono abbastanza merci nel
 BeaverBuddies.Trading.Status.NoSpaceHere,"Non c'è più spazio nei magazzini di questo distretto.",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"Non c'è più spazio nei magazzini dell'altro distretto.",""
 BeaverBuddies.Trading.Status.Traded,"Scambio fatto nell'ultima ora.",""
+BeaverBuddies.Trading.AddTrade,"Aggiungi scambio",""
+BeaverBuddies.Trading.RemoveTrade,"Rimuovi",""

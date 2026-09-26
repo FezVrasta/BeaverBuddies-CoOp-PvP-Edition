@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"В іншому районі н�
 BeaverBuddies.Trading.Status.NoSpaceHere,"На складах цього району немає місця.",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"На складах іншого району немає місця.",""
 BeaverBuddies.Trading.Status.Traded,"Обмін за останню годину виконано.",""
+BeaverBuddies.Trading.AddTrade,"Додати обмін",""
+BeaverBuddies.Trading.RemoveTrade,"Прибрати",""

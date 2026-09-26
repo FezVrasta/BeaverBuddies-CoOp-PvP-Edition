@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"另一个区域的物资不足�
 BeaverBuddies.Trading.Status.NoSpaceHere,"这个区域的仓库没有空间了。",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"另一个区域的仓库没有空间了。",""
 BeaverBuddies.Trading.Status.Traded,"过去一小时内完成了交易。",""
+BeaverBuddies.Trading.AddTrade,"添加交易",""
+BeaverBuddies.Trading.RemoveTrade,"移除",""

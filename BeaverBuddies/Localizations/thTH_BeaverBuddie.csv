@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"อีกเขตมีสิ�
 BeaverBuddies.Trading.Status.NoSpaceHere,"คลังของเขตนี้เต็มแล้ว",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"คลังของอีกเขตเต็มแล้ว",""
 BeaverBuddies.Trading.Status.Traded,"แลกเปลี่ยนแล้วในชั่วโมงที่ผ่านมา",""
+BeaverBuddies.Trading.AddTrade,"เพิ่มการแลกเปลี่ยน",""
+BeaverBuddies.Trading.RemoveTrade,"ลบ",""

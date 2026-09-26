@@ -1,43 +1,44 @@
 using BeaverBuddies.Events;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BeaverBuddies.Trading
 {
+    /**
+     * Replaces a trading post's list of trades. Sending the whole list
+     * keeps adding, removing and editing trades to a single event.
+     */
     [Serializable]
-    public class DistrictTradeSetEvent : ReplayEvent
+    public class DistrictTradeRulesSetEvent : ReplayEvent
     {
         public string entityID;
-        public string giveGood;
-        public int giveAmount;
-        public string getGood;
-        public int getAmount;
+        public List<TradeRule> rules = new();
 
         public override void Replay(IReplayContext context)
         {
-            GetComponent<DistrictTrade>(context, entityID)?.SetTrade(giveGood, giveAmount, getGood, getAmount);
+            GetComponent<DistrictTrade>(context, entityID)?.SetRules(rules);
         }
 
         public override string ToActionString()
         {
-            return $"Trading post {entityID}: {giveAmount} {giveGood} for {getAmount} {getGood}";
+            string trades = string.Join(", ", rules.Select(r => $"{r.giveAmount} {r.giveGood} for {r.getAmount} {r.getGood}"));
+            return $"Trading post {entityID}: {trades}";
         }
 
         /**
-         * Changes a trade through the event system in co-op, or directly
-         * otherwise.
+         * Changes a trading post's trades through the event system in
+         * co-op, or directly otherwise.
          */
-        public static void SetTrade(DistrictTrade trade, string giveGood, int giveAmount, string getGood, int getAmount)
+        public static void SetRules(DistrictTrade trade, List<TradeRule> rules)
         {
             string entityID = ReplayEvent.GetEntityID(trade);
-            bool apply = ReplayEvent.DoPrefix(() => entityID == null ? null : new DistrictTradeSetEvent()
+            bool apply = ReplayEvent.DoPrefix(() => entityID == null ? null : new DistrictTradeRulesSetEvent()
             {
                 entityID = entityID,
-                giveGood = giveGood,
-                giveAmount = giveAmount,
-                getGood = getGood,
-                getAmount = getAmount,
+                rules = rules,
             });
-            if (apply) trade.SetTrade(giveGood, giveAmount, getGood, getAmount);
+            if (apply) trade.SetRules(rules);
         }
     }
 }

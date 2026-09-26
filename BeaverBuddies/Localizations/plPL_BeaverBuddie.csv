@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"Za mało towarów w drugiej dzie
 BeaverBuddies.Trading.Status.NoSpaceHere,"Brak miejsca w magazynach tej dzielnicy.",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"Brak miejsca w magazynach drugiej dzielnicy.",""
 BeaverBuddies.Trading.Status.Traded,"Wymiana w ostatniej godzinie.",""
+BeaverBuddies.Trading.AddTrade,"Dodaj wymianę",""
+BeaverBuddies.Trading.RemoveTrade,"Usuń",""

@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"相手の地区に物資が足�
 BeaverBuddies.Trading.Status.NoSpaceHere,"この地区の倉庫に空きがありません。",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"相手の地区の倉庫に空きがありません。",""
 BeaverBuddies.Trading.Status.Traded,"直近の1時間に交換しました。",""
+BeaverBuddies.Trading.AddTrade,"交換を追加",""
+BeaverBuddies.Trading.RemoveTrade,"削除",""

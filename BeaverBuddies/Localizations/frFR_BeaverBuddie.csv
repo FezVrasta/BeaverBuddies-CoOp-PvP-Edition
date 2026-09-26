@@ -116,3 +116,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"Pas assez de biens dans l'autre 
 BeaverBuddies.Trading.Status.NoSpaceHere,"Plus de place dans les entrepôts de ce district.",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"Plus de place dans les entrepôts de l'autre district.",""
 BeaverBuddies.Trading.Status.Traded,"Échange effectué dans la dernière heure.",""
+BeaverBuddies.Trading.AddTrade,"Ajouter un échange",""
+BeaverBuddies.Trading.RemoveTrade,"Retirer",""

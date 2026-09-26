@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"Not enough goods to get in the o
 BeaverBuddies.Trading.Status.NoSpaceHere,"No room left in this district's stockpiles.",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"No room left in the other district's stockpiles.",""
 BeaverBuddies.Trading.Status.Traded,"Traded in the last hour.",""
+BeaverBuddies.Trading.AddTrade,"Add trade",""
+BeaverBuddies.Trading.RemoveTrade,"Remove",""

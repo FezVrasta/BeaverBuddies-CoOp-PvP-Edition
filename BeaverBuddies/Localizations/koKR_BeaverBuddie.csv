@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"상대 구역에 물자가 부�
 BeaverBuddies.Trading.Status.NoSpaceHere,"이 구역의 저장소에 공간이 없습니다.",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"상대 구역의 저장소에 공간이 없습니다.",""
 BeaverBuddies.Trading.Status.Traded,"지난 1시간 동안 교환했습니다.",""
+BeaverBuddies.Trading.AddTrade,"교환 추가",""
+BeaverBuddies.Trading.RemoveTrade,"삭제",""

@@ -112,3 +112,5 @@ BeaverBuddies.Trading.Status.MissingGoodsThere,"Diğer bölgede yeterli mal yok.
 BeaverBuddies.Trading.Status.NoSpaceHere,"Bu bölgenin depolarında yer kalmadı.",""
 BeaverBuddies.Trading.Status.NoSpaceThere,"Diğer bölgenin depolarında yer kalmadı.",""
 BeaverBuddies.Trading.Status.Traded,"Son bir saat içinde takas yapıldı.",""
+BeaverBuddies.Trading.AddTrade,"Takas ekle",""
+BeaverBuddies.Trading.RemoveTrade,"Kaldır",""

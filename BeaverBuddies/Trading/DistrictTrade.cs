@@ -35,11 +35,53 @@ namespace BeaverBuddies.Trading
     }
 
     /**
+     * One exchange: this side gives giveAmount of giveGood and gets
+     * getAmount of getGood from the district on the other side.
+     */
+    [Serializable]
+    public class TradeRule
+    {
+        public const int DefaultAmount = 1;
+        private const char Separator = '\t';
+
+        public string giveGood;
+        public int giveAmount = DefaultAmount;
+        public string getGood;
+        public int getAmount = DefaultAmount;
+
+        public bool IsConfigured => !string.IsNullOrEmpty(giveGood) && !string.IsNullOrEmpty(getGood)
+            && giveGood != getGood && giveAmount > 0 && getAmount > 0;
+
+        public TradeRule Copy()
+        {
+            return new TradeRule() { giveGood = giveGood, giveAmount = giveAmount, getGood = getGood, getAmount = getAmount };
+        }
+
+        public string Serialize()
+        {
+            return string.Join(Separator.ToString(), giveGood ?? "", giveAmount, getGood ?? "", getAmount);
+        }
+
+        public static TradeRule Deserialize(string value)
+        {
+            string[] parts = value.Split(Separator);
+            if (parts.Length != 4) return null;
+            return new TradeRule()
+            {
+                giveGood = parts[0] == "" ? null : parts[0],
+                giveAmount = int.TryParse(parts[1], out int give) ? Math.Max(1, give) : DefaultAmount,
+                getGood = parts[2] == "" ? null : parts[2],
+                getAmount = int.TryParse(parts[3], out int get) ? Math.Max(1, get) : DefaultAmount,
+            };
+        }
+    }
+
+    /**
      * A trading post is a district crossing that also swaps goods between
-     * the districts on its two sides at a fixed rate: once per hour, this
-     * side's district gives GiveAmount of GiveGood and gets GetAmount of
-     * GetGood from the district on the other side, if both have the goods
-     * in their stockpiles and room to store what they receive.
+     * the districts on its two sides: once per hour, each of its trades
+     * runs once if this side's district has the goods to give, the other
+     * side has the goods to give back, and both have room for what they
+     * receive.
      *
      * Goods move straight between stockpiles, picked in entity ID order,
      * so every co-op player gets the same result.
@@ -47,30 +89,26 @@ namespace BeaverBuddies.Trading
     public class DistrictTrade : TickableComponent, IAwakableComponent, IPersistentEntity, IFinishedStateListener
     {
         private static readonly ComponentKey DistrictTradeKey = new ComponentKey("BeaverBuddies.DistrictTrade");
+        private static readonly ListKey<string> RulesKey = new ListKey<string>("Rules");
+        private static readonly PropertyKey<int> LastTradeHourKey = new PropertyKey<int>("LastTradeHour");
+        // Saves from before multiple trades had a single one
         private static readonly PropertyKey<string> GiveGoodKey = new PropertyKey<string>("GiveGood");
         private static readonly PropertyKey<int> GiveAmountKey = new PropertyKey<int>("GiveAmount");
         private static readonly PropertyKey<string> GetGoodKey = new PropertyKey<string>("GetGood");
         private static readonly PropertyKey<int> GetAmountKey = new PropertyKey<int>("GetAmount");
-        private static readonly PropertyKey<int> LastTradeHourKey = new PropertyKey<int>("LastTradeHour");
 
-        public const int DefaultAmount = 1;
+        public const int MaxRules = 10;
 
         private readonly IDayNightCycle _dayNightCycle;
 
         private DistrictBuilding _districtBuilding;
         private LinkedBuilding _linkedBuilding;
         private int _lastTradeHour = -1;
-
-        public string GiveGood { get; private set; }
-        public int GiveAmount { get; private set; } = DefaultAmount;
-        public string GetGood { get; private set; }
-        public int GetAmount { get; private set; } = DefaultAmount;
-
+        private readonly List<TradeRule> _rules = new();
         // Only for the UI, recomputed every hour on every machine
-        public TradeStatus Status { get; private set; } = TradeStatus.NotConfigured;
+        private readonly List<TradeStatus> _statuses = new();
 
-        public bool IsConfigured => !string.IsNullOrEmpty(GiveGood) && !string.IsNullOrEmpty(GetGood)
-            && GiveGood != GetGood && GiveAmount > 0 && GetAmount > 0;
+        public IReadOnlyList<TradeRule> Rules => _rules;
 
         public DistrictTrade(IDayNightCycle dayNightCycle)
         {
@@ -97,30 +135,48 @@ namespace BeaverBuddies.Trading
         public void Save(IEntitySaver entitySaver)
         {
             IObjectSaver saver = entitySaver.GetComponent(DistrictTradeKey);
-            if (GiveGood != null) saver.Set(GiveGoodKey, GiveGood);
-            saver.Set(GiveAmountKey, GiveAmount);
-            if (GetGood != null) saver.Set(GetGoodKey, GetGood);
-            saver.Set(GetAmountKey, GetAmount);
+            saver.Set(RulesKey, _rules.Select(r => r.Serialize()).ToList());
             saver.Set(LastTradeHourKey, _lastTradeHour);
         }
 
         public void Load(IEntityLoader entityLoader)
         {
             if (!entityLoader.TryGetComponent(DistrictTradeKey, out IObjectLoader loader)) return;
-            if (loader.Has(GiveGoodKey)) GiveGood = loader.Get(GiveGoodKey);
-            if (loader.Has(GiveAmountKey)) GiveAmount = loader.Get(GiveAmountKey);
-            if (loader.Has(GetGoodKey)) GetGood = loader.Get(GetGoodKey);
-            if (loader.Has(GetAmountKey)) GetAmount = loader.Get(GetAmountKey);
             if (loader.Has(LastTradeHourKey)) _lastTradeHour = loader.Get(LastTradeHourKey);
+            if (loader.Has(RulesKey))
+            {
+                foreach (string value in loader.Get(RulesKey))
+                {
+                    TradeRule rule = TradeRule.Deserialize(value);
+                    if (rule != null) _rules.Add(rule);
+                }
+            }
+            else if (loader.Has(GiveGoodKey) || loader.Has(GetGoodKey))
+            {
+                _rules.Add(new TradeRule()
+                {
+                    giveGood = loader.Has(GiveGoodKey) ? loader.Get(GiveGoodKey) : null,
+                    giveAmount = loader.Has(GiveAmountKey) ? loader.Get(GiveAmountKey) : TradeRule.DefaultAmount,
+                    getGood = loader.Has(GetGoodKey) ? loader.Get(GetGoodKey) : null,
+                    getAmount = loader.Has(GetAmountKey) ? loader.Get(GetAmountKey) : TradeRule.DefaultAmount,
+                });
+            }
         }
 
-        public void SetTrade(string giveGood, int giveAmount, string getGood, int getAmount)
+        public void SetRules(IEnumerable<TradeRule> rules)
         {
-            GiveGood = string.IsNullOrEmpty(giveGood) ? null : giveGood;
-            GiveAmount = Math.Max(1, giveAmount);
-            GetGood = string.IsNullOrEmpty(getGood) ? null : getGood;
-            GetAmount = Math.Max(1, getAmount);
-            Status = IsConfigured ? Status : TradeStatus.NotConfigured;
+            _rules.Clear();
+            foreach (TradeRule rule in rules.Take(MaxRules))
+            {
+                if (rule != null) _rules.Add(rule.Copy());
+            }
+            _statuses.Clear();
+        }
+
+        public TradeStatus GetStatus(int index)
+        {
+            if (index < _statuses.Count) return _statuses[index];
+            return _rules[index].IsConfigured ? TradeStatus.NotConnected : TradeStatus.NotConfigured;
         }
 
         public override void Tick()
@@ -128,12 +184,17 @@ namespace BeaverBuddies.Trading
             int hour = Mathf.FloorToInt(_dayNightCycle.PartialDayNumber * 24f);
             if (hour <= _lastTradeHour) return;
             _lastTradeHour = hour;
-            Status = TryTrade();
+
+            _statuses.Clear();
+            foreach (TradeRule rule in _rules)
+            {
+                _statuses.Add(TryTrade(rule));
+            }
         }
 
-        private TradeStatus TryTrade()
+        private TradeStatus TryTrade(TradeRule rule)
         {
-            if (!IsConfigured) return TradeStatus.NotConfigured;
+            if (!rule.IsConfigured) return TradeStatus.NotConfigured;
 
             DistrictCenter here = _districtBuilding.District;
             DistrictCenter there = _linkedBuilding.IsLinked
@@ -144,15 +205,15 @@ namespace BeaverBuddies.Trading
             List<Inventory> hereStockpiles = GetStockpiles(here);
             List<Inventory> thereStockpiles = GetStockpiles(there);
 
-            if (Sum(hereStockpiles, i => i.UnreservedAmountInStock(GiveGood)) < GiveAmount) return TradeStatus.MissingGoodsHere;
-            if (Sum(thereStockpiles, i => i.UnreservedAmountInStock(GetGood)) < GetAmount) return TradeStatus.MissingGoodsThere;
-            if (Sum(hereStockpiles, i => i.UnreservedCapacity(GetGood)) < GetAmount) return TradeStatus.NoSpaceHere;
-            if (Sum(thereStockpiles, i => i.UnreservedCapacity(GiveGood)) < GiveAmount) return TradeStatus.NoSpaceThere;
+            if (Sum(hereStockpiles, i => i.UnreservedAmountInStock(rule.giveGood)) < rule.giveAmount) return TradeStatus.MissingGoodsHere;
+            if (Sum(thereStockpiles, i => i.UnreservedAmountInStock(rule.getGood)) < rule.getAmount) return TradeStatus.MissingGoodsThere;
+            if (Sum(hereStockpiles, i => i.UnreservedCapacity(rule.getGood)) < rule.getAmount) return TradeStatus.NoSpaceHere;
+            if (Sum(thereStockpiles, i => i.UnreservedCapacity(rule.giveGood)) < rule.giveAmount) return TradeStatus.NoSpaceThere;
 
-            Take(hereStockpiles, GiveGood, GiveAmount);
-            Take(thereStockpiles, GetGood, GetAmount);
-            Give(thereStockpiles, GiveGood, GiveAmount);
-            Give(hereStockpiles, GetGood, GetAmount);
+            Take(hereStockpiles, rule.giveGood, rule.giveAmount);
+            Take(thereStockpiles, rule.getGood, rule.getAmount);
+            Give(thereStockpiles, rule.giveGood, rule.giveAmount);
+            Give(hereStockpiles, rule.getGood, rule.getAmount);
             return TradeStatus.Traded;
         }
 
