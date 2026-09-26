@@ -114,3 +114,4 @@ BeaverBuddies.Trading.Status.NoSpaceThere,"상대 구역의 저장소에 공간�
 BeaverBuddies.Trading.Status.Traded,"지난 1시간 동안 교환했습니다.",""
 BeaverBuddies.Trading.AddTrade,"교환 추가",""
 BeaverBuddies.Trading.RemoveTrade,"삭제",""
+BeaverBuddies.Trading.OnlyOwnerCanEdit,"이쪽의 교환은 {0}만 바꿀 수 있습니다.",""

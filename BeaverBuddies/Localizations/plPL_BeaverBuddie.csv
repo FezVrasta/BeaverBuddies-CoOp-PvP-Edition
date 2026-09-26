@@ -114,3 +114,4 @@ BeaverBuddies.Trading.Status.NoSpaceThere,"Brak miejsca w magazynach drugiej dzi
 BeaverBuddies.Trading.Status.Traded,"Wymiana w ostatniej godzinie.",""
 BeaverBuddies.Trading.AddTrade,"Dodaj wymianę",""
 BeaverBuddies.Trading.RemoveTrade,"Usuń",""
+BeaverBuddies.Trading.OnlyOwnerCanEdit,"Tylko {0} może zmieniać wymiany po tej stronie.",""

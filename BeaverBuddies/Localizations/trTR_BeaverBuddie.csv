@@ -114,3 +114,4 @@ BeaverBuddies.Trading.Status.NoSpaceThere,"Diğer bölgenin depolarında yer kal
 BeaverBuddies.Trading.Status.Traded,"Son bir saat içinde takas yapıldı.",""
 BeaverBuddies.Trading.AddTrade,"Takas ekle",""
 BeaverBuddies.Trading.RemoveTrade,"Kaldır",""
+BeaverBuddies.Trading.OnlyOwnerCanEdit,"Bu taraftaki takasları yalnızca {0} değiştirebilir.",""

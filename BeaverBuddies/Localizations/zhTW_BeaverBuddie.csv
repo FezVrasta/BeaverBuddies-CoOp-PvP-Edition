@@ -114,3 +114,4 @@ BeaverBuddies.Trading.Status.NoSpaceThere,"另一個區域的倉庫沒有空間�
 BeaverBuddies.Trading.Status.Traded,"過去一小時內完成了交易。",""
 BeaverBuddies.Trading.AddTrade,"新增交易",""
 BeaverBuddies.Trading.RemoveTrade,"移除",""
+BeaverBuddies.Trading.OnlyOwnerCanEdit,"只有{0}可以修改這一側的交易。",""

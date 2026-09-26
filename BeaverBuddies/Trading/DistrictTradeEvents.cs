@@ -17,7 +17,17 @@ namespace BeaverBuddies.Trading
 
         public override void Replay(IReplayContext context)
         {
-            GetComponent<DistrictTrade>(context, entityID)?.SetRules(rules);
+            var trade = GetComponent<DistrictTrade>(context, entityID);
+            if (trade == null) return;
+            // Checked on every machine with the synced owner, so a change
+            // sent by someone else (e.g. clicked just before the owner
+            // changed) is dropped everywhere
+            if (!trade.CanEdit(playerID))
+            {
+                Plugin.LogWarning($"Ignoring trade change on {entityID} by {playerID}, who doesn't own that side");
+                return;
+            }
+            trade.SetRules(rules);
         }
 
         public override string ToActionString()

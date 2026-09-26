@@ -114,3 +114,4 @@ BeaverBuddies.Trading.Status.NoSpaceThere,"คลังของอีกเข�
 BeaverBuddies.Trading.Status.Traded,"แลกเปลี่ยนแล้วในชั่วโมงที่ผ่านมา",""
 BeaverBuddies.Trading.AddTrade,"เพิ่มการแลกเปลี่ยน",""
 BeaverBuddies.Trading.RemoveTrade,"ลบ",""
+BeaverBuddies.Trading.OnlyOwnerCanEdit,"มีเพียง {0} ที่เปลี่ยนการแลกเปลี่ยนฝั่งนี้ได้",""

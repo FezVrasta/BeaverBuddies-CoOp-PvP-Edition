@@ -114,3 +114,4 @@ BeaverBuddies.Trading.Status.NoSpaceThere,"На складах іншого ра
 BeaverBuddies.Trading.Status.Traded,"Обмін за останню годину виконано.",""
 BeaverBuddies.Trading.AddTrade,"Додати обмін",""
 BeaverBuddies.Trading.RemoveTrade,"Прибрати",""
+BeaverBuddies.Trading.OnlyOwnerCanEdit,"Лише {0} може змінювати обміни на цьому боці.",""

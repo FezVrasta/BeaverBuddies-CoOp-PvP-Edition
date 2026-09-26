@@ -1,3 +1,4 @@
+using BeaverBuddies.Players;
 using BeaverBuddies.Util;
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,9 @@ namespace BeaverBuddies.Trading
 
         private VisualElement _root;
         private VisualElement _rulesContainer;
+        private VisualElement _addBox;
         private Button _addButton;
+        private Label _locked;
         private readonly List<RuleView> _ruleViews = new();
         private DistrictTrade _trade;
         private List<string> _goodItems;
@@ -47,13 +50,21 @@ namespace BeaverBuddies.Trading
         public VisualElement InitializeFragment()
         {
             _root = new VisualElement();
+
+            var lockedBox = CreateSubPanel();
+            _locked = new Label();
+            _locked.AddToClassList("entity-panel__text");
+            _locked.style.whiteSpace = WhiteSpace.Normal;
+            lockedBox.Add(_locked);
+            _root.Add(lockedBox);
+
             _rulesContainer = new VisualElement();
             _root.Add(_rulesContainer);
 
-            var addBox = CreateSubPanel();
+            _addBox = CreateSubPanel();
             _addButton = CreateButton("BeaverBuddies.Trading.AddTrade", narrow: false, AddRule);
-            addBox.Add(_addButton);
-            _root.Add(addBox);
+            _addBox.Add(_addButton);
+            _root.Add(_addBox);
 
             _root.ToggleDisplayStyle(visible: false);
             return _root;
@@ -80,10 +91,20 @@ namespace BeaverBuddies.Trading
             // other players)
             if (_ruleViews.Count != _trade.Rules.Count) RebuildRuleViews();
 
+            // Other players can see this side's trades but not change them
+            bool editable = _trade.CanEdit(PlayerIdentity.LocalID);
+            _locked.parent.ToggleDisplayStyle(!editable);
+            if (!editable)
+            {
+                string owner = DistrictOwnershipService.Instance?.GetPlayerName(_trade.Owner);
+                _locked.text = string.Format(RegisteredLocalizationService.T("BeaverBuddies.Trading.OnlyOwnerCanEdit"), owner);
+            }
+
             for (int i = 0; i < _ruleViews.Count; i++)
             {
-                _ruleViews[i].Update(_trade.GetStatus(i));
+                _ruleViews[i].Update(_trade.GetStatus(i), editable);
             }
+            _addBox.ToggleDisplayStyle(editable);
             _addButton.SetEnabled(_trade.Rules.Count < DistrictTrade.MaxRules);
         }
 
@@ -106,9 +127,11 @@ namespace BeaverBuddies.Trading
             return _trade.Rules.Select(r => r.Copy()).ToList();
         }
 
+        private bool CanEdit => _trade != null && _trade.CanEdit(PlayerIdentity.LocalID);
+
         private void AddRule()
         {
-            if (_trade == null || _trade.Rules.Count >= DistrictTrade.MaxRules) return;
+            if (!CanEdit || _trade.Rules.Count >= DistrictTrade.MaxRules) return;
             List<TradeRule> rules = CopyRules();
             rules.Add(new TradeRule());
             DistrictTradeRulesSetEvent.SetRules(_trade, rules);
@@ -116,7 +139,7 @@ namespace BeaverBuddies.Trading
 
         private void RemoveRule(int index)
         {
-            if (_trade == null || index >= _trade.Rules.Count) return;
+            if (!CanEdit || index >= _trade.Rules.Count) return;
             List<TradeRule> rules = CopyRules();
             rules.RemoveAt(index);
             DistrictTradeRulesSetEvent.SetRules(_trade, rules);
@@ -124,7 +147,7 @@ namespace BeaverBuddies.Trading
 
         private void ChangeRule(int index, Action<TradeRule> change)
         {
-            if (_trade == null || index >= _trade.Rules.Count) return;
+            if (!CanEdit || index >= _trade.Rules.Count) return;
             List<TradeRule> rules = CopyRules();
             change(rules[index]);
             DistrictTradeRulesSetEvent.SetRules(_trade, rules);
@@ -188,6 +211,7 @@ namespace BeaverBuddies.Trading
 
             private readonly Dropdown[] _dropdowns;
             private readonly Label _status;
+            private readonly VisualElement _buttons;
 
             public RuleView(DistrictTradeFragment fragment, int index)
             {
@@ -205,15 +229,20 @@ namespace BeaverBuddies.Trading
                 _status.style.whiteSpace = WhiteSpace.Normal;
                 Root.Add(_status);
 
-                var buttons = new VisualElement();
-                buttons.AddToClassList("entity-panel__button-wrapper");
-                buttons.Add(CreateButton("BeaverBuddies.Trading.RemoveTrade", narrow: true, () => fragment.RemoveRule(index)));
-                Root.Add(buttons);
+                _buttons = new VisualElement();
+                _buttons.AddToClassList("entity-panel__button-wrapper");
+                _buttons.Add(CreateButton("BeaverBuddies.Trading.RemoveTrade", narrow: true, () => fragment.RemoveRule(index)));
+                Root.Add(_buttons);
             }
 
-            public void Update(TradeStatus status)
+            public void Update(TradeStatus status, bool editable)
             {
-                foreach (Dropdown dropdown in _dropdowns) dropdown.UpdateSelectedValue();
+                foreach (Dropdown dropdown in _dropdowns)
+                {
+                    dropdown.UpdateSelectedValue();
+                    dropdown.SetEnabled(editable);
+                }
+                _buttons.ToggleDisplayStyle(editable);
                 _status.text = RegisteredLocalizationService.T("BeaverBuddies.Trading.Status." + status);
             }
         }

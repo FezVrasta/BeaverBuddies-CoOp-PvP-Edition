@@ -114,3 +114,4 @@ BeaverBuddies.Trading.Status.NoSpaceThere,"Non c'è più spazio nei magazzini de
 BeaverBuddies.Trading.Status.Traded,"Scambio fatto nell'ultima ora.",""
 BeaverBuddies.Trading.AddTrade,"Aggiungi scambio",""
 BeaverBuddies.Trading.RemoveTrade,"Rimuovi",""
+BeaverBuddies.Trading.OnlyOwnerCanEdit,"Solo {0} può cambiare gli scambi di questo lato.",""

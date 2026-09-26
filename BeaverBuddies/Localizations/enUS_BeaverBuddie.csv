@@ -114,3 +114,4 @@ BeaverBuddies.Trading.Status.NoSpaceThere,"No room left in the other district's 
 BeaverBuddies.Trading.Status.Traded,"Traded in the last hour.",""
 BeaverBuddies.Trading.AddTrade,"Add trade",""
 BeaverBuddies.Trading.RemoveTrade,"Remove",""
+BeaverBuddies.Trading.OnlyOwnerCanEdit,"Only {0} can change the trades on this side.",""

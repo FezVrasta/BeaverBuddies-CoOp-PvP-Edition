@@ -1,3 +1,4 @@
+using BeaverBuddies.Players;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -171,6 +172,23 @@ namespace BeaverBuddies.Trading
                 if (rule != null) _rules.Add(rule.Copy());
             }
             _statuses.Clear();
+        }
+
+        /**
+         * The owner of the district on this side, or null if it has none.
+         */
+        public string Owner => _districtBuilding.District == null
+            ? null
+            : DistrictOwnershipService.Instance?.GetDistrictOwner(_districtBuilding.District);
+
+        /**
+         * Only the owner of this side's district can change its trades.
+         * Districts without an owner are open to everyone.
+         */
+        public bool CanEdit(string playerID)
+        {
+            string owner = Owner;
+            return owner == null || owner == playerID;
         }
 
         public TradeStatus GetStatus(int index)
