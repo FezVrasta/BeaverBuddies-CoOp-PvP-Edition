@@ -143,3 +143,6 @@ BeaverBuddies.PowerLimiter.Transferring,"{1} 마력 중 {0} 마력을 넘기는 
 BeaverBuddies.PowerLimiter.NoSurplus,"상대편은 동력이 필요하지만 이쪽에 남는 동력이 없습니다.",""
 BeaverBuddies.PowerLimiter.Idle,"어느 쪽도 상대편의 동력이 필요하지 않습니다.",""
 BeaverBuddies.PowerLimiter.NotConnected,"양쪽에 동력망을 연결하세요.",""
+BeaverBuddies.BorderProtection.Blocked,"이것은 {0}의 구역에 속해 있습니다.",""
+BeaverBuddies.Settings.BorderProtection,"경계 보호",""
+BeaverBuddies.Settings.BorderProtection.Tooltip,"호스트일 때 다른 플레이어의 구역에 있는 건물과 비버를 철거, 일시정지하거나 설정을 바꿀 수 없습니다.",""

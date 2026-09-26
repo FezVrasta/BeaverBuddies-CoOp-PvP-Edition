@@ -18,7 +18,7 @@ namespace BeaverBuddies.Trading
      * allowed to make is dropped everywhere.
      */
     [Serializable]
-    public class DistrictDealEvent : ReplayEvent
+    public class DistrictDealEvent : ReplayEvent, Players.IOwnershipChecked
     {
         public string entityID;
         public TradeSide side;

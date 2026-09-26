@@ -28,7 +28,7 @@ namespace BeaverBuddies.Players
      * and claim what is shared, but never take someone else's building.
      */
     [Serializable]
-    public class BuildingOwnershipSetEvent : ReplayEvent
+    public class BuildingOwnershipSetEvent : ReplayEvent, IOwnershipChecked
     {
         public List<string> entityIDs = new();
         public bool shared;

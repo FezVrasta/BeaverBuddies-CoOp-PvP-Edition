@@ -97,6 +97,13 @@ namespace BeaverBuddies
                 ).SetLocalizedTooltip("BeaverBuddies.Settings.DistrictSpecializations.Tooltip")
         );
 
+        public ModSetting<bool> BorderProtectionSetting { get; } =
+            new(true,
+                ModSettingDescriptor.CreateLocalized(
+                    "BeaverBuddies.Settings.BorderProtection"
+                ).SetLocalizedTooltip("BeaverBuddies.Settings.BorderProtection.Tooltip")
+        );
+
         public ModSetting<bool> AllowDevToolsInCoop { get; } =
             new(true,
                 ModSettingDescriptor.CreateLocalized(
@@ -168,6 +175,7 @@ namespace BeaverBuddies
         public static bool AllowDevTools => instance?.AllowDevToolsInCoop.Value ?? true;
         public static bool SciencePerPlayer => instance?.SciencePerPlayerSetting.Value ?? true;
         public static bool DistrictSpecializations => instance?.DistrictSpecializationsSetting.Value ?? true;
+        public static bool BorderProtection => instance?.BorderProtectionSetting.Value ?? true;
         public static bool ShowOwnerColors => instance?.ShowOwnerColorsSetting.Value ?? true;
         public static bool TopBarShowsOwnDistricts => instance?.TopBarShowsOwnDistrictsSetting.Value ?? true;
 

@@ -143,3 +143,6 @@ BeaverBuddies.PowerLimiter.Transferring,"กำลังส่ง {0} แรง�
 BeaverBuddies.PowerLimiter.NoSurplus,"อีกฝั่งต้องการพลังงาน แต่ฝั่งนี้ไม่มีเหลือ",""
 BeaverBuddies.PowerLimiter.Idle,"ไม่มีฝั่งไหนต้องการพลังงานจากอีกฝั่ง",""
 BeaverBuddies.PowerLimiter.NotConnected,"เชื่อมต่อเครือข่ายทั้งสองฝั่ง",""
+BeaverBuddies.BorderProtection.Blocked,"สิ่งนี้เป็นของเขตของ {0}",""
+BeaverBuddies.Settings.BorderProtection,"การป้องกันเขตแดน",""
+BeaverBuddies.Settings.BorderProtection.Tooltip,"เมื่อคุณเป็นโฮสต์ ผู้เล่นจะรื้อถอน หยุดชั่วคราว หรือเปลี่ยนการตั้งค่าของอาคารและบีเวอร์ในเขตของคนอื่นไม่ได้",""

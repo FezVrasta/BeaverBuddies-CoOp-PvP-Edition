@@ -143,3 +143,6 @@ BeaverBuddies.PowerLimiter.Transferring,"正在传送 {0} 马力（上限 {1} �
 BeaverBuddies.PowerLimiter.NoSurplus,"另一侧需要动力，但这一侧没有富余。",""
 BeaverBuddies.PowerLimiter.Idle,"两侧都不需要对方的动力。",""
 BeaverBuddies.PowerLimiter.NotConnected,"请在两侧都连接动力网络。",""
+BeaverBuddies.BorderProtection.Blocked,"这属于{0}的区域。",""
+BeaverBuddies.Settings.BorderProtection,"边界保护",""
+BeaverBuddies.Settings.BorderProtection.Tooltip,"当你作为主机时，玩家不能拆除、暂停或更改其他玩家区域中的建筑和河狸的设置。",""

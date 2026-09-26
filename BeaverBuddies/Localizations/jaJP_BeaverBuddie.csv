@@ -143,3 +143,6 @@ BeaverBuddies.PowerLimiter.Transferring,"{1} 馬力のうち {0} 馬力を送っ
 BeaverBuddies.PowerLimiter.NoSurplus,"相手側は動力が必要ですが、こちら側に余りがありません。",""
 BeaverBuddies.PowerLimiter.Idle,"どちらの側も相手の動力を必要としていません。",""
 BeaverBuddies.PowerLimiter.NotConnected,"両側に動力網をつないでください。",""
+BeaverBuddies.BorderProtection.Blocked,"これは{0}の地区のものです。",""
+BeaverBuddies.Settings.BorderProtection,"境界の保護",""
+BeaverBuddies.Settings.BorderProtection.Tooltip,"ホストの場合、他のプレイヤーの地区にある建物やビーバーを解体、一時停止、設定変更できなくなります。",""

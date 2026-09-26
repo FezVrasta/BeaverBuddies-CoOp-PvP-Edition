@@ -211,7 +211,7 @@ namespace BeaverBuddies.Players
     }
 
     [Serializable]
-    public class DistrictOwnerSetEvent : ReplayEvent
+    public class DistrictOwnerSetEvent : ReplayEvent, IOwnershipChecked
     {
         public string districtID;
         public string ownerID;

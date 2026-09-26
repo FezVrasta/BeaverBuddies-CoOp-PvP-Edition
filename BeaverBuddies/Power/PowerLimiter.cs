@@ -213,7 +213,7 @@ namespace BeaverBuddies.Power
     }
 
     [Serializable]
-    public class PowerLimiterSetEvent : ReplayEvent
+    public class PowerLimiterSetEvent : ReplayEvent, Players.IOwnershipChecked
     {
         public string entityID;
         public int maxPower;

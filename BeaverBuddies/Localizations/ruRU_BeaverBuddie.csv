@@ -143,3 +143,6 @@ BeaverBuddies.PowerLimiter.Transferring,"Передаёт {0} л.с. из {1} л
 BeaverBuddies.PowerLimiter.NoSurplus,"Другой стороне нужна энергия, но у этой стороны нет избытка.",""
 BeaverBuddies.PowerLimiter.Idle,"Ни одной стороне не нужна энергия другой.",""
 BeaverBuddies.PowerLimiter.NotConnected,"Подключите сеть с обеих сторон.",""
+BeaverBuddies.BorderProtection.Blocked,"Это принадлежит району игрока {0}.",""
+BeaverBuddies.Settings.BorderProtection,"Защита границ",""
+BeaverBuddies.Settings.BorderProtection.Tooltip,"Когда вы хост, игроки не могут сносить, ставить на паузу или менять настройки зданий и бобров в районах других игроков.",""

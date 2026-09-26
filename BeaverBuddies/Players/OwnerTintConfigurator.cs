@@ -41,6 +41,7 @@ namespace BeaverBuddies.Players
         public static void Configure(IContainerDefinition containerDefinition)
         {
             containerDefinition.Bind<OwnershipToolsButton>().AsSingleton();
+            containerDefinition.Bind<BorderProtection>().AsSingleton();
             containerDefinition.MultiBind<BottomBarModule>().ToProvider<BottomBarModuleProvider>().AsSingleton();
             containerDefinition.Bind<OwnerTint>().AsTransient();
             containerDefinition.Bind<PlacedBy>().AsTransient();

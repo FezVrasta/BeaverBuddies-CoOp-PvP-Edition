@@ -259,6 +259,8 @@ namespace BeaverBuddies
             // successful.
             if (IsReplayingEvents) return;
             if (!IsLoaded) return;
+            // Don't send actions on someone else's buildings
+            if (Players.BorderProtection.Instance?.AllowLocal(replayEvent) == false) return;
 
             string json = JsonSettings.Serialize(replayEvent);
             Plugin.Log($"RecordEvent: {json}");
@@ -324,6 +326,14 @@ namespace BeaverBuddies
                 if (DevToolsPolicy.ShouldDropReplayedEvent(replayEvent))
                 {
                     Plugin.LogWarning($"Dropping {replayEvent.type}: dev tools are disabled");
+                    continue;
+                }
+
+                // Every machine drops actions on buildings of someone else's
+                // district (and trims multi-building ones)
+                if (Players.BorderProtection.Instance?.Filter(replayEvent, replayEvent.playerID, out _) == false)
+                {
+                    Plugin.LogWarning($"Dropping {replayEvent.type} by {replayEvent.playerID}: not their building");
                     continue;
                 }
                 

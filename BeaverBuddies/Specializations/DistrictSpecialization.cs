@@ -162,7 +162,7 @@ namespace BeaverBuddies.Specializations
     }
 
     [Serializable]
-    public class DistrictSpecializationSetEvent : ReplayEvent
+    public class DistrictSpecializationSetEvent : ReplayEvent, Players.IOwnershipChecked
     {
         public string districtID;
         public string focus;
