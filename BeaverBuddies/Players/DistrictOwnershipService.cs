@@ -23,6 +23,7 @@ namespace BeaverBuddies.Players
         private static readonly SingletonKey DistrictOwnershipKey = new SingletonKey("BeaverBuddies.DistrictOwnership");
         private static readonly ListKey<string> PlayersKey = new ListKey<string>("Players");
         private static readonly ListKey<string> DistrictOwnersKey = new ListKey<string>("DistrictOwners");
+        private static readonly ListKey<string> PlayerColorsKey = new ListKey<string>("PlayerColors");
         // Saves from the first per-player science build kept these there
         private static readonly SingletonKey LegacyKey = new SingletonKey("BeaverBuddies.PlayerScience");
         private const char Separator = '\t';
@@ -32,9 +33,11 @@ namespace BeaverBuddies.Players
 
         private readonly Dictionary<string, string> _playerNames = new();
         private readonly Dictionary<string, string> _districtOwners = new();
+        private readonly Dictionary<string, string> _playerColors = new();
 
         private bool _announced;
         private string _announcedName;
+        private string _announcedColor;
         private float _nextCheckTime;
 
         public static DistrictOwnershipService Instance => SingletonManager.GetSingleton<DistrictOwnershipService>();
@@ -62,6 +65,10 @@ namespace BeaverBuddies.Players
             {
                 _districtOwners[district] = owner;
             }
+            foreach (var (id, color) in SaveUtils.Split(loader, PlayerColorsKey, Separator))
+            {
+                _playerColors[id] = color;
+            }
         }
 
         public void Save(ISingletonSaver singletonSaver)
@@ -69,6 +76,7 @@ namespace BeaverBuddies.Players
             IObjectSaver saver = singletonSaver.GetSingleton(DistrictOwnershipKey);
             saver.Set(PlayersKey, SaveUtils.Join(_playerNames, Separator));
             saver.Set(DistrictOwnersKey, SaveUtils.Join(_districtOwners, Separator));
+            saver.Set(PlayerColorsKey, SaveUtils.Join(_playerColors, Separator));
         }
 
         public void UpdateSingleton()
@@ -81,19 +89,31 @@ namespace BeaverBuddies.Players
             _nextCheckTime = Time.unscaledTime + 1f;
 
             string name = PlayerIdentity.LocalName;
-            if (_announced && name == _announcedName) return;
+            string color = ColorUtility.ToHtmlStringRGB(Settings.PingColorValue);
+            if (_announced && name == _announcedName && color == _announcedColor) return;
             _announced = true;
             _announcedName = name;
-            if (ReplayEvent.DoPrefix(() => new PlayerAnnouncedEvent() { name = name }))
+            _announcedColor = color;
+            if (ReplayEvent.DoPrefix(() => new PlayerAnnouncedEvent() { name = name, color = color }))
             {
-                SetPlayerName(PlayerIdentity.LocalID, name);
+                SetPlayer(PlayerIdentity.LocalID, name, color);
             }
         }
 
-        public void SetPlayerName(string playerID, string name)
+        public void SetPlayer(string playerID, string name, string color)
         {
             if (string.IsNullOrEmpty(playerID)) return;
             _playerNames[playerID] = name ?? string.Empty;
+            if (!string.IsNullOrEmpty(color)) _playerColors[playerID] = color;
+        }
+
+        /**
+         * The player's ping color, which also marks what they own.
+         */
+        public Color? GetPlayerColor(string playerID)
+        {
+            if (playerID == null || !_playerColors.TryGetValue(playerID, out string hex)) return null;
+            return ColorUtility.TryParseHtmlString("#" + hex, out Color color) ? color : (Color?)null;
         }
 
         public void SetDistrictOwner(string districtID, string playerID)
@@ -171,10 +191,11 @@ namespace BeaverBuddies.Players
     public class PlayerAnnouncedEvent : ReplayEvent
     {
         public string name;
+        public string color;
 
         public override void Replay(IReplayContext context)
         {
-            DistrictOwnershipService.Instance?.SetPlayerName(playerID, name);
+            DistrictOwnershipService.Instance?.SetPlayer(playerID, name, color);
         }
 
         public override string ToActionString()
