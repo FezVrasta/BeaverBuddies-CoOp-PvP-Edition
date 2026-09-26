@@ -44,6 +44,8 @@ namespace BeaverBuddies
             BeaverBuddies.Specializations.SpecializationConfigurator.Configure(containerDefinition);
             BeaverBuddies.Power.PowerLimiterConfigurator.Configure(containerDefinition);
 
+            containerDefinition.Bind<BeaverBuddies.Factions.MixedFactionsService>().AsSingleton();
+
             // Bound in every game, so per-player science in a co-op save
             // survives being saved in single player
             containerDefinition.Bind<BeaverBuddies.Players.DistrictOwnershipService>().AsSingleton();
