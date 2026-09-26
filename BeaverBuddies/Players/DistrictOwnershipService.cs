@@ -30,6 +30,7 @@ namespace BeaverBuddies.Players
 
         private readonly ISingletonLoader _singletonLoader;
         private readonly IBlockService _blockService;
+        private readonly DistrictConstructionAssigner _districtConstructionAssigner;
 
         private readonly Dictionary<string, string> _playerNames = new();
         private readonly Dictionary<string, string> _districtOwners = new();
@@ -44,10 +45,12 @@ namespace BeaverBuddies.Players
 
         public IReadOnlyDictionary<string, string> PlayerNames => _playerNames;
 
-        public DistrictOwnershipService(ISingletonLoader singletonLoader, IBlockService blockService)
+        public DistrictOwnershipService(ISingletonLoader singletonLoader, IBlockService blockService,
+            DistrictConstructionAssigner districtConstructionAssigner)
         {
             _singletonLoader = singletonLoader;
             _blockService = blockService;
+            _districtConstructionAssigner = districtConstructionAssigner;
         }
 
         public void Load()
@@ -127,6 +130,9 @@ namespace BeaverBuddies.Players
             {
                 _districtOwners[districtID] = playerID;
             }
+            // Which district builds a construction site depends on owners
+            // (see PlacedBy), so hand them out again
+            _districtConstructionAssigner.ReassignAllConstructions();
         }
 
         /**

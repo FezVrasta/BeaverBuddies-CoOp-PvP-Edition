@@ -1,6 +1,5 @@
 using Bindito.Core;
-using Timberborn.GameDistricts;
-using Timberborn.PathSystem;
+using Timberborn.Buildings;
 using Timberborn.TemplateInstantiation;
 
 namespace BeaverBuddies.Players
@@ -12,8 +11,10 @@ namespace BeaverBuddies.Players
             public TemplateModule Get()
             {
                 TemplateModule.Builder builder = new TemplateModule.Builder();
-                builder.AddDecorator<DistrictCenterSpec, OwnerTint>();
-                builder.AddDecorator<PathSpec, OwnerTint>();
+                // All buildings: district centers, paths and construction
+                // sites get tinted, the rest is skipped by OwnerTintService
+                builder.AddDecorator<BuildingSpec, OwnerTint>();
+                builder.AddDecorator<BuildingSpec, PlacedBy>();
                 return builder.Build();
             }
         }
@@ -21,6 +22,7 @@ namespace BeaverBuddies.Players
         public static void Configure(IContainerDefinition containerDefinition)
         {
             containerDefinition.Bind<OwnerTint>().AsTransient();
+            containerDefinition.Bind<PlacedBy>().AsTransient();
             containerDefinition.Bind<OwnerTintService>().AsSingleton();
             containerDefinition.MultiBind<TemplateModule>().ToProvider<TemplateModuleProvider>().AsSingleton();
         }

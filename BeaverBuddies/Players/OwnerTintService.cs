@@ -4,6 +4,7 @@ using Timberborn.BlockSystem;
 using Timberborn.Coordinates;
 using Timberborn.EntitySystem;
 using Timberborn.GameDistricts;
+using Timberborn.PathSystem;
 using Timberborn.SelectionSystem;
 using Timberborn.SingletonSystem;
 using UnityEngine;
@@ -11,19 +12,23 @@ using UnityEngine;
 namespace BeaverBuddies.Players
 {
     /**
-     * Marks the objects tinted with their owner's color: district centers
-     * and paths. Added by blueprint decorators (see OwnerTintConfigurator).
+     * Marks buildings that can be tinted with their owner's color. Added
+     * to every building by a blueprint decorator (see OwnerTintConfigurator).
      */
     public class OwnerTint : BaseComponent, IAwakableComponent, IDeletableEntity
     {
         public DistrictCenter DistrictCenter { get; private set; }
         public BlockObject BlockObject { get; private set; }
+        public PlacedBy PlacedBy { get; private set; }
+        public bool IsPath { get; private set; }
         public Color? AppliedColor { get; set; }
 
         public void Awake()
         {
             DistrictCenter = GetComponent<DistrictCenter>();
             BlockObject = GetComponent<BlockObject>();
+            PlacedBy = GetComponent<PlacedBy>();
+            IsPath = HasComponent<PathSpec>();
             OwnerTintService.Instance?.Register(this);
         }
 
@@ -34,9 +39,10 @@ namespace BeaverBuddies.Players
     }
 
     /**
-     * Gives each player's district center and paths a faint tint of their
-     * color, so it's clear who owns what. It only changes how things look
-     * on this machine, never the game.
+     * Gives each player's district centers, paths and unbuilt construction
+     * sites a faint tint of their color, so it's clear who owns what and
+     * who is going to build what. It only changes how things look on this
+     * machine, never the game.
      */
     public class OwnerTintService : RegisteredSingleton, IUpdatableSingleton
     {
@@ -109,7 +115,13 @@ namespace BeaverBuddies.Players
             {
                 owner = ownership.GetDistrictOwner(tint.DistrictCenter);
             }
-            else if (tint.BlockObject && tint.BlockObject.IsFinished)
+            else if (tint.BlockObject && !tint.BlockObject.IsFinished)
+            {
+                // Construction sites show who placed them, since only
+                // that player's districts build them (see PlacedBy)
+                owner = tint.PlacedBy?.PlayerID;
+            }
+            else if (tint.IsPath && tint.BlockObject)
             {
                 // A path belongs to the district whose roads it's part of
                 Vector3 position = CoordinateSystem.GridToWorldCentered(tint.BlockObject.Coordinates);

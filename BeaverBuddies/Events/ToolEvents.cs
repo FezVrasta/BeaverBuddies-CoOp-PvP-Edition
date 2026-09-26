@@ -62,7 +62,10 @@ namespace BeaverBuddies.Events
             {
                 builder.AddInitComponent(new DuplicationInit(duplicationSource));
             }
-            placer.Place(builder, placement);
+            using (Players.PlacedBy.Placing(playerID))
+            {
+                placer.Place(builder, placement);
+            }
             Players.DistrictOwnershipService.Instance?.OnBuildingPlaced(placement.Coordinates, playerID);
         }
 
