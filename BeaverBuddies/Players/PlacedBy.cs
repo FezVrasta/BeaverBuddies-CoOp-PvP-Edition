@@ -22,6 +22,16 @@ namespace BeaverBuddies.Players
 
         public string PlayerID { get; private set; }
 
+        public bool IsShared => PlayerID == null;
+
+        /**
+         * Only from replayed events (see BuildingOwnershipSetEvent).
+         */
+        public void SetPlayerID(string playerID)
+        {
+            PlayerID = playerID;
+        }
+
         public static Scope Placing(string playerID)
         {
             var scope = new Scope(_placingPlayer);

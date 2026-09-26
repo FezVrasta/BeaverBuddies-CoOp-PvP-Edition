@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"Esperando a que ambos lados aprue
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Solo {0} puede cambiar los tratos de este distrito.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Mostrar colores de los dueños",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Tiñe ligeramente cada centro de distrito y sus caminos con el color de su dueño (su color de marcador). Solo cambia lo que ves.",""
+BeaverBuddies.Ownership.ToolGroup,"Propiedad",""
+BeaverBuddies.Ownership.MakeShared,"Compartir",""
+BeaverBuddies.Ownership.MakeShared.Description,"Haz clic o arrastra sobre edificios que colocaste para compartirlos: cualquier distrito puede construirlos.",""
+BeaverBuddies.Ownership.MakeMine,"Hacer mío",""
+BeaverBuddies.Ownership.MakeMine.Description,"Haz clic o arrastra sobre edificios compartidos para reclamarlos: solo tus distritos los construyen.",""

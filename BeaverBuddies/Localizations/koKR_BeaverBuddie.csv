@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"양쪽의 승인을 기다리는 
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"이 구역의 거래는 {0}만 바꿀 수 있습니다.",""
 BeaverBuddies.Settings.ShowOwnerColors,"구역 소유자 색상 표시",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"각 구역 센터와 그 길을 소유자의 색(핑 색상)으로 옅게 물들입니다. 보이는 것만 바뀝니다.",""
+BeaverBuddies.Ownership.ToolGroup,"소유",""
+BeaverBuddies.Ownership.MakeShared,"공유하기",""
+BeaverBuddies.Ownership.MakeShared.Description,"내가 배치한 건물을 클릭하거나 드래그해 공유합니다. 어느 구역이든 건설할 수 있습니다.",""
+BeaverBuddies.Ownership.MakeMine,"내 것으로",""
+BeaverBuddies.Ownership.MakeMine.Description,"공유된 건물을 클릭하거나 드래그해 가져옵니다. 내 구역만 건설합니다.",""

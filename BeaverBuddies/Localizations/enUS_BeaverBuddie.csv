@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"Waiting for both sides to approve
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Only {0} can change the deals of this district.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Show District Owner Colors",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Gives each district center and its paths a faint tint of its owner's color (their ping color). Only changes what you see.",""
+BeaverBuddies.Ownership.ToolGroup,"Ownership",""
+BeaverBuddies.Ownership.MakeShared,"Make shared",""
+BeaverBuddies.Ownership.MakeShared.Description,"Click or drag over buildings you placed to share them: any district can build them.",""
+BeaverBuddies.Ownership.MakeMine,"Make mine",""
+BeaverBuddies.Ownership.MakeMine.Description,"Click or drag over shared buildings to claim them: only your districts build them.",""

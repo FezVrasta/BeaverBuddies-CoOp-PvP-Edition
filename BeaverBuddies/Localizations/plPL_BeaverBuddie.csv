@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"Czeka na zatwierdzenie obu stron.
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Tylko {0} może zmieniać umowy tej dzielnicy.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Pokaż kolory właścicieli dzielnic",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Lekko barwi każde centrum dzielnicy i jego ścieżki kolorem właściciela (kolorem jego pinga). Zmienia tylko to, co widzisz.",""
+BeaverBuddies.Ownership.ToolGroup,"Własność",""
+BeaverBuddies.Ownership.MakeShared,"Udostępnij",""
+BeaverBuddies.Ownership.MakeShared.Description,"Kliknij lub przeciągnij po budynkach, które postawiłeś, aby je udostępnić: każda dzielnica może je zbudować.",""
+BeaverBuddies.Ownership.MakeMine,"Przejmij",""
+BeaverBuddies.Ownership.MakeMine.Description,"Kliknij lub przeciągnij po wspólnych budynkach, aby je przejąć: budują je tylko twoje dzielnice.",""

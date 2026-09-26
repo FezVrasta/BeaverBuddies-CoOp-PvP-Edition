@@ -126,3 +126,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"En attente de l'accord des deux c
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Seul {0} peut modifier les accords de ce district.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Afficher les couleurs des propriétaires",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Teinte légèrement chaque centre de district et ses chemins de la couleur de son propriétaire (sa couleur de marqueur). Ne change que ce que vous voyez.",""
+BeaverBuddies.Ownership.ToolGroup,"Propriété",""
+BeaverBuddies.Ownership.MakeShared,"Partager",""
+BeaverBuddies.Ownership.MakeShared.Description,"Cliquez ou glissez sur les bâtiments que vous avez placés pour les partager : n'importe quel district peut les construire.",""
+BeaverBuddies.Ownership.MakeMine,"Réclamer",""
+BeaverBuddies.Ownership.MakeMine.Description,"Cliquez ou glissez sur les bâtiments partagés pour les réclamer : seuls vos districts les construisent.",""

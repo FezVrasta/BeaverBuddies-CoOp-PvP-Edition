@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"กำลังรอให้ท
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"มีเพียง {0} ที่เปลี่ยนข้อตกลงของเขตนี้ได้",""
 BeaverBuddies.Settings.ShowOwnerColors,"แสดงสีของเจ้าของเขต",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"แต้มสีจางๆ ให้ศูนย์กลางเขตและทางเดินด้วยสีของเจ้าของ (สีการปักหมุด) เปลี่ยนเฉพาะสิ่งที่คุณเห็น",""
+BeaverBuddies.Ownership.ToolGroup,"ความเป็นเจ้าของ",""
+BeaverBuddies.Ownership.MakeShared,"แชร์",""
+BeaverBuddies.Ownership.MakeShared.Description,"คลิกหรือลากบนอาคารที่คุณวางเพื่อแชร์ เขตไหนก็สร้างได้",""
+BeaverBuddies.Ownership.MakeMine,"เป็นของฉัน",""
+BeaverBuddies.Ownership.MakeMine.Description,"คลิกหรือลากบนอาคารที่แชร์อยู่เพื่อเอามาเป็นของคุณ เฉพาะเขตของคุณที่สร้าง",""

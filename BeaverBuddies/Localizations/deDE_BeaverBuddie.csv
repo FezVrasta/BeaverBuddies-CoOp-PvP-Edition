@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"Wartet auf die Zustimmung beider 
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Nur {0} kann die Handel dieses Bezirks ändern.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Bezirksbesitzer-Farben anzeigen",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Färbt jedes Bezirkszentrum und seine Wege leicht in der Farbe des Besitzers (seiner Markierungsfarbe). Ändert nur, was du siehst.",""
+BeaverBuddies.Ownership.ToolGroup,"Besitz",""
+BeaverBuddies.Ownership.MakeShared,"Teilen",""
+BeaverBuddies.Ownership.MakeShared.Description,"Klicke oder ziehe über Gebäude, die du platziert hast, um sie zu teilen: Jeder Bezirk kann sie bauen.",""
+BeaverBuddies.Ownership.MakeMine,"Beanspruchen",""
+BeaverBuddies.Ownership.MakeMine.Description,"Klicke oder ziehe über geteilte Gebäude, um sie zu beanspruchen: Nur deine Bezirke bauen sie.",""

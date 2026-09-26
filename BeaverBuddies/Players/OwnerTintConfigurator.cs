@@ -1,4 +1,5 @@
 using Bindito.Core;
+using Timberborn.BottomBarSystem;
 using Timberborn.Buildings;
 using Timberborn.TemplateInstantiation;
 
@@ -19,8 +20,28 @@ namespace BeaverBuddies.Players
             }
         }
 
+        private class BottomBarModuleProvider : IProvider<BottomBarModule>
+        {
+            private readonly OwnershipToolsButton _ownershipToolsButton;
+
+            public BottomBarModuleProvider(OwnershipToolsButton ownershipToolsButton)
+            {
+                _ownershipToolsButton = ownershipToolsButton;
+            }
+
+            public BottomBarModule Get()
+            {
+                BottomBarModule.Builder builder = new BottomBarModule.Builder();
+                // Right after the builder priorities (60)
+                builder.AddLeftSectionElement(_ownershipToolsButton, 61);
+                return builder.Build();
+            }
+        }
+
         public static void Configure(IContainerDefinition containerDefinition)
         {
+            containerDefinition.Bind<OwnershipToolsButton>().AsSingleton();
+            containerDefinition.MultiBind<BottomBarModule>().ToProvider<BottomBarModuleProvider>().AsSingleton();
             containerDefinition.Bind<OwnerTint>().AsTransient();
             containerDefinition.Bind<PlacedBy>().AsTransient();
             containerDefinition.Bind<OwnerTintService>().AsSingleton();

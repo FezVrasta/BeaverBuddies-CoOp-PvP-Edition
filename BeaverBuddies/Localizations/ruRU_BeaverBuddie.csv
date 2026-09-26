@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"Ждёт одобрения об�
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Только {0} может менять сделки этого района.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Показывать цвета владельцев районов",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Слегка окрашивает каждый центр района и его дороги в цвет владельца (цвет его метки). Меняет только то, что видите вы.",""
+BeaverBuddies.Ownership.ToolGroup,"Владение",""
+BeaverBuddies.Ownership.MakeShared,"Сделать общим",""
+BeaverBuddies.Ownership.MakeShared.Description,"Щёлкните или проведите по своим зданиям, чтобы сделать их общими: строить их сможет любой район.",""
+BeaverBuddies.Ownership.MakeMine,"Сделать своим",""
+BeaverBuddies.Ownership.MakeMine.Description,"Щёлкните или проведите по общим зданиям, чтобы забрать их: строить их будут только ваши районы.",""

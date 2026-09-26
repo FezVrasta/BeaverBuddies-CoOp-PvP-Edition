@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"両側の承認を待っていま
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"この地区の取引を変更できるのは{0}だけです。",""
 BeaverBuddies.Settings.ShowOwnerColors,"地区の所有者の色を表示",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"各地区センターとその道を、所有者の色（ピンの色）で薄く色付けします。表示が変わるだけです。",""
+BeaverBuddies.Ownership.ToolGroup,"所有",""
+BeaverBuddies.Ownership.MakeShared,"共有する",""
+BeaverBuddies.Ownership.MakeShared.Description,"自分が置いた建物をクリックまたはドラッグして共有します。どの地区でも建設できます。",""
+BeaverBuddies.Ownership.MakeMine,"自分のものにする",""
+BeaverBuddies.Ownership.MakeMine.Description,"共有の建物をクリックまたはドラッグして自分のものにします。自分の地区だけが建設します。",""

@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"Чекає схвалення о�
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Лише {0} може змінювати угоди цього району.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Показувати кольори власників районів",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Злегка забарвлює кожен центр району та його дороги в колір власника (колір його позначки). Змінює лише те, що бачите ви.",""
+BeaverBuddies.Ownership.ToolGroup,"Власність",""
+BeaverBuddies.Ownership.MakeShared,"Зробити спільним",""
+BeaverBuddies.Ownership.MakeShared.Description,"Клацніть або проведіть по своїх будівлях, щоб зробити їх спільними: будувати їх зможе будь-який район.",""
+BeaverBuddies.Ownership.MakeMine,"Зробити своїм",""
+BeaverBuddies.Ownership.MakeMine.Description,"Клацніть або проведіть по спільних будівлях, щоб забрати їх: будуватимуть лише ваші райони.",""

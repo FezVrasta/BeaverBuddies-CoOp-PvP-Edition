@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"İki tarafın da onayı bekleniyo
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Bu bölgenin anlaşmalarını yalnızca {0} değiştirebilir.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Bölge sahibi renklerini göster",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Her bölge merkezini ve yollarını sahibinin rengine (işaret rengine) hafifçe boyar. Yalnızca senin gördüğünü değiştirir.",""
+BeaverBuddies.Ownership.ToolGroup,"Sahiplik",""
+BeaverBuddies.Ownership.MakeShared,"Paylaş",""
+BeaverBuddies.Ownership.MakeShared.Description,"Yerleştirdiğin binaları paylaşmak için tıkla veya sürükle: her bölge inşa edebilir.",""
+BeaverBuddies.Ownership.MakeMine,"Benim yap",""
+BeaverBuddies.Ownership.MakeMine.Description,"Paylaşılan binaları almak için tıkla veya sürükle: yalnızca senin bölgelerin inşa eder.",""

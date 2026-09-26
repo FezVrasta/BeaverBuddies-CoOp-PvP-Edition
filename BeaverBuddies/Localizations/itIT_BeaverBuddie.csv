@@ -122,3 +122,8 @@ BeaverBuddies.Trading.Status.AwaitingApproval,"In attesa che entrambi i lati app
 BeaverBuddies.Trading.OnlyOwnerCanEdit,"Solo {0} può cambiare gli accordi di questo distretto.",""
 BeaverBuddies.Settings.ShowOwnerColors,"Mostra i colori dei proprietari",""
 BeaverBuddies.Settings.ShowOwnerColors.Tooltip,"Colora leggermente ogni centro distrettuale e le sue strade con il colore del proprietario (il colore del suo segnale). Cambia solo quello che vedi tu.",""
+BeaverBuddies.Ownership.ToolGroup,"Proprietà",""
+BeaverBuddies.Ownership.MakeShared,"Condividi",""
+BeaverBuddies.Ownership.MakeShared.Description,"Clicca o trascina sugli edifici che hai piazzato per condividerli: qualsiasi distretto può costruirli.",""
+BeaverBuddies.Ownership.MakeMine,"Rendi mio",""
+BeaverBuddies.Ownership.MakeMine.Description,"Clicca o trascina sugli edifici condivisi per prenderli: solo i tuoi distretti li costruiscono.",""
