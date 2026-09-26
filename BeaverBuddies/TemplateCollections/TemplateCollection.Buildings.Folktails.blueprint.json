@@ -3,7 +3,7 @@
     "CollectionId": "Buildings.Folktails",
     "Blueprints#append": [
       "Buildings/TradingPost/TradingPost.Folktails.blueprint",
-      "Buildings/PowerLimiter/PowerLimiter.Folktails.blueprint"
+      "Buildings/PowerExchange/PowerExchange.Folktails.blueprint"
     ]
   }
 }

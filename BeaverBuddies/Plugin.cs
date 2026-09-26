@@ -42,7 +42,7 @@ namespace BeaverBuddies
             BeaverBuddies.Trading.TradingConfigurator.Configure(containerDefinition);
             BeaverBuddies.Players.OwnerTintConfigurator.Configure(containerDefinition);
             BeaverBuddies.Specializations.SpecializationConfigurator.Configure(containerDefinition);
-            BeaverBuddies.Power.PowerLimiterConfigurator.Configure(containerDefinition);
+            BeaverBuddies.Power.PowerExchangeConfigurator.Configure(containerDefinition);
 
             containerDefinition.Bind<BeaverBuddies.Factions.MixedFactionsService>().AsSingleton();
             BeaverBuddies.Factions.FactionsConfigurator.Configure(containerDefinition);

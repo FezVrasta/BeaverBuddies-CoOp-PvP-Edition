@@ -3,7 +3,7 @@
     "CollectionId": "Buildings.IronTeeth",
     "Blueprints#append": [
       "Buildings/TradingPost/TradingPost.IronTeeth.blueprint",
-      "Buildings/PowerLimiter/PowerLimiter.IronTeeth.blueprint"
+      "Buildings/PowerExchange/PowerExchange.IronTeeth.blueprint"
     ]
   }
 }
