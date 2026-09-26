@@ -346,7 +346,11 @@ namespace BeaverBuddies
                 {
                     // For these events, make sure to record s0 beforehand
                     replayEvent.randomS0Before = UnityEngine.Random.state.s0;
-                    replayEvent.Replay(this);
+                    // Science spent or earned by the event belongs to its player
+                    using (Science.ScienceContext.Use(replayEvent.playerID))
+                    {
+                        replayEvent.Replay(this);
+                    }
                     // Only send the event if it played successfully and
                     // the IO says we shouldn't skip recording
                     if (!EventIO.SkipRecording)

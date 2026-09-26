@@ -96,3 +96,7 @@ BeaverBuddies.DevTools.DisabledByHost,"L'hôte a désactivé les outils de déve
 BeaverBuddies.DevTools.NotSynced,"Cet outil de développement ne peut pas être utilisé en coop car il ne peut pas être synchronisé.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Afficher les curseurs des joueurs",""
 BeaverBuddies.Settings.ShowPlayerCursors.Tooltip,"Affiche où pointent les autres joueurs et partage votre curseur avec eux. Utilise votre couleur de marqueur.",""
+BeaverBuddies.Settings.SciencePerPlayer,"Science séparée par joueur",""
+BeaverBuddies.Settings.SciencePerPlayer.Tooltip,"Quand vous hébergez, chaque joueur a ses propres points de science. Les districts produisent de la science pour le joueur à qui ils appartiennent, et les déblocages sont payés par celui qui débloque. La science des districts sans propriétaire est partagée par tous.",""
+BeaverBuddies.Science.DistrictOwner,"La science va à",""
+BeaverBuddies.Science.Shared,"Partagée",""

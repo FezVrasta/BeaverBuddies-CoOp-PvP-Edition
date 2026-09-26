@@ -92,3 +92,7 @@ BeaverBuddies.DevTools.DisabledByHost,"ホストがこのゲームの開発ツ�
 BeaverBuddies.DevTools.NotSynced,"この開発ツールは同期できないため、協力プレイでは使用できません。",""
 BeaverBuddies.Settings.ShowPlayerCursors,"プレイヤーのカーソルを表示",""
 BeaverBuddies.Settings.ShowPlayerCursors.Tooltip,"他のプレイヤーが指している場所を表示し、あなたのカーソルも共有します。ピンの色を使用します。",""
+BeaverBuddies.Settings.SciencePerPlayer,"プレイヤーごとに研究ポイントを分ける",""
+BeaverBuddies.Settings.SciencePerPlayer.Tooltip,"ホストの場合、各プレイヤーが自分の研究ポイントを持ちます。地区は所有者のために研究ポイントを生み出し、解放の費用は解放したプレイヤーが払います。所有者のいない地区の研究ポイントは全員で共有します。",""
+BeaverBuddies.Science.DistrictOwner,"研究ポイントの行き先",""
+BeaverBuddies.Science.Shared,"共有",""

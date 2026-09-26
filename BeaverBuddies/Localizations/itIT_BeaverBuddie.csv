@@ -92,3 +92,7 @@ BeaverBuddies.DevTools.DisabledByHost,"L'host ha disattivato gli strumenti svilu
 BeaverBuddies.DevTools.NotSynced,"Questo strumento sviluppatore non si può usare in co-op perché non può essere sincronizzato.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Mostra i cursori dei giocatori",""
 BeaverBuddies.Settings.ShowPlayerCursors.Tooltip,"Mostra dove puntano gli altri giocatori e condivide il tuo cursore con loro. Usa il colore dei tuoi segnali.",""
+BeaverBuddies.Settings.SciencePerPlayer,"Scienza separata per giocatore",""
+BeaverBuddies.Settings.SciencePerPlayer.Tooltip,"Quando ospiti, ogni giocatore ha i suoi punti scienza. I distretti producono scienza per il giocatore a cui appartengono e gli sblocchi li paga chi sblocca. La scienza dei distretti senza proprietario è condivisa da tutti.",""
+BeaverBuddies.Science.DistrictOwner,"La scienza va a",""
+BeaverBuddies.Science.Shared,"Condivisa",""

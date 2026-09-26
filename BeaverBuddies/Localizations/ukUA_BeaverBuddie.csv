@@ -92,3 +92,7 @@ BeaverBuddies.DevTools.DisabledByHost,"Хост вимкнув інструме�
 BeaverBuddies.DevTools.NotSynced,"Цей інструмент розробника не можна використовувати в кооперативі, бо його не можна синхронізувати.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Показувати курсори гравців",""
 BeaverBuddies.Settings.ShowPlayerCursors.Tooltip,"Показує, куди вказують інші гравці, і ділиться з ними вашим курсором. Використовує колір ваших позначок.",""
+BeaverBuddies.Settings.SciencePerPlayer,"Окремі очки науки для кожного гравця",""
+BeaverBuddies.Settings.SciencePerPlayer.Tooltip,"Коли ви хост, кожен гравець має власні очки науки. Райони приносять науку гравцю, якому належать, а за відкриття платить той, хто відкриває. Наука з районів без власника спільна для всіх.",""
+BeaverBuddies.Science.DistrictOwner,"Наука йде",""
+BeaverBuddies.Science.Shared,"Спільна",""

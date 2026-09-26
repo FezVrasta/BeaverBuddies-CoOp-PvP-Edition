@@ -19,6 +19,8 @@ namespace BeaverBuddies.Events
 
         public int ticksSinceLoad;
         public int? randomS0Before;
+        // The stable ID of the player who caused this event
+        public string playerID = Science.PlayerIdentity.LocalID;
 
         public string type => GetType().Name;
 

@@ -92,3 +92,7 @@ BeaverBuddies.DevTools.DisabledByHost,"Sunucu bu oyunda geliştirici araçların
 BeaverBuddies.DevTools.NotSynced,"Bu geliştirici aracı senkronize edilemediği için ortak oyunda kullanılamaz.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Oyuncu imleçlerini göster",""
 BeaverBuddies.Settings.ShowPlayerCursors.Tooltip,"Diğer oyuncuların nereyi gösterdiğini gösterir ve kendi imlecini onlarla paylaşır. İşaret rengini kullanır.",""
+BeaverBuddies.Settings.SciencePerPlayer,"Oyuncu başına ayrı bilim",""
+BeaverBuddies.Settings.SciencePerPlayer.Tooltip,"Sunucu sen olduğunda her oyuncunun kendi bilim puanı olur. Bölgeler ait oldukları oyuncu için bilim üretir ve kilit açma bedelini açan oyuncu öder. Sahibi olmayan bölgelerin bilimi herkes tarafından paylaşılır.",""
+BeaverBuddies.Science.DistrictOwner,"Bilim şuraya gider",""
+BeaverBuddies.Science.Shared,"Ortak",""

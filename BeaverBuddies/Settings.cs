@@ -69,6 +69,13 @@ namespace BeaverBuddies
                 .SetLocalizedTooltip("BeaverBuddies.Settings.PauseReduction.Tooltip")
         );
 
+        public ModSetting<bool> SciencePerPlayerSetting { get; } =
+            new(true,
+                ModSettingDescriptor.CreateLocalized(
+                    "BeaverBuddies.Settings.SciencePerPlayer"
+                ).SetLocalizedTooltip("BeaverBuddies.Settings.SciencePerPlayer.Tooltip")
+        );
+
         public ModSetting<bool> AllowDevToolsInCoop { get; } =
             new(true,
                 ModSettingDescriptor.CreateLocalized(
@@ -138,6 +145,7 @@ namespace BeaverBuddies
         public static bool LobbyJoinable => instance?.FriendsCanJoinSteamGame.Value ?? true;
         public static bool ShouldShowFirstTimerMessage => instance?.ShowFirstTimerMessage.Value ?? true;
         public static bool AllowDevTools => instance?.AllowDevToolsInCoop.Value ?? true;
+        public static bool SciencePerPlayer => instance?.SciencePerPlayerSetting.Value ?? true;
 
         public static PauseReductionLevel PauseReductionSetting
         {

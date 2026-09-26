@@ -92,3 +92,7 @@ BeaverBuddies.DevTools.DisabledByHost,"El anfitrión ha desactivado las herramie
 BeaverBuddies.DevTools.NotSynced,"Esta herramienta de desarrollo no se puede usar en cooperativo porque no se puede sincronizar.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Mostrar cursores de jugadores",""
 BeaverBuddies.Settings.ShowPlayerCursors.Tooltip,"Muestra hacia dónde apuntan los demás jugadores y comparte tu cursor con ellos. Usa tu color de marcador.",""
+BeaverBuddies.Settings.SciencePerPlayer,"Ciencia separada por jugador",""
+BeaverBuddies.Settings.SciencePerPlayer.Tooltip,"Cuando eres el anfitrión, cada jugador tiene sus propios puntos de ciencia. Los distritos generan ciencia para el jugador al que pertenecen y los desbloqueos los paga quien desbloquea. La ciencia de los distritos sin dueño es compartida por todos.",""
+BeaverBuddies.Science.DistrictOwner,"La ciencia va a",""
+BeaverBuddies.Science.Shared,"Compartida",""

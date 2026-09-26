@@ -92,3 +92,7 @@ BeaverBuddies.DevTools.DisabledByHost,"主機已在本局遊戲中停用開發�
 BeaverBuddies.DevTools.NotSynced,"此開發者工具無法同步，因此不能在合作模式中使用。",""
 BeaverBuddies.Settings.ShowPlayerCursors,"顯示玩家游標",""
 BeaverBuddies.Settings.ShowPlayerCursors.Tooltip,"顯示其他玩家指向的位置，並與他們分享你的游標。使用你的標記顏色。",""
+BeaverBuddies.Settings.SciencePerPlayer,"每位玩家獨立的科技點",""
+BeaverBuddies.Settings.SciencePerPlayer.Tooltip,"當你作為主機時，每位玩家都有自己的科技點。區域為其所屬的玩家產出科技點，解鎖由解鎖者支付。無主區域的科技點由所有人共享。",""
+BeaverBuddies.Science.DistrictOwner,"科技點歸屬",""
+BeaverBuddies.Science.Shared,"共享",""

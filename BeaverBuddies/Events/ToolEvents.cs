@@ -63,6 +63,7 @@ namespace BeaverBuddies.Events
                 builder.AddInitComponent(new DuplicationInit(duplicationSource));
             }
             placer.Place(builder, placement);
+            Science.PlayerScienceService.Instance?.OnBuildingPlaced(placement.Coordinates, playerID);
         }
 
         // Note: This may not catch every possible invalid placement (e.g. if terrain height changes or something)

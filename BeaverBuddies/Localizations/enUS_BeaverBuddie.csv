@@ -92,3 +92,7 @@ BeaverBuddies.DevTools.DisabledByHost,"The host has disabled dev tools for this 
 BeaverBuddies.DevTools.NotSynced,"This dev tool can't be used in co-op because it can't be synced.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Show Player Cursors",""
 BeaverBuddies.Settings.ShowPlayerCursors.Tooltip,"Show where the other players are pointing and share your own cursor with them. Uses your ping color.",""
+BeaverBuddies.Settings.SciencePerPlayer,"Separate Science per Player",""
+BeaverBuddies.Settings.SciencePerPlayer.Tooltip,"When you host, each player has their own science points. Districts earn science for the player they belong to, and unlocks are paid by whoever unlocks them. Science from districts that belong to nobody is shared by everyone.",""
+BeaverBuddies.Science.DistrictOwner,"Science goes to",""
+BeaverBuddies.Science.Shared,"Shared",""
