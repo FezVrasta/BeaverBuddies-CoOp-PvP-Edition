@@ -11,17 +11,17 @@ using Timberborn.GameDistrictsUI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace BeaverBuddies.Science
+namespace BeaverBuddies.Players
 {
     /**
      * A dropdown in the district center panel to pick which player the
-     * district's science goes to.
+     * district belongs to.
      */
     public class DistrictOwnerSelector : RegisteredSingleton, IExtendedDropdownProvider
     {
-        public const string SharedValue = "";
-        private const string LabelKey = "BeaverBuddies.Science.DistrictOwner";
-        private const string SharedKey = "BeaverBuddies.Science.Shared";
+        public const string NoOwnerValue = "";
+        private const string LabelKey = "BeaverBuddies.Districts.Owner";
+        private const string NoOwnerKey = "BeaverBuddies.Districts.NoOwner";
 
         private readonly DropdownListDrawer _dropdownListDrawer;
         private readonly DropdownItemsSetter _dropdownItemsSetter;
@@ -43,14 +43,18 @@ namespace BeaverBuddies.Science
 
         public void AddTo(VisualElement parent)
         {
+            // Same structure as the game's dropdown fragments (e.g.
+            // ManufactoryFragment.uxml), styled by the panel's stylesheets
             _dropdown = new Dropdown();
+            _dropdown.AddToClassList("game-dropdown");
             _dropdown.Initialize(_dropdownListDrawer);
             Label label = _dropdown.Q<Label>("Label");
             label.text = RegisteredLocalizationService.T(LabelKey);
             label.ToggleDisplayStyle(visible: true);
 
-            _root = new VisualElement();
-            _root.style.marginTop = 4;
+            _root = new NineSliceVisualElement();
+            _root.AddToClassList("entity-sub-panel");
+            _root.AddToClassList("bg-sub-box--green");
             _root.Add(_dropdown);
             _root.ToggleDisplayStyle(visible: false);
             parent.Add(_root);
@@ -59,7 +63,7 @@ namespace BeaverBuddies.Science
         public void Show(DistrictCenter districtCenter)
         {
             _districtCenter = districtCenter;
-            if (_dropdown == null || PlayerScienceService.Instance == null) return;
+            if (_dropdown == null || DistrictOwnershipService.Instance == null) return;
             UpdateItems();
             _dropdownItemsSetter.SetItems(_dropdown, this);
         }
@@ -72,9 +76,8 @@ namespace BeaverBuddies.Science
 
         public void Update()
         {
-            var service = PlayerScienceService.Instance;
-            bool visible = _districtCenter != null && _districtCenter.Enabled
-                && service != null && service.Enabled;
+            var service = DistrictOwnershipService.Instance;
+            bool visible = _districtCenter != null && _districtCenter.Enabled && service != null;
             _root?.ToggleDisplayStyle(visible);
             if (!visible) return;
 
@@ -89,9 +92,9 @@ namespace BeaverBuddies.Science
 
         private void UpdateItems()
         {
-            var service = PlayerScienceService.Instance;
+            var service = DistrictOwnershipService.Instance;
             _items.Clear();
-            _items.Add(SharedValue);
+            _items.Add(NoOwnerValue);
             _items.AddRange(service.PlayerNames.Keys
                 .OrderBy(id => service.GetPlayerName(id))
                 .ThenBy(id => id));
@@ -99,17 +102,17 @@ namespace BeaverBuddies.Science
 
         public string GetValue()
         {
-            if (_districtCenter == null) return SharedValue;
-            return PlayerScienceService.Instance?.GetDistrictOwner(_districtCenter) ?? SharedValue;
+            if (_districtCenter == null) return NoOwnerValue;
+            return DistrictOwnershipService.Instance?.GetDistrictOwner(_districtCenter) ?? NoOwnerValue;
         }
 
         public void SetValue(string value)
         {
-            var service = PlayerScienceService.Instance;
+            var service = DistrictOwnershipService.Instance;
             string districtID = ReplayEvent.GetEntityID(_districtCenter);
             if (service == null || districtID == null) return;
 
-            string ownerID = value == SharedValue ? null : value;
+            string ownerID = value == NoOwnerValue ? null : value;
             bool apply = ReplayEvent.DoPrefix(() => new DistrictOwnerSetEvent()
             {
                 districtID = districtID,
@@ -120,8 +123,8 @@ namespace BeaverBuddies.Science
 
         public string FormatDisplayText(string value, bool selected)
         {
-            if (value == SharedValue) return RegisteredLocalizationService.T(SharedKey);
-            var service = PlayerScienceService.Instance;
+            if (value == NoOwnerValue) return RegisteredLocalizationService.T(NoOwnerKey);
+            var service = DistrictOwnershipService.Instance;
             string name = service?.GetPlayerName(value) ?? value;
             // Tell apart players with the same name
             bool duplicate = service != null && service.PlayerNames.Count(p => service.GetPlayerName(p.Key) == name) > 1;

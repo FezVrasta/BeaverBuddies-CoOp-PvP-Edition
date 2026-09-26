@@ -76,6 +76,13 @@ namespace BeaverBuddies
                 ).SetLocalizedTooltip("BeaverBuddies.Settings.SciencePerPlayer.Tooltip")
         );
 
+        public ModSetting<bool> TopBarShowsOwnDistrictsSetting { get; } =
+            new(true,
+                ModSettingDescriptor.CreateLocalized(
+                    "BeaverBuddies.Settings.TopBarShowsOwnDistricts"
+                ).SetLocalizedTooltip("BeaverBuddies.Settings.TopBarShowsOwnDistricts.Tooltip")
+        );
+
         public ModSetting<bool> AllowDevToolsInCoop { get; } =
             new(true,
                 ModSettingDescriptor.CreateLocalized(
@@ -146,6 +153,7 @@ namespace BeaverBuddies
         public static bool ShouldShowFirstTimerMessage => instance?.ShowFirstTimerMessage.Value ?? true;
         public static bool AllowDevTools => instance?.AllowDevToolsInCoop.Value ?? true;
         public static bool SciencePerPlayer => instance?.SciencePerPlayerSetting.Value ?? true;
+        public static bool TopBarShowsOwnDistricts => instance?.TopBarShowsOwnDistrictsSetting.Value ?? true;
 
         public static PauseReductionLevel PauseReductionSetting
         {

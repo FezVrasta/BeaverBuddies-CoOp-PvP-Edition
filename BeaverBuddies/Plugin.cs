@@ -42,8 +42,9 @@ namespace BeaverBuddies
 
             // Bound in every game, so per-player science in a co-op save
             // survives being saved in single player
+            containerDefinition.Bind<BeaverBuddies.Players.DistrictOwnershipService>().AsSingleton();
+            containerDefinition.Bind<BeaverBuddies.Players.DistrictOwnerSelector>().AsSingleton();
             containerDefinition.Bind<BeaverBuddies.Science.PlayerScienceService>().AsSingleton();
-            containerDefinition.Bind<BeaverBuddies.Science.DistrictOwnerSelector>().AsSingleton();
 
             // EventIO gets set before load, so if it's null, this is a regular
             // game, so don't initialize these services.
@@ -122,7 +123,7 @@ namespace BeaverBuddies
 
             // Load the player ID on the main thread, since events can be
             // created on other threads and PlayerPrefs only works here
-            _ = BeaverBuddies.Science.PlayerIdentity.LocalID;
+            _ = BeaverBuddies.Players.PlayerIdentity.LocalID;
 
             // apply all harmony patches automatically.
             Harmony harmony = new Harmony(ID);

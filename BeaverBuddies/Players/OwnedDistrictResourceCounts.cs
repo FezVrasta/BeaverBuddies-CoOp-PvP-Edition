@@ -3,12 +3,13 @@ using Timberborn.GameDistricts;
 using Timberborn.ResourceCountingSystem;
 using Timberborn.ResourceCountingSystemUI;
 
-namespace BeaverBuddies.Science
+namespace BeaverBuddies.Players
 {
     /**
      * With no district selected, the top bar (and the other contextual
      * good counts) show the districts this player owns instead of the
      * whole settlement. If the player owns no district it stays global.
+     * Each player can turn it off in the settings.
      * This only changes what each player sees, not the game.
      */
     [HarmonyPatch(typeof(ContextualResourceCountingService), nameof(ContextualResourceCountingService.GetContextualResourceCount))]
@@ -19,8 +20,8 @@ namespace BeaverBuddies.Science
             // Selecting a district still shows just that district
             if (__instance._districtContextService.SelectedDistrict) return true;
 
-            var service = PlayerScienceService.Instance;
-            if (service == null || !service.Enabled) return true;
+            var service = DistrictOwnershipService.Instance;
+            if (service == null || !Settings.TopBarShowsOwnDistricts) return true;
 
             ResourceCountingService counting = __instance._resourceCountingService;
             string localID = PlayerIdentity.LocalID;

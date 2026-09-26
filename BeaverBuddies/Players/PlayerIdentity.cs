@@ -3,7 +3,7 @@ using Steamworks;
 using System;
 using UnityEngine;
 
-namespace BeaverBuddies.Science
+namespace BeaverBuddies.Players
 {
     /**
      * A stable ID for this player, created once per install, so things

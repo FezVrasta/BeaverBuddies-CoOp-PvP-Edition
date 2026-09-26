@@ -1,3 +1,4 @@
+using BeaverBuddies.Players;
 using HarmonyLib;
 using Timberborn.AutomationBuildings;
 using Timberborn.Buildings;
@@ -36,7 +37,7 @@ namespace BeaverBuddies.Science
         static void Prefix(Manufactory __instance, out ScienceContext.Scope? __state)
         {
             var service = PlayerScienceService.Instance;
-            __state = service == null ? null : ScienceContext.Use(service.GetOwner(__instance));
+            __state = service == null ? null : ScienceContext.Use(PlayerScienceService.GetOwner(__instance));
         }
 
         static void Postfix(ScienceContext.Scope? __state)
@@ -123,7 +124,7 @@ namespace BeaverBuddies.Science
             var service = PlayerScienceService.Instance;
             if (service == null) return true;
 
-            string owner = service.GetOwner(__instance);
+            string owner = PlayerScienceService.GetOwner(__instance);
             if (service.AvailablePoints(owner) >= __instance.ScienceUsedPerHour)
             {
                 using (ScienceContext.Use(owner))
@@ -153,7 +154,7 @@ namespace BeaverBuddies.Science
             var service = PlayerScienceService.Instance;
             if (service == null) return true;
 
-            __instance.SampledSciencePoints = service.AvailablePoints(service.GetOwner(__instance));
+            __instance.SampledSciencePoints = service.AvailablePoints(PlayerScienceService.GetOwner(__instance));
             __instance.UpdateOutputState();
             return false;
         }
