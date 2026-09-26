@@ -5,7 +5,6 @@ using System.Linq;
 using Timberborn.BaseComponentSystem;
 using Timberborn.BlockSystem;
 using Timberborn.BlueprintSystem;
-using Timberborn.DistributionSystem;
 using Timberborn.EntitySystem;
 using Timberborn.GameDistricts;
 using Timberborn.Goods;
@@ -28,78 +27,107 @@ namespace BeaverBuddies.Trading
     {
         NotConfigured,
         NotConnected,
+        AwaitingApproval,
         MissingGoodsHere,
         MissingGoodsThere,
         NoSpaceHere,
         NoSpaceThere,
         Traded,
-        AwaitingOtherSide,
+    }
+
+    public enum TradeSide
+    {
+        // The half that stores the deals and runs them
+        A,
+        B,
     }
 
     /**
-     * One exchange: this side gives giveAmount of giveGood and gets
-     * getAmount of getGood from the district on the other side.
+     * One deal of a trading post: side A gives aAmount of aGood and side B
+     * gives bAmount of bGood. It runs only once both sides approved it.
      */
     [Serializable]
-    public class TradeRule
+    public class TradeDeal
     {
         public const int DefaultAmount = 1;
         private const char Separator = '\t';
 
-        public string giveGood;
-        public int giveAmount = DefaultAmount;
-        public string getGood;
-        public int getAmount = DefaultAmount;
+        public int id;
+        public string aGood;
+        public int aAmount = DefaultAmount;
+        public string bGood;
+        public int bAmount = DefaultAmount;
+        public bool aApproved;
+        public bool bApproved;
 
-        public bool IsConfigured => !string.IsNullOrEmpty(giveGood) && !string.IsNullOrEmpty(getGood)
-            && giveGood != getGood && giveAmount > 0 && getAmount > 0;
+        public bool IsConfigured => !string.IsNullOrEmpty(aGood) && !string.IsNullOrEmpty(bGood)
+            && aGood != bGood && aAmount > 0 && bAmount > 0;
+
+        public bool IsApproved => aApproved && bApproved;
+
+        public string Gives(TradeSide side) => side == TradeSide.A ? aGood : bGood;
+        public int GivesAmount(TradeSide side) => side == TradeSide.A ? aAmount : bAmount;
+        public string Gets(TradeSide side) => side == TradeSide.A ? bGood : aGood;
+        public int GetsAmount(TradeSide side) => side == TradeSide.A ? bAmount : aAmount;
+        public bool Approved(TradeSide side) => side == TradeSide.A ? aApproved : bApproved;
+
+        public void SetApproved(TradeSide side, bool approved)
+        {
+            if (side == TradeSide.A) aApproved = approved;
+            else bApproved = approved;
+        }
 
         /**
-         * True if other is the same deal seen from the other side.
+         * Sets what a side gives and gets. The other side has to approve
+         * the new terms again.
          */
-        public bool Mirrors(TradeRule other)
+        public void SetTerms(TradeSide side, string gives, int givesAmount, string gets, int getsAmount)
         {
-            return IsConfigured && other != null && other.IsConfigured
-                && giveGood == other.getGood && giveAmount == other.getAmount
-                && getGood == other.giveGood && getAmount == other.giveAmount;
+            givesAmount = Math.Max(1, givesAmount);
+            getsAmount = Math.Max(1, getsAmount);
+            if (side == TradeSide.A)
+            {
+                aGood = gives; aAmount = givesAmount; bGood = gets; bAmount = getsAmount;
+            }
+            else
+            {
+                bGood = gives; bAmount = givesAmount; aGood = gets; aAmount = getsAmount;
+            }
+            SetApproved(side, true);
+            SetApproved(Other(side), false);
         }
 
-        public TradeRule Mirror()
-        {
-            return new TradeRule() { giveGood = getGood, giveAmount = getAmount, getGood = giveGood, getAmount = giveAmount };
-        }
-
-        public TradeRule Copy()
-        {
-            return new TradeRule() { giveGood = giveGood, giveAmount = giveAmount, getGood = getGood, getAmount = getAmount };
-        }
+        public static TradeSide Other(TradeSide side) => side == TradeSide.A ? TradeSide.B : TradeSide.A;
 
         public string Serialize()
         {
-            return string.Join(Separator.ToString(), giveGood ?? "", giveAmount, getGood ?? "", getAmount);
+            return string.Join(Separator.ToString(), id, aGood ?? "", aAmount, bGood ?? "", bAmount, aApproved, bApproved);
         }
 
-        public static TradeRule Deserialize(string value)
+        public static TradeDeal Deserialize(string value)
         {
             string[] parts = value.Split(Separator);
-            if (parts.Length != 4) return null;
-            return new TradeRule()
+            if (parts.Length != 7 || !int.TryParse(parts[0], out int id)) return null;
+            return new TradeDeal()
             {
-                giveGood = parts[0] == "" ? null : parts[0],
-                giveAmount = int.TryParse(parts[1], out int give) ? Math.Max(1, give) : DefaultAmount,
-                getGood = parts[2] == "" ? null : parts[2],
-                getAmount = int.TryParse(parts[3], out int get) ? Math.Max(1, get) : DefaultAmount,
+                id = id,
+                aGood = parts[1] == "" ? null : parts[1],
+                aAmount = int.TryParse(parts[2], out int a) ? Math.Max(1, a) : DefaultAmount,
+                bGood = parts[3] == "" ? null : parts[3],
+                bAmount = int.TryParse(parts[4], out int b) ? Math.Max(1, b) : DefaultAmount,
+                aApproved = parts[5] == bool.TrueString,
+                bApproved = parts[6] == bool.TrueString,
             };
         }
     }
 
     /**
      * A trading post is a district crossing that also swaps goods between
-     * the districts on its two sides. A trade only runs when both halves
-     * list it (each from its own side), so neither side can take goods
-     * from the other without agreeing. Once per hour, each agreed trade
-     * runs once if both districts have the goods and room for what they
-     * receive. Only one of the two halves runs a pair, so it happens once.
+     * the districts on its two sides. Both halves share one list of deals,
+     * stored on side A (the half with the lower entity ID, so every
+     * machine agrees). A deal runs once per hour only after both sides
+     * approved it, and only if both districts have the goods and room for
+     * what they receive.
      *
      * Goods move straight between stockpiles, picked in entity ID order,
      * so every co-op player gets the same result.
@@ -107,26 +135,28 @@ namespace BeaverBuddies.Trading
     public class DistrictTrade : TickableComponent, IAwakableComponent, IPersistentEntity, IFinishedStateListener
     {
         private static readonly ComponentKey DistrictTradeKey = new ComponentKey("BeaverBuddies.DistrictTrade");
-        private static readonly ListKey<string> RulesKey = new ListKey<string>("Rules");
+        private static readonly ListKey<string> DealsKey = new ListKey<string>("Deals");
+        private static readonly PropertyKey<int> NextDealIdKey = new PropertyKey<int>("NextDealId");
         private static readonly PropertyKey<int> LastTradeHourKey = new PropertyKey<int>("LastTradeHour");
-        // Saves from before multiple trades had a single one
-        private static readonly PropertyKey<string> GiveGoodKey = new PropertyKey<string>("GiveGood");
-        private static readonly PropertyKey<int> GiveAmountKey = new PropertyKey<int>("GiveAmount");
-        private static readonly PropertyKey<string> GetGoodKey = new PropertyKey<string>("GetGood");
-        private static readonly PropertyKey<int> GetAmountKey = new PropertyKey<int>("GetAmount");
+        // Trades from before shared deals, converted on the first tick
+        private static readonly ListKey<string> LegacyRulesKey = new ListKey<string>("Rules");
+        private static readonly PropertyKey<string> LegacyGiveGoodKey = new PropertyKey<string>("GiveGood");
+        private static readonly PropertyKey<int> LegacyGiveAmountKey = new PropertyKey<int>("GiveAmount");
+        private static readonly PropertyKey<string> LegacyGetGoodKey = new PropertyKey<string>("GetGood");
+        private static readonly PropertyKey<int> LegacyGetAmountKey = new PropertyKey<int>("GetAmount");
 
-        public const int MaxRules = 10;
+        public const int MaxDeals = 10;
 
         private readonly IDayNightCycle _dayNightCycle;
 
         private DistrictBuilding _districtBuilding;
         private LinkedBuilding _linkedBuilding;
         private int _lastTradeHour = -1;
-        private readonly List<TradeRule> _rules = new();
+        private int _nextDealId = 1;
+        private readonly List<TradeDeal> _deals = new();
+        private readonly List<string> _legacyRules = new();
         // Only for the UI, recomputed every hour on every machine
-        private readonly List<TradeStatus> _statuses = new();
-
-        public IReadOnlyList<TradeRule> Rules => _rules;
+        private readonly Dictionary<int, TradeStatus> _statuses = new();
 
         public DistrictTrade(IDayNightCycle dayNightCycle)
         {
@@ -153,60 +183,37 @@ namespace BeaverBuddies.Trading
         public void Save(IEntitySaver entitySaver)
         {
             IObjectSaver saver = entitySaver.GetComponent(DistrictTradeKey);
-            saver.Set(RulesKey, _rules.Select(r => r.Serialize()).ToList());
+            saver.Set(DealsKey, _deals.Select(d => d.Serialize()).ToList());
+            saver.Set(NextDealIdKey, _nextDealId);
             saver.Set(LastTradeHourKey, _lastTradeHour);
+            if (_legacyRules.Count > 0) saver.Set(LegacyRulesKey, _legacyRules);
         }
 
         public void Load(IEntityLoader entityLoader)
         {
             if (!entityLoader.TryGetComponent(DistrictTradeKey, out IObjectLoader loader)) return;
             if (loader.Has(LastTradeHourKey)) _lastTradeHour = loader.Get(LastTradeHourKey);
-            if (loader.Has(RulesKey))
+            if (loader.Has(NextDealIdKey)) _nextDealId = loader.Get(NextDealIdKey);
+            if (loader.Has(DealsKey))
             {
-                foreach (string value in loader.Get(RulesKey))
+                foreach (string value in loader.Get(DealsKey))
                 {
-                    TradeRule rule = TradeRule.Deserialize(value);
-                    if (rule != null) _rules.Add(rule);
+                    TradeDeal deal = TradeDeal.Deserialize(value);
+                    if (deal != null) _deals.Add(deal);
                 }
             }
-            else if (loader.Has(GiveGoodKey) || loader.Has(GetGoodKey))
+            if (loader.Has(LegacyRulesKey)) _legacyRules.AddRange(loader.Get(LegacyRulesKey));
+            if (loader.Has(LegacyGiveGoodKey) || loader.Has(LegacyGetGoodKey))
             {
-                _rules.Add(new TradeRule()
-                {
-                    giveGood = loader.Has(GiveGoodKey) ? loader.Get(GiveGoodKey) : null,
-                    giveAmount = loader.Has(GiveAmountKey) ? loader.Get(GiveAmountKey) : TradeRule.DefaultAmount,
-                    getGood = loader.Has(GetGoodKey) ? loader.Get(GetGoodKey) : null,
-                    getAmount = loader.Has(GetAmountKey) ? loader.Get(GetAmountKey) : TradeRule.DefaultAmount,
-                });
+                _legacyRules.Add(string.Join("\t",
+                    loader.Has(LegacyGiveGoodKey) ? loader.Get(LegacyGiveGoodKey) : "",
+                    loader.Has(LegacyGiveAmountKey) ? loader.Get(LegacyGiveAmountKey) : TradeDeal.DefaultAmount,
+                    loader.Has(LegacyGetGoodKey) ? loader.Get(LegacyGetGoodKey) : "",
+                    loader.Has(LegacyGetAmountKey) ? loader.Get(LegacyGetAmountKey) : TradeDeal.DefaultAmount));
             }
         }
 
-        public void SetRules(IEnumerable<TradeRule> rules)
-        {
-            _rules.Clear();
-            foreach (TradeRule rule in rules.Take(MaxRules))
-            {
-                if (rule != null) _rules.Add(rule.Copy());
-            }
-            _statuses.Clear();
-        }
-
-        /**
-         * The owner of the district on this side, or null if it has none.
-         */
-        public string Owner => _districtBuilding.District == null
-            ? null
-            : DistrictOwnershipService.Instance?.GetDistrictOwner(_districtBuilding.District);
-
-        /**
-         * Only the owner of this side's district can change its trades.
-         * Districts without an owner are open to everyone.
-         */
-        public bool CanEdit(string playerID)
-        {
-            string owner = Owner;
-            return owner == null || owner == playerID;
-        }
+        // ---- The two halves ----
 
         /**
          * The other half of this trading post, if it's a trading post too.
@@ -215,50 +222,77 @@ namespace BeaverBuddies.Trading
             ? _linkedBuilding._linked.GetComponent<DistrictTrade>()
             : null;
 
-        /**
-         * For each of this side's trades, the index of the matching trade
-         * on the other half, or -1 if the other side hasn't agreed to it.
-         */
-        public int[] MatchRules()
+        public TradeSide Side
         {
-            var matches = Enumerable.Repeat(-1, _rules.Count).ToArray();
-            DistrictTrade linked = Linked;
-            if (linked == null) return matches;
-            var used = new bool[linked._rules.Count];
-            for (int i = 0; i < _rules.Count; i++)
+            get
             {
-                for (int j = 0; j < linked._rules.Count; j++)
-                {
-                    if (used[j] || !_rules[i].Mirrors(linked._rules[j])) continue;
-                    matches[i] = j;
-                    used[j] = true;
-                    break;
-                }
+                DistrictTrade linked = Linked;
+                if (linked == null) return TradeSide.A;
+                return GetComponent<EntityComponent>().EntityId.CompareTo(linked.GetComponent<EntityComponent>().EntityId) < 0
+                    ? TradeSide.A
+                    : TradeSide.B;
             }
-            return matches;
         }
 
         /**
-         * The half with the lower entity ID runs the agreed trades, so each
-         * pair runs once and every machine picks the same half.
+         * The half that stores the deals.
          */
-        private bool IsLeader(DistrictTrade linked)
+        public DistrictTrade SideA => Side == TradeSide.A ? this : Linked;
+
+        public DistrictTrade GetHalf(TradeSide side) => Side == side ? this : Linked;
+
+        public IReadOnlyList<TradeDeal> Deals => SideA?._deals ?? (IReadOnlyList<TradeDeal>)Array.Empty<TradeDeal>();
+
+        public DistrictCenter District => _districtBuilding.District;
+
+        /**
+         * The owner of the district on this side, or null if it has none.
+         */
+        public string Owner => District == null
+            ? null
+            : DistrictOwnershipService.Instance?.GetDistrictOwner(District);
+
+        /**
+         * Only the owner of a side's district can act for that side.
+         * Districts without an owner are open to everyone.
+         */
+        public bool CanEdit(string playerID)
         {
-            return GetComponent<EntityComponent>().EntityId.CompareTo(linked.GetComponent<EntityComponent>().EntityId) < 0;
+            string owner = Owner;
+            return owner == null || owner == playerID;
         }
 
-        public TradeStatus GetStatus(int index)
+        public TradeStatus GetStatus(TradeDeal deal)
         {
-            TradeRule rule = _rules[index];
-            if (!rule.IsConfigured) return TradeStatus.NotConfigured;
-            DistrictTrade linked = Linked;
-            if (linked == null) return TradeStatus.NotConnected;
-            int match = MatchRules()[index];
-            if (match < 0) return TradeStatus.AwaitingOtherSide;
-            // The other half runs this pair, so show its result
-            if (!IsLeader(linked)) return match < linked._statuses.Count ? linked._statuses[match] : TradeStatus.NotConnected;
-            return index < _statuses.Count ? _statuses[index] : TradeStatus.NotConnected;
+            if (!deal.IsConfigured) return TradeStatus.NotConfigured;
+            if (!deal.IsApproved) return TradeStatus.AwaitingApproval;
+            DistrictTrade sideA = SideA;
+            return sideA != null && sideA._statuses.TryGetValue(deal.id, out TradeStatus status)
+                ? status
+                : TradeStatus.NotConnected;
         }
+
+        // ---- Changes (from replayed events, checked by DistrictDealEvent) ----
+
+        public TradeDeal FindDeal(int id) => SideA?._deals.FirstOrDefault(d => d.id == id);
+
+        public void AddDeal(TradeSide side, string gives, int givesAmount, string gets, int getsAmount)
+        {
+            DistrictTrade sideA = SideA;
+            if (sideA == null || sideA._deals.Count >= MaxDeals) return;
+            var deal = new TradeDeal() { id = sideA._nextDealId++ };
+            deal.SetTerms(side, gives, givesAmount, gets, getsAmount);
+            sideA._deals.Add(deal);
+        }
+
+        public void RemoveDeal(int id)
+        {
+            DistrictTrade sideA = SideA;
+            sideA?._deals.RemoveAll(d => d.id == id);
+            sideA?._statuses.Remove(id);
+        }
+
+        // ---- Trading ----
 
         public override void Tick()
         {
@@ -266,52 +300,66 @@ namespace BeaverBuddies.Trading
             if (hour <= _lastTradeHour) return;
             _lastTradeHour = hour;
 
+            ConvertLegacyRules();
+            if (Side != TradeSide.A) return;
+
             _statuses.Clear();
-            DistrictTrade linked = Linked;
-            int[] matches = MatchRules();
-            bool leader = linked != null && IsLeader(linked);
-            for (int i = 0; i < _rules.Count; i++)
+            foreach (TradeDeal deal in _deals)
             {
-                TradeStatus status;
-                if (!_rules[i].IsConfigured) status = TradeStatus.NotConfigured;
-                else if (linked == null) status = TradeStatus.NotConnected;
-                else if (matches[i] < 0) status = TradeStatus.AwaitingOtherSide;
-                // The other half runs agreed trades
-                else if (!leader) status = TradeStatus.NotConnected;
-                else status = TryTrade(_rules[i]);
-                _statuses.Add(status);
+                if (deal.IsConfigured && deal.IsApproved) _statuses[deal.id] = TryTrade(deal);
             }
         }
 
-        private TradeStatus TryTrade(TradeRule rule)
+        /**
+         * Before shared deals each half had its own list of trades. Turn
+         * them into deals approved by the side that had them; a trade both
+         * sides had becomes a single deal approved by both.
+         */
+        private void ConvertLegacyRules()
         {
-            if (!rule.IsConfigured) return TradeStatus.NotConfigured;
+            if (_legacyRules.Count == 0) return;
+            DistrictTrade sideA = SideA;
+            if (sideA == null) return;
+            TradeSide side = Side;
+            foreach (string value in _legacyRules)
+            {
+                string[] parts = value.Split('\t');
+                if (parts.Length != 4) continue;
+                string gives = parts[0] == "" ? null : parts[0];
+                string gets = parts[2] == "" ? null : parts[2];
+                int givesAmount = int.TryParse(parts[1], out int g) ? g : TradeDeal.DefaultAmount;
+                int getsAmount = int.TryParse(parts[3], out int r) ? r : TradeDeal.DefaultAmount;
+                TradeDeal same = sideA._deals.FirstOrDefault(d => !d.Approved(side)
+                    && d.Gives(side) == gives && d.GivesAmount(side) == givesAmount
+                    && d.Gets(side) == gets && d.GetsAmount(side) == getsAmount);
+                if (same != null) same.SetApproved(side, true);
+                else AddDeal(side, gives, givesAmount, gets, getsAmount);
+            }
+            _legacyRules.Clear();
+        }
 
-            DistrictCenter here = _districtBuilding.District;
-            DistrictCenter there = _linkedBuilding.IsLinked
-                ? _linkedBuilding._linked.GetComponent<DistrictBuilding>().District
-                : null;
+        private TradeStatus TryTrade(TradeDeal deal)
+        {
+            DistrictCenter here = District;
+            DistrictCenter there = Linked?.District;
             if (here == null || there == null || here == there) return TradeStatus.NotConnected;
 
             List<Inventory> hereStockpiles = GetStockpiles(here);
             List<Inventory> thereStockpiles = GetStockpiles(there);
 
-            if (Sum(hereStockpiles, i => i.UnreservedAmountInStock(rule.giveGood)) < rule.giveAmount) return TradeStatus.MissingGoodsHere;
-            if (Sum(thereStockpiles, i => i.UnreservedAmountInStock(rule.getGood)) < rule.getAmount) return TradeStatus.MissingGoodsThere;
-            if (Sum(hereStockpiles, i => i.UnreservedCapacity(rule.getGood)) < rule.getAmount) return TradeStatus.NoSpaceHere;
-            if (Sum(thereStockpiles, i => i.UnreservedCapacity(rule.giveGood)) < rule.giveAmount) return TradeStatus.NoSpaceThere;
+            // This is side A: it gives aGood and gets bGood
+            if (Sum(hereStockpiles, i => i.UnreservedAmountInStock(deal.aGood)) < deal.aAmount) return TradeStatus.MissingGoodsHere;
+            if (Sum(thereStockpiles, i => i.UnreservedAmountInStock(deal.bGood)) < deal.bAmount) return TradeStatus.MissingGoodsThere;
+            if (Sum(hereStockpiles, i => i.UnreservedCapacity(deal.bGood)) < deal.bAmount) return TradeStatus.NoSpaceHere;
+            if (Sum(thereStockpiles, i => i.UnreservedCapacity(deal.aGood)) < deal.aAmount) return TradeStatus.NoSpaceThere;
 
-            Take(hereStockpiles, rule.giveGood, rule.giveAmount);
-            Take(thereStockpiles, rule.getGood, rule.getAmount);
-            Give(thereStockpiles, rule.giveGood, rule.giveAmount);
-            Give(hereStockpiles, rule.getGood, rule.getAmount);
+            Take(hereStockpiles, deal.aGood, deal.aAmount);
+            Take(thereStockpiles, deal.bGood, deal.bAmount);
+            Give(thereStockpiles, deal.aGood, deal.aAmount);
+            Give(hereStockpiles, deal.bGood, deal.bAmount);
             return TradeStatus.Traded;
         }
 
-        /**
-         * The district's enabled stockpiles, in a fixed order. The
-         * registry is a hash set, whose order differs between machines.
-         */
         private static List<Inventory> GetStockpiles(DistrictCenter district)
         {
             var stockpiles = new List<Inventory>();

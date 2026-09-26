@@ -15,10 +15,9 @@ using UnityEngine.UIElements;
 namespace BeaverBuddies.Trading
 {
     /**
-     * Entity panel section of the trading post: one box per trade with
-     * what this side gives, what it gets back and why the last trade
-     * didn't happen, a button to add more, and the other side's offers
-     * this side hasn't agreed to yet.
+     * Entity panel section of the trading post: the deals shared by both
+     * halves, seen from the side this player acts for ("you give", "you
+     * get"), with who approved each one and whether it ran.
      */
     public class DistrictTradeFragment : IEntityPanelFragment
     {
@@ -30,14 +29,12 @@ namespace BeaverBuddies.Trading
         private readonly DropdownItemsSetter _dropdownItemsSetter;
 
         private VisualElement _root;
-        private VisualElement _rulesContainer;
+        private Label _locked;
+        private VisualElement _dealsContainer;
         private VisualElement _addBox;
         private Button _addButton;
-        private Label _locked;
-        private VisualElement _offersBox;
-        private VisualElement _offersList;
-        private string _offersKey;
-        private readonly List<RuleView> _ruleViews = new();
+        private readonly List<DealView> _dealViews = new();
+        private string _dealsKey;
         private DistrictTrade _trade;
         private List<string> _goodItems;
 
@@ -56,27 +53,17 @@ namespace BeaverBuddies.Trading
             _root = new VisualElement();
 
             var lockedBox = CreateSubPanel();
-            _locked = new Label();
-            _locked.AddToClassList("entity-panel__text");
-            _locked.style.whiteSpace = WhiteSpace.Normal;
+            _locked = CreateText();
             lockedBox.Add(_locked);
             _root.Add(lockedBox);
 
-            _rulesContainer = new VisualElement();
-            _root.Add(_rulesContainer);
+            _dealsContainer = new VisualElement();
+            _root.Add(_dealsContainer);
 
             _addBox = CreateSubPanel();
-            _addButton = CreateButton("BeaverBuddies.Trading.AddTrade", narrow: false, AddRule);
+            _addButton = CreateButton("BeaverBuddies.Trading.AddDeal", narrow: false, AddDeal);
             _addBox.Add(_addButton);
             _root.Add(_addBox);
-
-            _offersBox = CreateSubPanel();
-            var offersTitle = new Label(RegisteredLocalizationService.T("BeaverBuddies.Trading.Offers"));
-            offersTitle.AddToClassList("entity-panel__text");
-            _offersBox.Add(offersTitle);
-            _offersList = new VisualElement();
-            _offersBox.Add(_offersList);
-            _root.Add(_offersBox);
 
             _root.ToggleDisplayStyle(visible: false);
             return _root;
@@ -85,14 +72,35 @@ namespace BeaverBuddies.Trading
         public void ShowFragment(BaseComponent entity)
         {
             _trade = entity.GetComponent<DistrictTrade>();
+            _dealsKey = null;
         }
 
         public void ClearFragment()
         {
             _trade = null;
-            _offersKey = null;
+            _dealsKey = null;
             _root.ToggleDisplayStyle(visible: false);
         }
+
+        /**
+         * The side this player can act for: the selected half if they can,
+         * otherwise the other half (e.g. they clicked their partner's
+         * half), or null if they can't act for either.
+         */
+        private TradeSide? ActingSide
+        {
+            get
+            {
+                string local = PlayerIdentity.LocalID;
+                if (_trade.CanEdit(local)) return _trade.Side;
+                DistrictTrade linked = _trade.Linked;
+                if (linked != null && linked.CanEdit(local)) return linked.Side;
+                return null;
+            }
+        }
+
+        // The side the deals are shown from
+        private TradeSide ViewSide => ActingSide ?? _trade.Side;
 
         public void UpdateFragment()
         {
@@ -100,12 +108,8 @@ namespace BeaverBuddies.Trading
             _root.ToggleDisplayStyle(visible);
             if (!visible) return;
 
-            // Rebuild the boxes when trades are added or removed (also by
-            // other players)
-            if (_ruleViews.Count != _trade.Rules.Count) RebuildRuleViews();
-
-            // Other players can see this side's trades but not change them
-            bool editable = _trade.CanEdit(PlayerIdentity.LocalID);
+            TradeSide? acting = ActingSide;
+            bool editable = acting != null;
             _locked.parent.ToggleDisplayStyle(!editable);
             if (!editable)
             {
@@ -113,114 +117,68 @@ namespace BeaverBuddies.Trading
                 _locked.text = string.Format(RegisteredLocalizationService.T("BeaverBuddies.Trading.OnlyOwnerCanEdit"), owner);
             }
 
-            for (int i = 0; i < _ruleViews.Count; i++)
+            // Rebuild the boxes when deals are added or removed (also by
+            // the other player) or the side we act for changes
+            IReadOnlyList<TradeDeal> deals = _trade.Deals;
+            string key = acting + "|" + string.Join(",", deals.Select(d => d.id));
+            if (key != _dealsKey)
             {
-                _ruleViews[i].Update(_trade.GetStatus(i), editable);
+                _dealsKey = key;
+                _dealsContainer.Clear();
+                _dealViews.Clear();
+                foreach (TradeDeal deal in deals)
+                {
+                    var view = new DealView(this, deal.id, editable);
+                    _dealViews.Add(view);
+                    _dealsContainer.Add(view.Root);
+                }
             }
+            foreach (DealView view in _dealViews) view.Update();
+
             _addBox.ToggleDisplayStyle(editable);
-            _addButton.SetEnabled(_trade.Rules.Count < DistrictTrade.MaxRules);
-            UpdateOffers(editable);
+            _addButton.SetEnabled(deals.Count < DistrictTrade.MaxDeals);
         }
 
-        private void RebuildRuleViews()
+        // ---- Changes ----
+
+        private void Send(DealAction action, int dealId = 0, TradeDeal terms = null)
         {
-            _rulesContainer.Clear();
-            _ruleViews.Clear();
-            for (int i = 0; i < _trade.Rules.Count; i++)
+            TradeSide? acting = ActingSide;
+            if (_trade == null || acting == null) return;
+            TradeSide side = acting.Value;
+            DistrictDealEvent.Send(_trade, new DistrictDealEvent()
             {
-                var view = new RuleView(this, i);
-                _ruleViews.Add(view);
-                _rulesContainer.Add(view.Root);
-            }
+                side = side,
+                action = action,
+                dealId = dealId,
+                gives = terms?.Gives(side),
+                givesAmount = terms?.GivesAmount(side) ?? TradeDeal.DefaultAmount,
+                gets = terms?.Gets(side),
+                getsAmount = terms?.GetsAmount(side) ?? TradeDeal.DefaultAmount,
+            });
         }
+
+        private void AddDeal() => Send(DealAction.Add);
 
         /**
-         * The other side's trades that this side hasn't agreed to, shown
-         * from this side's point of view with a button to accept them.
+         * Changes one field of a deal, from the acting side's point of view.
          */
-        private void UpdateOffers(bool editable)
+        private void EditDeal(int dealId, string gives = null, int? givesAmount = null, string gets = null, int? getsAmount = null)
         {
-            DistrictTrade linked = _trade.Linked;
-            var offers = new List<TradeRule>();
-            if (linked != null)
-            {
-                var matched = new HashSet<int>(_trade.MatchRules().Where(j => j >= 0));
-                for (int j = 0; j < linked.Rules.Count; j++)
-                {
-                    if (!matched.Contains(j) && linked.Rules[j].IsConfigured) offers.Add(linked.Rules[j].Mirror());
-                }
-            }
-
-            _offersBox.ToggleDisplayStyle(offers.Count > 0);
-            string key = editable + "|" + string.Join(";", offers.Select(o => o.Serialize()));
-            if (key == _offersKey) return;
-            _offersKey = key;
-
-            _offersList.Clear();
-            foreach (TradeRule offer in offers)
-            {
-                var row = new VisualElement();
-                var text = new Label(string.Format(RegisteredLocalizationService.T("BeaverBuddies.Trading.OfferText"),
-                    offer.getAmount, DescribeGood(offer.getGood), offer.giveAmount, DescribeGood(offer.giveGood)));
-                text.AddToClassList("entity-panel__text");
-                text.style.whiteSpace = WhiteSpace.Normal;
-                row.Add(text);
-                if (editable)
-                {
-                    var buttons = new VisualElement();
-                    buttons.AddToClassList("entity-panel__button-wrapper");
-                    TradeRule accepted = offer;
-                    buttons.Add(CreateButton("BeaverBuddies.Trading.Accept", narrow: true, () => AcceptOffer(accepted)));
-                    row.Add(buttons);
-                }
-                _offersList.Add(row);
-            }
-        }
-
-        // ---- Changes, always sent as a whole new list of trades ----
-
-        private void AcceptOffer(TradeRule offer)
-        {
-            if (!CanEdit || _trade.Rules.Count >= DistrictTrade.MaxRules) return;
-            List<TradeRule> rules = CopyRules();
-            rules.Add(offer.Copy());
-            DistrictTradeRulesSetEvent.SetRules(_trade, rules);
-        }
-
-        private List<TradeRule> CopyRules()
-        {
-            return _trade.Rules.Select(r => r.Copy()).ToList();
-        }
-
-        private bool CanEdit => _trade != null && _trade.CanEdit(PlayerIdentity.LocalID);
-
-        private void AddRule()
-        {
-            if (!CanEdit || _trade.Rules.Count >= DistrictTrade.MaxRules) return;
-            List<TradeRule> rules = CopyRules();
-            rules.Add(new TradeRule());
-            DistrictTradeRulesSetEvent.SetRules(_trade, rules);
-        }
-
-        private void RemoveRule(int index)
-        {
-            if (!CanEdit || index >= _trade.Rules.Count) return;
-            List<TradeRule> rules = CopyRules();
-            rules.RemoveAt(index);
-            DistrictTradeRulesSetEvent.SetRules(_trade, rules);
-        }
-
-        private void ChangeRule(int index, Action<TradeRule> change)
-        {
-            if (!CanEdit || index >= _trade.Rules.Count) return;
-            List<TradeRule> rules = CopyRules();
-            change(rules[index]);
-            DistrictTradeRulesSetEvent.SetRules(_trade, rules);
-        }
-
-        private TradeRule GetRule(int index)
-        {
-            return _trade != null && index < _trade.Rules.Count ? _trade.Rules[index] : null;
+            TradeDeal deal = _trade?.FindDeal(dealId);
+            TradeSide? acting = ActingSide;
+            if (deal == null || acting == null) return;
+            TradeSide side = acting.Value;
+            var terms = new TradeDeal();
+            terms.SetTerms(side,
+                gives ?? deal.Gives(side),
+                givesAmount ?? deal.GivesAmount(side),
+                gets ?? deal.Gets(side),
+                getsAmount ?? deal.GetsAmount(side));
+            // An empty good clears it
+            if (gives == NoGood) terms.SetTerms(side, null, terms.GivesAmount(side), terms.Gets(side), terms.GetsAmount(side));
+            if (gets == NoGood) terms.SetTerms(side, terms.Gives(side), terms.GivesAmount(side), null, terms.GetsAmount(side));
+            Send(DealAction.Edit, dealId, terms);
         }
 
         // ---- UI helpers, matching the game's fragments ----
@@ -231,6 +189,14 @@ namespace BeaverBuddies.Trading
             panel.AddToClassList("entity-sub-panel");
             panel.AddToClassList("bg-sub-box--green");
             return panel;
+        }
+
+        private static Label CreateText()
+        {
+            var label = new Label();
+            label.AddToClassList("entity-panel__text");
+            label.style.whiteSpace = WhiteSpace.Normal;
+            return label;
         }
 
         private static Button CreateButton(string textKey, bool narrow, Action onClick)
@@ -260,87 +226,133 @@ namespace BeaverBuddies.Trading
 
         private string DescribeGood(string goodId)
         {
-            return goodId == NoGood
+            return string.IsNullOrEmpty(goodId)
                 ? RegisteredLocalizationService.T("BeaverBuddies.Trading.Nothing")
                 : _goodService.GetGood(goodId).PluralDisplayName.Value;
         }
 
         private Sprite GoodIcon(string goodId)
         {
-            return goodId == NoGood ? null : _goodService.GetGood(goodId).IconSmall.Value;
+            return string.IsNullOrEmpty(goodId) ? null : _goodService.GetGood(goodId).IconSmall.Value;
         }
 
-        private class RuleView
+        private string DistrictName(TradeSide side)
+        {
+            string name = _trade.GetHalf(side)?.District?.DistrictName;
+            return string.IsNullOrEmpty(name) ? RegisteredLocalizationService.T("BeaverBuddies.Trading.UnknownDistrict") : name;
+        }
+
+        /**
+         * Statuses are worked out on side A, so "here" and "there" swap
+         * when looking from side B.
+         */
+        private static TradeStatus FromSide(TradeStatus status, TradeSide side)
+        {
+            if (side == TradeSide.A) return status;
+            return status switch
+            {
+                TradeStatus.MissingGoodsHere => TradeStatus.MissingGoodsThere,
+                TradeStatus.MissingGoodsThere => TradeStatus.MissingGoodsHere,
+                TradeStatus.NoSpaceHere => TradeStatus.NoSpaceThere,
+                TradeStatus.NoSpaceThere => TradeStatus.NoSpaceHere,
+                _ => status,
+            };
+        }
+
+        private class DealView
         {
             public VisualElement Root { get; }
 
+            private readonly DistrictTradeFragment _fragment;
+            private readonly int _dealId;
             private readonly Dropdown[] _dropdowns;
+            private readonly Label _approvals;
             private readonly Label _status;
-            private readonly VisualElement _buttons;
+            private readonly VisualElement _approveButton;
 
-            public RuleView(DistrictTradeFragment fragment, int index)
+            public DealView(DistrictTradeFragment fragment, int dealId, bool editable)
             {
+                _fragment = fragment;
+                _dealId = dealId;
                 Root = CreateSubPanel();
                 _dropdowns = new[]
                 {
-                    fragment.CreateDropdown(Root, "BeaverBuddies.Trading.Gives", new GoodProvider(fragment, index, give: true)),
-                    fragment.CreateDropdown(Root, "BeaverBuddies.Trading.Amount", new AmountProvider(fragment, index, give: true)),
-                    fragment.CreateDropdown(Root, "BeaverBuddies.Trading.Gets", new GoodProvider(fragment, index, give: false)),
-                    fragment.CreateDropdown(Root, "BeaverBuddies.Trading.Amount", new AmountProvider(fragment, index, give: false)),
+                    fragment.CreateDropdown(Root, "BeaverBuddies.Trading.YouGive", new GoodProvider(fragment, dealId, gives: true)),
+                    fragment.CreateDropdown(Root, "BeaverBuddies.Trading.Amount", new AmountProvider(fragment, dealId, gives: true)),
+                    fragment.CreateDropdown(Root, "BeaverBuddies.Trading.YouGet", new GoodProvider(fragment, dealId, gives: false)),
+                    fragment.CreateDropdown(Root, "BeaverBuddies.Trading.Amount", new AmountProvider(fragment, dealId, gives: false)),
                 };
+                foreach (Dropdown dropdown in _dropdowns) dropdown.SetEnabled(editable);
 
-                _status = new Label();
-                _status.AddToClassList("entity-panel__text");
-                _status.style.whiteSpace = WhiteSpace.Normal;
+                _approvals = CreateText();
+                Root.Add(_approvals);
+                _status = CreateText();
                 Root.Add(_status);
 
-                _buttons = new VisualElement();
-                _buttons.AddToClassList("entity-panel__button-wrapper");
-                _buttons.Add(CreateButton("BeaverBuddies.Trading.RemoveTrade", narrow: true, () => fragment.RemoveRule(index)));
-                Root.Add(_buttons);
+                if (editable)
+                {
+                    var buttons = new VisualElement();
+                    buttons.AddToClassList("entity-panel__button-wrapper");
+                    _approveButton = CreateButton("BeaverBuddies.Trading.Approve", narrow: true,
+                        () => fragment.Send(DealAction.Approve, dealId));
+                    buttons.Add(_approveButton);
+                    buttons.Add(CreateButton("BeaverBuddies.Trading.Remove", narrow: true,
+                        () => fragment.Send(DealAction.Remove, dealId)));
+                    Root.Add(buttons);
+                }
             }
 
-            public void Update(TradeStatus status, bool editable)
+            public void Update()
             {
-                foreach (Dropdown dropdown in _dropdowns)
-                {
-                    dropdown.UpdateSelectedValue();
-                    dropdown.SetEnabled(editable);
-                }
-                _buttons.ToggleDisplayStyle(editable);
+                TradeDeal deal = _fragment._trade.FindDeal(_dealId);
+                if (deal == null) return;
+                foreach (Dropdown dropdown in _dropdowns) dropdown.UpdateSelectedValue();
+
+                TradeSide view = _fragment.ViewSide;
+                TradeSide other = TradeDeal.Other(view);
+                _approvals.text = Approval(deal, view) + "\n" + Approval(deal, other);
+
+                TradeStatus status = FromSide(_fragment._trade.GetStatus(deal), view);
                 _status.text = RegisteredLocalizationService.T("BeaverBuddies.Trading.Status." + status);
+                _status.ToggleDisplayStyle(status != TradeStatus.AwaitingApproval);
+
+                _approveButton?.ToggleDisplayStyle(deal.IsConfigured && !deal.Approved(view));
+            }
+
+            private string Approval(TradeDeal deal, TradeSide side)
+            {
+                string key = deal.Approved(side) ? "BeaverBuddies.Trading.ApprovedBy" : "BeaverBuddies.Trading.WaitingFor";
+                return string.Format(RegisteredLocalizationService.T(key), _fragment.DistrictName(side));
             }
         }
 
         private class GoodProvider : IExtendedDropdownProvider
         {
             private readonly DistrictTradeFragment _fragment;
-            private readonly int _index;
-            private readonly bool _give;
+            private readonly int _dealId;
+            private readonly bool _gives;
 
-            public GoodProvider(DistrictTradeFragment fragment, int index, bool give)
+            public GoodProvider(DistrictTradeFragment fragment, int dealId, bool gives)
             {
                 _fragment = fragment;
-                _index = index;
-                _give = give;
+                _dealId = dealId;
+                _gives = gives;
             }
 
             public IReadOnlyList<string> Items => _fragment.GoodItems;
 
             public string GetValue()
             {
-                TradeRule rule = _fragment.GetRule(_index);
-                return (_give ? rule?.giveGood : rule?.getGood) ?? NoGood;
+                TradeDeal deal = _fragment._trade?.FindDeal(_dealId);
+                if (deal == null) return NoGood;
+                TradeSide side = _fragment.ViewSide;
+                return (_gives ? deal.Gives(side) : deal.Gets(side)) ?? NoGood;
             }
 
             public void SetValue(string value)
             {
-                string good = value == NoGood ? null : value;
-                _fragment.ChangeRule(_index, rule =>
-                {
-                    if (_give) rule.giveGood = good;
-                    else rule.getGood = good;
-                });
+                if (_gives) _fragment.EditDeal(_dealId, gives: value);
+                else _fragment.EditDeal(_dealId, gets: value);
             }
 
             public string FormatDisplayText(string value, bool selected) => _fragment.DescribeGood(value);
@@ -355,33 +367,31 @@ namespace BeaverBuddies.Trading
             private static readonly IReadOnlyList<string> AmountItems = Amounts.Select(a => a.ToString()).ToList();
 
             private readonly DistrictTradeFragment _fragment;
-            private readonly int _index;
-            private readonly bool _give;
+            private readonly int _dealId;
+            private readonly bool _gives;
 
-            public AmountProvider(DistrictTradeFragment fragment, int index, bool give)
+            public AmountProvider(DistrictTradeFragment fragment, int dealId, bool gives)
             {
                 _fragment = fragment;
-                _index = index;
-                _give = give;
+                _dealId = dealId;
+                _gives = gives;
             }
 
             public IReadOnlyList<string> Items => AmountItems;
 
             public string GetValue()
             {
-                TradeRule rule = _fragment.GetRule(_index);
-                int amount = rule == null ? TradeRule.DefaultAmount : (_give ? rule.giveAmount : rule.getAmount);
-                return amount.ToString();
+                TradeDeal deal = _fragment._trade?.FindDeal(_dealId);
+                if (deal == null) return TradeDeal.DefaultAmount.ToString();
+                TradeSide side = _fragment.ViewSide;
+                return (_gives ? deal.GivesAmount(side) : deal.GetsAmount(side)).ToString();
             }
 
             public void SetValue(string value)
             {
                 if (!int.TryParse(value, out int amount)) return;
-                _fragment.ChangeRule(_index, rule =>
-                {
-                    if (_give) rule.giveAmount = amount;
-                    else rule.getAmount = amount;
-                });
+                if (_gives) _fragment.EditDeal(_dealId, givesAmount: amount);
+                else _fragment.EditDeal(_dealId, getsAmount: amount);
             }
 
             public string FormatDisplayText(string value, bool selected) => value;

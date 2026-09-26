@@ -1,54 +1,84 @@
 using BeaverBuddies.Events;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace BeaverBuddies.Trading
 {
+    public enum DealAction
+    {
+        Add,
+        Edit,
+        Approve,
+        Remove,
+    }
+
     /**
-     * Replaces a trading post's list of trades. Sending the whole list
-     * keeps adding, removing and editing trades to a single event.
+     * A change to one of a trading post's deals, made by a player acting
+     * for one side. Every machine checks that the player can act for that
+     * side (with the synced district owners), so a change someone isn't
+     * allowed to make is dropped everywhere.
      */
     [Serializable]
-    public class DistrictTradeRulesSetEvent : ReplayEvent
+    public class DistrictDealEvent : ReplayEvent
     {
         public string entityID;
-        public List<TradeRule> rules = new();
+        public TradeSide side;
+        public DealAction action;
+        public int dealId;
+        public string gives;
+        public int givesAmount;
+        public string gets;
+        public int getsAmount;
 
         public override void Replay(IReplayContext context)
         {
-            var trade = GetComponent<DistrictTrade>(context, entityID);
-            if (trade == null) return;
-            // Checked on every machine with the synced owner, so a change
-            // sent by someone else (e.g. clicked just before the owner
-            // changed) is dropped everywhere
-            if (!trade.CanEdit(playerID))
+            Apply(GetComponent<DistrictTrade>(context, entityID), playerID);
+        }
+
+        private void Apply(DistrictTrade trade, string actingPlayer)
+        {
+            DistrictTrade half = trade?.GetHalf(side);
+            if (half == null) return;
+            if (!half.CanEdit(actingPlayer))
             {
-                Plugin.LogWarning($"Ignoring trade change on {entityID} by {playerID}, who doesn't own that side");
+                Plugin.LogWarning($"Ignoring {action} on trading post {entityID}: {actingPlayer} can't act for side {side}");
                 return;
             }
-            trade.SetRules(rules);
+
+            TradeDeal deal = trade.FindDeal(dealId);
+            switch (action)
+            {
+                case DealAction.Add:
+                    trade.AddDeal(side, gives, givesAmount, gets, getsAmount);
+                    break;
+                case DealAction.Edit:
+                    deal?.SetTerms(side, gives, givesAmount, gets, getsAmount);
+                    break;
+                case DealAction.Approve:
+                    if (deal != null && deal.IsConfigured) deal.SetApproved(side, true);
+                    break;
+                case DealAction.Remove:
+                    trade.RemoveDeal(dealId);
+                    break;
+            }
         }
 
         public override string ToActionString()
         {
-            string trades = string.Join(", ", rules.Select(r => $"{r.giveAmount} {r.giveGood} for {r.getAmount} {r.getGood}"));
-            return $"Trading post {entityID}: {trades}";
+            return $"Trading post {entityID}, side {side}: {action} deal {dealId} ({givesAmount} {gives} for {getsAmount} {gets})";
         }
 
         /**
-         * Changes a trading post's trades through the event system in
-         * co-op, or directly otherwise.
+         * Makes a change through the event system in co-op, or directly
+         * otherwise.
          */
-        public static void SetRules(DistrictTrade trade, List<TradeRule> rules)
+        public static void Send(DistrictTrade trade, DistrictDealEvent change)
         {
-            string entityID = ReplayEvent.GetEntityID(trade);
-            bool apply = ReplayEvent.DoPrefix(() => entityID == null ? null : new DistrictTradeRulesSetEvent()
+            change.entityID = ReplayEvent.GetEntityID(trade);
+            if (change.entityID == null) return;
+            if (ReplayEvent.DoPrefix(() => change))
             {
-                entityID = entityID,
-                rules = rules,
-            });
-            if (apply) trade.SetRules(rules);
+                change.Apply(trade, change.playerID);
+            }
         }
     }
 }
