@@ -313,6 +313,7 @@ namespace BeaverBuddies.Power
                 builder.AddDecorator<PowerExchange, WaitInsideIdlyWorkplaceBehavior>();
                 builder.AddDecorator<PowerExchange, WorkplaceWithBackpacks>();
                 builder.AddDecorator<PowerExchange, InventoryNeedBehavior>();
+                builder.AddDecorator<PowerExchangeModelSpec, PowerExchangeModel>();
                 return builder.Build();
             }
         }
@@ -338,6 +339,7 @@ namespace BeaverBuddies.Power
         {
             containerDefinition.Bind<PowerExchange>().AsTransient();
             containerDefinition.Bind<PowerExchangeWorkplaceBehavior>().AsTransient();
+            containerDefinition.Bind<PowerExchangeModel>().AsTransient();
             containerDefinition.Bind<PowerExchangeInventoryInitializer>().AsSingleton();
             containerDefinition.Bind<PowerExchangeService>().AsSingleton();
             containerDefinition.Bind<PowerExchangeFragment>().AsSingleton();
