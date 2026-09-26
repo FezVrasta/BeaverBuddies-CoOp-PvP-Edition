@@ -90,6 +90,13 @@ namespace BeaverBuddies
                 ).SetLocalizedTooltip("BeaverBuddies.Settings.ShowOwnerColors.Tooltip")
         );
 
+        public ModSetting<bool> DistrictSpecializationsSetting { get; } =
+            new(true,
+                ModSettingDescriptor.CreateLocalized(
+                    "BeaverBuddies.Settings.DistrictSpecializations"
+                ).SetLocalizedTooltip("BeaverBuddies.Settings.DistrictSpecializations.Tooltip")
+        );
+
         public ModSetting<bool> AllowDevToolsInCoop { get; } =
             new(true,
                 ModSettingDescriptor.CreateLocalized(
@@ -160,6 +167,7 @@ namespace BeaverBuddies
         public static bool ShouldShowFirstTimerMessage => instance?.ShowFirstTimerMessage.Value ?? true;
         public static bool AllowDevTools => instance?.AllowDevToolsInCoop.Value ?? true;
         public static bool SciencePerPlayer => instance?.SciencePerPlayerSetting.Value ?? true;
+        public static bool DistrictSpecializations => instance?.DistrictSpecializationsSetting.Value ?? true;
         public static bool ShowOwnerColors => instance?.ShowOwnerColorsSetting.Value ?? true;
         public static bool TopBarShowsOwnDistricts => instance?.TopBarShowsOwnDistrictsSetting.Value ?? true;
 

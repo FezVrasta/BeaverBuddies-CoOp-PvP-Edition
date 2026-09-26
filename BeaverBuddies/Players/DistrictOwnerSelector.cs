@@ -148,6 +148,7 @@ namespace BeaverBuddies.Players
         static void Postfix(VisualElement __result)
         {
             DistrictOwnerSelector.Instance?.AddTo(__result);
+            Specializations.DistrictSpecializationSelector.Instance?.AddTo(__result);
         }
     }
 
@@ -157,6 +158,7 @@ namespace BeaverBuddies.Players
         static void Postfix(DistrictCenterFragment __instance)
         {
             DistrictOwnerSelector.Instance?.Show(__instance._districtCenter);
+            Specializations.DistrictSpecializationSelector.Instance?.Show(__instance._districtCenter);
         }
     }
 
@@ -166,6 +168,7 @@ namespace BeaverBuddies.Players
         static void Postfix()
         {
             DistrictOwnerSelector.Instance?.Clear();
+            Specializations.DistrictSpecializationSelector.Instance?.Clear();
         }
     }
 
@@ -175,6 +178,7 @@ namespace BeaverBuddies.Players
         static void Postfix()
         {
             DistrictOwnerSelector.Instance?.Update();
+            Specializations.DistrictSpecializationSelector.Instance?.Update();
         }
     }
 }
