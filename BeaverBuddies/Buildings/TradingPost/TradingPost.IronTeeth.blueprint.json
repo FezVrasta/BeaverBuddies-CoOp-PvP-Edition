@@ -120,7 +120,7 @@
     "DisplayNameLocKey": "Building.BeaverBuddies.TradingPost.DisplayName",
     "DescriptionLocKey": "Building.BeaverBuddies.TradingPost.Description",
     "FlavorDescriptionLocKey": "Building.BeaverBuddies.TradingPost.FlavorDescription",
-    "Icon": "Buildings/DistrictManagement/DistrictCrossing/DistrictCrossingIcon"
+    "Icon": "Buildings/TradingPost/TradingPostIcon"
   },
   "BuildingAccessibleSpec": {
     "LocalAccess": {
