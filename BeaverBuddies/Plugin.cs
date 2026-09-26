@@ -39,6 +39,7 @@ namespace BeaverBuddies
             containerDefinition.Bind<Settings>().AsSingleton();
 
             MultiStartConfigurator.Configure(containerDefinition);
+            BeaverBuddies.Trading.TradingConfigurator.Configure(containerDefinition);
 
             // Bound in every game, so per-player science in a co-op save
             // survives being saved in single player
