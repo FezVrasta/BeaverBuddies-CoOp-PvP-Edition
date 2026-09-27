@@ -1,0 +1,10 @@
+{
+  "KeyBindingSpec": {
+    "Id": "BeaverBuddies.KeyBind.TradesTab",
+    "GroupId": "SettlementPanel",
+    "LocKey": "BeaverBuddies.KeyBindings.TradesTab",
+    "Order": 85,
+    "AllowOtherModifiers": false,
+    "DevModeOnly": false
+  }
+}
