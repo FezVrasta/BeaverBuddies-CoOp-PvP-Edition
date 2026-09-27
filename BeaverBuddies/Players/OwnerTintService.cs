@@ -28,6 +28,41 @@ namespace BeaverBuddies.Players
         public Color? GlyphColor { get; set; }
 
         private readonly List<Material> _glyphMaterials = new();
+        private List<(ParticleSystem system, ParticleSystem.MinMaxGradient color)> _flames;
+        private List<(Light light, Color color)> _fireLights;
+
+        /**
+         * The fire on top of a district center (a template attachment), with
+         * its original colors so they can be put back.
+         */
+        public void GetFire(out List<(ParticleSystem system, ParticleSystem.MinMaxGradient color)> flames,
+            out List<(Light light, Color color)> lights)
+        {
+            if (_flames == null)
+            {
+                _flames = new();
+                _fireLights = new();
+                if (DistrictCenter)
+                {
+                    foreach (Transform child in GameObject.GetComponentsInChildren<Transform>(true))
+                    {
+                        if (!child.name.StartsWith(OwnerTintService.FireObjectName)) continue;
+                        foreach (ParticleSystem system in child.GetComponentsInChildren<ParticleSystem>(true))
+                        {
+                            _flames.Add((system, system.main.startColor));
+                        }
+                        foreach (Light light in child.GetComponentsInChildren<Light>(true))
+                        {
+                            _fireLights.Add((light, light.color));
+                        }
+                    }
+                }
+            }
+            flames = _flames;
+            lights = _fireLights;
+            // The fire might not be attached yet, look again next time
+            if (_flames.Count == 0 && _fireLights.Count == 0) _flames = null;
+        }
 
         public List<Material> GlyphMaterials
         {
@@ -67,8 +102,8 @@ namespace BeaverBuddies.Players
     }
 
     /**
-     * Shows each player's color on their district centers' faction glyphs,
-     * and as a faint tint on their paths and unbuilt construction sites, so
+     * Shows each player's color on their district centers' faction glyphs
+     * and fires, and as a faint tint on their paths and unbuilt construction sites, so
      * it's clear who owns what and who is going to build what. It only
      * changes how things look on this machine, never the game.
      */
@@ -82,6 +117,9 @@ namespace BeaverBuddies.Players
         // The glyph's material on both factions' district centers, used by
         // nothing else on them
         public const string GlyphMaterialPrefix = "Details.";
+        public const string FireObjectName = "DistrictCenterFire";
+        // Mixed into the fire's color so it still reads as flames
+        private const float FireWhiteness = 0.35f;
         private static readonly int EmissionColorProperty = Shader.PropertyToID("_EmissionColor");
         private const float UpdateSeconds = 1f;
         // Other systems can reset an object's highlights, so reapply now
@@ -140,6 +178,7 @@ namespace BeaverBuddies.Players
                 if (UsesGlyph(tint))
                 {
                     ApplyGlyph(tint, color);
+                    ApplyFire(tint, GetOwnerColor(tint, ownership));
                     continue;
                 }
                 if (color == tint.AppliedColor && !reapply) continue;
@@ -147,6 +186,35 @@ namespace BeaverBuddies.Players
             }
             foreach (OwnerTint tint in _dead) _tints.Remove(tint);
             _dead.Clear();
+        }
+
+        private static Color? GetOwnerColor(OwnerTint tint, DistrictOwnershipService ownership)
+        {
+            return tint.DistrictCenter ? ownership.GetPlayerColor(ownership.GetDistrictOwner(tint.DistrictCenter)) : null;
+        }
+
+        private static void ApplyFire(OwnerTint tint, Color? ownerColor)
+        {
+            tint.GetFire(out var flames, out var lights);
+            foreach (var (system, original) in flames)
+            {
+                if (!system) continue;
+                ParticleSystem.MainModule main = system.main;
+                if (ownerColor.HasValue)
+                {
+                    Color c = Color.Lerp(ownerColor.Value, Color.white, FireWhiteness);
+                    c.a = original.color.a;
+                    main.startColor = c;
+                }
+                else
+                {
+                    main.startColor = original;
+                }
+            }
+            foreach (var (light, original) in lights)
+            {
+                if (light) light.color = ownerColor ?? original;
+            }
         }
 
         private Color? GetColor(OwnerTint tint, DistrictOwnershipService ownership)
@@ -219,6 +287,7 @@ namespace BeaverBuddies.Players
                 if (tint.AppliedColor.HasValue) _highlighter.UnhighlightSecondary(tint);
                 tint.AppliedColor = null;
                 if (tint.GlyphColor.HasValue) ApplyGlyph(tint, null);
+                if (tint.DistrictCenter) ApplyFire(tint, null);
             }
         }
     }
