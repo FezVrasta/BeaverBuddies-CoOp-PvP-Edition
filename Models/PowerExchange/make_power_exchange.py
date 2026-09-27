@@ -4,7 +4,8 @@
 #   python extract_game_models.py <Timberborn data dir> <models dir> \
 #       DistrictCrossing.Folktails.Model DistrictCrossing.IronTeeth.Model \
 #       AxleHorizontal.Folktails.Model AxleHorizontal.IronTeeth.Model \
-#       ShaftFrame.Folktails.Model ShaftFrame.IronTeeth.Model
+#       ShaftFrame.Folktails.Model ShaftFrame.IronTeeth.Model \
+#       Indicator.Folktails.Model Indicator.IronTeeth.Model
 #   blender --background --python make_power_exchange.py -- <models dir> <out dir>
 #
 # Needs the Timbermesh Blender plugin installed.
@@ -15,6 +16,7 @@
 # front to back, connecting on the entrance side and turning while power
 # flows. The other porch keeps its goods. The second half of the pair is
 # placed mirrored, so both shafts meet across the border on the same side.
+# A small lamp on the roof lights up while power flows.
 
 import math
 import os
@@ -35,6 +37,10 @@ FRAMES = 48  # one turn every two seconds at 24 fps
 # The shaft port block, x from -1 to 0 (the game's x = 0 column), with its
 # transput facing the entrance side. A shaft axle sits at middle height.
 PORT_BLOCK = (-0.5, -0.5, 0.0)
+# Where the roof lamp stands (the Indicator model is a whole block, centered
+# at -0.5, -0.5), sunk into the roof slope so its front edge meets it
+LAMP = (-1.5, -0.75, 1.47)
+LAMP_SCALE = 0.28
 # The District Crossing's side porch over that block
 BAY = (-0.8, -0.05)
 
@@ -153,6 +159,11 @@ def build(faction):
     axle = place(part_mesh("AxleHorizontal", faction, col), "#Shaft", col,
                  to_port, (PORT_BLOCK[0], PORT_BLOCK[1], 0.5))  # axle is along y
     spin(axle, 1)
+
+    # A small Indicator lamp on the roof, just below the ridge, lit while
+    # power flows. It stays its own node so the game can light it alone.
+    place(part_mesh("Indicator", faction, col), "#Lamp", col,
+          Matrix.Translation(LAMP) @ Matrix.Scale(LAMP_SCALE, 4) @ Matrix.Translation((0.5, 0.5, 0)), LAMP)
     return col
 
 

@@ -7,8 +7,10 @@ using Timberborn.BlockSystem;
 using Timberborn.BlueprintSystem;
 using Timberborn.Coordinates;
 using Timberborn.Buildings;
+using Timberborn.Rendering;
 using Timberborn.TimbermeshAnimations;
 using Timberborn.TimeSystem;
+using UnityEngine;
 
 namespace BeaverBuddies.Power
 {
@@ -17,23 +19,28 @@ namespace BeaverBuddies.Power
     }
 
     /**
-     * Spins the Power Exchange gears while power is flowing. Both halves
-     * play forwards: the halves face each other, so their big gears turn
-     * in opposite directions like a meshing pair. Only visuals, so it
-     * doesn't need to be deterministic.
+     * Spins the Power Exchange shaft and lights its roof lamp while power
+     * is flowing. The lamp is left out of the building's own lighting, which
+     * turns the windows on at night. Only visuals, so it doesn't need to be
+     * deterministic.
      */
     public class PowerExchangeModel : BaseComponent, IAwakableComponent, IUpdatableComponent, IFinishedStateListener
     {
+        private const string LampName = "#Lamp";
+
         private readonly NonlinearAnimationManager _nonlinearAnimationManager;
+        private readonly MaterialLightingEnabler _materialLightingEnabler;
 
         private PowerExchange _exchange;
         private BuildingModel _buildingModel;
         private readonly List<IAnimator> _animators = new();
+        private GameObject _lamp;
         private bool _spinning;
 
-        public PowerExchangeModel(NonlinearAnimationManager nonlinearAnimationManager)
+        public PowerExchangeModel(NonlinearAnimationManager nonlinearAnimationManager, MaterialLightingEnabler materialLightingEnabler)
         {
             _nonlinearAnimationManager = nonlinearAnimationManager;
+            _materialLightingEnabler = materialLightingEnabler;
         }
 
         public void Awake()
@@ -48,6 +55,7 @@ namespace BeaverBuddies.Power
             if (_animators.Count == 0 && _buildingModel && _buildingModel.FinishedModel)
             {
                 _animators.AddRange(_buildingModel.FinishedModel.GetComponentsInChildren<IAnimator>(true));
+                FindLamp();
             }
             SetSpinning(false, force: true);
             EnableComponent();
@@ -77,6 +85,28 @@ namespace BeaverBuddies.Power
             foreach (IAnimator animator in _animators)
             {
                 animator.Enabled = spinning;
+            }
+            if (_lamp)
+            {
+                _materialLightingEnabler.EnableLighting(_lamp, spinning ? 1f : 0f);
+            }
+        }
+
+        private void FindLamp()
+        {
+            foreach (Transform child in _buildingModel.FinishedModel.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name != LampName) continue;
+                _lamp = child.gameObject;
+                MaterialLightingRenderers lighting = GetComponent<MaterialLightingRenderers>();
+                if (lighting)
+                {
+                    foreach (MeshRenderer renderer in _lamp.GetComponentsInChildren<MeshRenderer>(true))
+                    {
+                        lighting.DisableRendering(renderer);
+                    }
+                }
+                return;
             }
         }
     }
