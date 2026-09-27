@@ -16,7 +16,7 @@
 # front to back, connecting on the entrance side and turning while power
 # flows. The other porch keeps its goods. The second half of the pair is
 # placed mirrored, so both shafts meet across the border on the same side.
-# A small lamp on the roof lights up while power flows.
+# A lamp on the ridge lights up while power flows.
 
 import math
 import os
@@ -38,9 +38,10 @@ FRAMES = 48  # one turn every two seconds at 24 fps
 # transput facing the entrance side. A shaft axle sits at middle height.
 PORT_BLOCK = (-0.5, -0.5, 0.0)
 # Where the roof lamp stands (the Indicator model is a whole block, centered
-# at -0.5, -0.5), sunk into the roof slope so its front edge meets it
-LAMP = (-1.5, -0.75, 1.47)
-LAMP_SCALE = 0.28
+# at -0.5, -0.5): on the ridge, centered on the border. Both halves have it,
+# and the game hides it on the mirrored one so the pair shows one lamp.
+LAMP = (-1.5, -1.0, 1.66)
+LAMP_SCALE = 0.45
 # The District Crossing's side porch over that block
 BAY = (-0.8, -0.05)
 
@@ -160,8 +161,8 @@ def build(faction):
                  to_port, (PORT_BLOCK[0], PORT_BLOCK[1], 0.5))  # axle is along y
     spin(axle, 1)
 
-    # A small Indicator lamp on the roof, just below the ridge, lit while
-    # power flows. It stays its own node so the game can light it alone.
+    # An Indicator lamp on the ridge, lit while power flows. It stays its own
+    # node so the game can light or hide it alone.
     place(part_mesh("Indicator", faction, col), "#Lamp", col,
           Matrix.Translation(LAMP) @ Matrix.Scale(LAMP_SCALE, 4) @ Matrix.Translation((0.5, 0.5, 0)), LAMP)
     return col

@@ -19,8 +19,8 @@ namespace BeaverBuddies.Power
     }
 
     /**
-     * Spins the Power Exchange shaft and lights its roof lamp while power
-     * is flowing. The lamp is left out of the building's own lighting, which
+     * Spins the Power Exchange shaft and lights the lamp on its ridge while
+     * power is flowing. The lamp is left out of the building's own lighting, which
      * turns the windows on at night. Only visuals, so it doesn't need to be
      * deterministic.
      */
@@ -97,6 +97,13 @@ namespace BeaverBuddies.Power
             foreach (Transform child in _buildingModel.FinishedModel.GetComponentsInChildren<Transform>(true))
             {
                 if (child.name != LampName) continue;
+                // Both halves carry the lamp on the border, and they're always
+                // mirror images of each other, so only the unflipped one shows it
+                if (GetComponent<BlockObject>().FlipMode.IsFlipped)
+                {
+                    child.gameObject.SetActive(false);
+                    return;
+                }
                 _lamp = child.gameObject;
                 MaterialLightingRenderers lighting = GetComponent<MaterialLightingRenderers>();
                 if (lighting)
