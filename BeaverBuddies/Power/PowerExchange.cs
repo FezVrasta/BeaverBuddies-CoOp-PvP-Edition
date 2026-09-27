@@ -74,7 +74,7 @@ namespace BeaverBuddies.Power
      * is full the exchange stops, and it never sends more than MaxPower or
      * more than the seller can spare.
      */
-    public class PowerExchange : BaseComponent, IAwakableComponent, IPersistentEntity, IRegisteredComponent
+    public class PowerExchange : BaseComponent, IAwakableComponent, IPersistentEntity, IRegisteredComponent, IFinishedStateListener
     {
         private static readonly ComponentKey PowerExchangeKey = new ComponentKey("BeaverBuddies.PowerExchange");
         private static readonly PropertyKey<bool> SellingKey = new PropertyKey<bool>("Selling");
@@ -116,6 +116,17 @@ namespace BeaverBuddies.Power
         public void InitializeInventory(Inventory inventory)
         {
             Inventory = inventory;
+        }
+
+        // Like the District Crossing, the inventory only takes goods once built
+        public void OnEnterFinishedState()
+        {
+            Inventory?.Enable();
+        }
+
+        public void OnExitFinishedState()
+        {
+            Inventory?.Disable();
         }
 
         public void Save(IEntitySaver entitySaver)
