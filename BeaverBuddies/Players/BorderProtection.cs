@@ -4,12 +4,15 @@ using BeaverBuddies.Util;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Timberborn.BlockSystem;
+using Timberborn.Coordinates;
 using Timberborn.EntitySystem;
 using Timberborn.GameDistricts;
 using Timberborn.Persistence;
 using Timberborn.QuickNotificationSystem;
 using Timberborn.SingletonSystem;
 using Timberborn.WorldPersistence;
+using UnityEngine;
 
 namespace BeaverBuddies.Players
 {
@@ -37,6 +40,7 @@ namespace BeaverBuddies.Players
         private readonly ISingletonLoader _singletonLoader;
         private readonly EntityRegistry _entityRegistry;
         private readonly QuickNotificationService _quickNotificationService;
+        private readonly DistrictCenterRegistry _districtCenterRegistry;
         private bool? _requestedEnabled;
 
         public bool Enabled { get; private set; } = true;
@@ -44,8 +48,9 @@ namespace BeaverBuddies.Players
         public static BorderProtection Instance => SingletonManager.GetSingleton<BorderProtection>();
 
         public BorderProtection(ISingletonLoader singletonLoader, EntityRegistry entityRegistry,
-            QuickNotificationService quickNotificationService)
+            QuickNotificationService quickNotificationService, DistrictCenterRegistry districtCenterRegistry)
         {
+            _districtCenterRegistry = districtCenterRegistry;
             _singletonLoader = singletonLoader;
             _entityRegistry = entityRegistry;
             _quickNotificationService = quickNotificationService;
@@ -89,8 +94,28 @@ namespace BeaverBuddies.Players
             DistrictCenter district = entity.GetComponent<DistrictCenter>();
             if (!district) district = entity.GetComponent<DistrictBuilding>()?.GetDistrictOrConstructionDistrict();
             if (!district) district = entity.GetComponent<Citizen>()?.AssignedDistrict;
+            if (!district) district = Instance?.RoadDistrict(entity);
             string owner = district ? ownership.GetDistrictOwner(district) : null;
             return owner ?? entity.GetComponent<PlacedBy>()?.PlayerID;
+        }
+
+        /**
+         * Paths, stairs and platforms don't belong to a district: they
+         * belong to the district whose roads they're part of.
+         */
+        private DistrictCenter RoadDistrict(EntityComponent entity)
+        {
+            BlockObject blockObject = entity.GetComponent<BlockObject>();
+            if (!blockObject) return null;
+            foreach (Vector3Int coordinates in blockObject.PositionedBlocks.GetAllCoordinates())
+            {
+                Vector3 position = CoordinateSystem.GridToWorld(coordinates + new Vector3(0.5f, 0.5f, 0));
+                foreach (DistrictCenter district in _districtCenterRegistry.FinishedDistrictCenters)
+                {
+                    if (district.IsOnInstantDistrictRoad(position)) return district;
+                }
+            }
+            return null;
         }
 
         /**
