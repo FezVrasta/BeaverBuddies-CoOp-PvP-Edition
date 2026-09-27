@@ -155,6 +155,7 @@ namespace BeaverBuddies.DevTools
         public override void Replay(IReplayContext context)
         {
             DevToolsPolicy.HostAllowsDevTools = allowed;
+            Plugin.Log($"Host changed dev tools to: {allowed}");
             context.GetSingleton<DevToolsService>()?.EnforcePolicy();
         }
 

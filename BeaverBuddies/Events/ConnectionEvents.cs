@@ -30,6 +30,7 @@ namespace BeaverBuddies.Events
         {
             //context.GetSingleton<ReplayService>().SetServerMapName(mapName);
             DevToolsPolicy.HostAllowsDevTools = allowDevTools;
+            Plugin.Log($"Host allows dev tools: {allowDevTools}");
             string warningMessage = null;
             if (serverGameVersion != GameVersions.CurrentVersion.ToString())
             {
