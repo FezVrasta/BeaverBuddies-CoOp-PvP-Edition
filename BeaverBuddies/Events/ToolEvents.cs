@@ -497,6 +497,13 @@ namespace BeaverBuddies.Events
 
         public override void Replay(IReplayContext context)
         {
+            // In co-op each player has their own working hours
+            var playerHours = BeaverBuddies.Players.PlayerWorkingHours.Instance;
+            if (playerHours != null && playerID != null)
+            {
+                playerHours.SetHours(playerID, hours);
+                return;
+            }
             var panel = context.GetSingleton<WorkingHoursPanel>();
             panel._hours = hours;
             panel.OnHoursChanged();

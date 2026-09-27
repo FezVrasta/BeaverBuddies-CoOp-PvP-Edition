@@ -55,6 +55,7 @@ namespace BeaverBuddies
             containerDefinition.Bind<BeaverBuddies.Science.PlayerUnlockService>().AsSingleton();
             containerDefinition.Bind<BeaverBuddies.Players.OwnPopulation>().AsSingleton();
             containerDefinition.Bind<BeaverBuddies.Players.CuttingAreaOwners>().AsSingleton();
+            containerDefinition.Bind<BeaverBuddies.Players.PlayerWorkingHours>().AsSingleton();
 
             // EventIO gets set before load, so if it's null, this is a regular
             // game, so don't initialize these services.
