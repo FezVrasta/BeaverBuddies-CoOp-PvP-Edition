@@ -177,4 +177,15 @@ namespace BeaverBuddies.Power
             if (!__result && PowerExchangeService.IsRequested(__instance)) __result = true;
         }
     }
+
+    // A network fed by an exchange has no generator of its own, so without
+    // this its consumers show "connect it to a generator" while powered
+    [HarmonyPatch(typeof(MechanicalNode), nameof(MechanicalNode.CanPotentiallyBePowered))]
+    class MechanicalNodeCanPotentiallyBePoweredPatcher
+    {
+        static void Postfix(MechanicalNode __instance, ref bool __result)
+        {
+            if (!__result && PowerExchangeService.GetExtraSupply(__instance.Graph) > 0) __result = true;
+        }
+    }
 }
