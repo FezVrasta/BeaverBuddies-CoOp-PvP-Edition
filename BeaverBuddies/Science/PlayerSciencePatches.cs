@@ -2,6 +2,8 @@ using BeaverBuddies.Players;
 using HarmonyLib;
 using Timberborn.AutomationBuildings;
 using Timberborn.Buildings;
+using Timberborn.Demolishing;
+using Timberborn.EntitySystem;
 using Timberborn.ScienceSystem;
 using Timberborn.WellbeingUI;
 using Timberborn.WorkSystem;
@@ -38,6 +40,27 @@ namespace BeaverBuddies.Science
         {
             var service = PlayerScienceService.Instance;
             __state = service == null ? null : ScienceContext.Use(PlayerScienceService.GetOwner(__instance));
+        }
+
+        static void Postfix(ScienceContext.Scope? __state)
+        {
+            __state?.Dispose();
+        }
+    }
+
+    /**
+     * Demolishing something that gives science (the reward is added when
+     * it's deleted) earns it for the owner of the demolishing beaver's
+     * district, not the shared pool.
+     */
+    [HarmonyPatch(typeof(DemolishExecutor), nameof(DemolishExecutor.PerformActionOnComplete))]
+    class DemolishExecutorSciencePatcher
+    {
+        static void Prefix(DemolishExecutor __instance, out ScienceContext.Scope? __state)
+        {
+            var service = PlayerScienceService.Instance;
+            __state = service == null ? null
+                : ScienceContext.Use(BorderProtection.OwnerOf(__instance.GetComponent<EntityComponent>()));
         }
 
         static void Postfix(ScienceContext.Scope? __state)
