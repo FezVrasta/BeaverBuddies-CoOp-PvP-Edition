@@ -1,6 +1,9 @@
 using HarmonyLib;
 using System;
 using Timberborn.BaseComponentSystem;
+using Timberborn.Navigation;
+using Timberborn.ConstructionSites;
+using Timberborn.BehaviorSystem;
 using Timberborn.GameDistricts;
 using Timberborn.Persistence;
 using Timberborn.WorldPersistence;
@@ -82,6 +85,28 @@ namespace BeaverBuddies.Players
             string owner = DistrictOwnershipService.Instance?.GetDistrictOwner(district);
             if (owner == null || owner == placedBy) return;
             __result = false;
+        }
+    }
+
+    /**
+     * Builders take any construction site their district center can reach,
+     * whatever its construction district, and bring their own district's
+     * materials. So a builder skips sites placed by another player unless
+     * its district has no owner (shared sites are open to everyone).
+     */
+    [HarmonyPatch(typeof(ConstructionJob), nameof(ConstructionJob.StartConstructionJob))]
+    class ConstructionJobOwnerPatcher
+    {
+        static bool Prefix(ConstructionJob __instance, Accessible workplaceAccessible, ref (Behavior, Decision) __result)
+        {
+            string placedBy = __instance.GetComponent<PlacedBy>()?.PlayerID;
+            if (placedBy == null) return true;
+            DistrictCenter district = workplaceAccessible.GetComponent<DistrictBuilding>()?.District;
+            if (!district) return true;
+            string owner = DistrictOwnershipService.Instance?.GetDistrictOwner(district);
+            if (owner == null || owner == placedBy) return true;
+            __result = (null, Decision.ReleaseNow());
+            return false;
         }
     }
 }
