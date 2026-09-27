@@ -167,6 +167,3 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"売り手側に余っている動�
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"買い手の作業員が代金を運ぶのを待っています。",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"売り手側がいっぱいです。作業員が代金を運び出す必要があります。",""
 BeaverBuddies.PowerExchange.Status.Sending,"{0} 馬力を送っています（最大 {1} 馬力）。",""
-BeaverBuddies.PowerExchange.ThisSide,"こちら側：{0}",""
-BeaverBuddies.PowerExchange.OtherSide,"相手側：{0}",""
-BeaverBuddies.PowerExchange.Empty,"空",""

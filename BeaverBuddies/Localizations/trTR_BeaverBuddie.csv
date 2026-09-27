@@ -167,6 +167,3 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"Satıcı tarafın fazla gücü yok
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"Alıcının işçilerinin ödemeyi getirmesi bekleniyor.",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"Satıcının yarısı dolu: işçilerinin ödemeleri boşaltması gerekiyor.",""
 BeaverBuddies.PowerExchange.Status.Sending,"{0} bg gönderiliyor (azami {1} bg).",""
-BeaverBuddies.PowerExchange.ThisSide,"Bu taraf: {0}",""
-BeaverBuddies.PowerExchange.OtherSide,"Diğer taraf: {0}",""
-BeaverBuddies.PowerExchange.Empty,"boş",""

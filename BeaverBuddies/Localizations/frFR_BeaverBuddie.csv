@@ -171,6 +171,3 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"Le côté vendeur n'a pas d'énerg
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"En attente du paiement apporté par les ouvriers de l'acheteur.",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"La moitié du vendeur est pleine : ses ouvriers doivent décharger les paiements.",""
 BeaverBuddies.PowerExchange.Status.Sending,"Envoi de {0} ch (max {1} ch).",""
-BeaverBuddies.PowerExchange.ThisSide,"Ce côté : {0}",""
-BeaverBuddies.PowerExchange.OtherSide,"Autre côté : {0}",""
-BeaverBuddies.PowerExchange.Empty,"vide",""

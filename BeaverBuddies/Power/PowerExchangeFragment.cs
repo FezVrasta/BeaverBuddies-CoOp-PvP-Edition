@@ -10,6 +10,7 @@ using Timberborn.CoreUI;
 using Timberborn.DropdownSystem;
 using Timberborn.EntityPanelSystem;
 using Timberborn.Goods;
+using Timberborn.InventorySystemUI;
 using Timberborn.InventorySystem;
 using Timberborn.LaborSystem;
 using Timberborn.Hauling;
@@ -39,8 +40,6 @@ namespace BeaverBuddies.Power
         private VisualElement _root;
         private VisualElement _content;
         private Label _status;
-        private Label _thisStock;
-        private Label _otherStock;
         private PowerExchange _exchange;
         private string _layoutKey;
         private readonly List<Dropdown> _dropdowns = new();
@@ -64,10 +63,6 @@ namespace BeaverBuddies.Power
             var statusBox = SubPanel();
             _status = Text();
             statusBox.Add(_status);
-            _thisStock = Text();
-            statusBox.Add(_thisStock);
-            _otherStock = Text();
-            statusBox.Add(_otherStock);
             _root.Add(statusBox);
             _root.ToggleDisplayStyle(visible: false);
             return _root;
@@ -106,19 +101,6 @@ namespace BeaverBuddies.Power
             _status.text = seller == null
                 ? T("BeaverBuddies.PowerExchange.NotSelling")
                 : string.Format(T("BeaverBuddies.PowerExchange.Status." + seller.Status), seller.Sent, seller.MaxPower);
-            _thisStock.text = string.Format(T("BeaverBuddies.PowerExchange.ThisSide"), DescribeStock(_exchange.Inventory));
-            PowerExchange linked = _exchange.Linked;
-            _otherStock.ToggleDisplayStyle(linked != null);
-            if (linked != null)
-            {
-                _otherStock.text = string.Format(T("BeaverBuddies.PowerExchange.OtherSide"), DescribeStock(linked.Inventory));
-            }
-        }
-
-        private string DescribeStock(Inventory inventory)
-        {
-            if (inventory == null || inventory.IsEmpty) return T("BeaverBuddies.PowerExchange.Empty");
-            return string.Join(", ", inventory.Stock.Select(g => $"{g.Amount} {DescribeGood(g.GoodId)}"));
         }
 
         private Label _priceList;
@@ -310,6 +292,60 @@ namespace BeaverBuddies.Power
         }
     }
 
+    /**
+     * The half's payment inventory, in the same list the District Crossing
+     * shows for its goods.
+     */
+    public class PowerExchangeInventoryFragment : IEntityPanelFragment
+    {
+        private readonly InventoryFragmentBuilderFactory _inventoryFragmentBuilderFactory;
+        private readonly VisualElementLoader _visualElementLoader;
+
+        private InventoryFragment _inventoryFragment;
+        private PowerExchange _exchange;
+        private VisualElement _root;
+
+        public PowerExchangeInventoryFragment(InventoryFragmentBuilderFactory inventoryFragmentBuilderFactory, VisualElementLoader visualElementLoader)
+        {
+            _inventoryFragmentBuilderFactory = inventoryFragmentBuilderFactory;
+            _visualElementLoader = visualElementLoader;
+        }
+
+        public VisualElement InitializeFragment()
+        {
+            _root = _visualElementLoader.LoadVisualElement("Game/EntityPanel/DistrictCrossingInventoryFragment");
+            _root.ToggleDisplayStyle(visible: false);
+            _inventoryFragment = _inventoryFragmentBuilderFactory.CreateBuilder(_root).ShowRowLimit().ShowNoGoodInStockMessage().Build();
+            return _root;
+        }
+
+        public void ShowFragment(BaseComponent entity)
+        {
+            _exchange = entity.GetComponent<PowerExchange>();
+            if (_exchange && _exchange.Inventory != null)
+            {
+                _root.ToggleDisplayStyle(visible: true);
+                _inventoryFragment.ShowFragment(_exchange.Inventory);
+            }
+            else
+            {
+                _exchange = null;
+            }
+        }
+
+        public void ClearFragment()
+        {
+            _exchange = null;
+            _inventoryFragment.ClearFragment();
+            _root.ToggleDisplayStyle(visible: false);
+        }
+
+        public void UpdateFragment()
+        {
+            if (_exchange) _inventoryFragment.UpdateFragment();
+        }
+    }
+
     public static class PowerExchangeConfigurator
     {
         private class TemplateModuleProvider : IProvider<TemplateModule>
@@ -340,16 +376,19 @@ namespace BeaverBuddies.Power
         private class EntityPanelModuleProvider : IProvider<EntityPanelModule>
         {
             private readonly PowerExchangeFragment _fragment;
+            private readonly PowerExchangeInventoryFragment _inventoryFragment;
 
-            public EntityPanelModuleProvider(PowerExchangeFragment fragment)
+            public EntityPanelModuleProvider(PowerExchangeFragment fragment, PowerExchangeInventoryFragment inventoryFragment)
             {
                 _fragment = fragment;
+                _inventoryFragment = inventoryFragment;
             }
 
             public EntityPanelModule Get()
             {
                 EntityPanelModule.Builder builder = new EntityPanelModule.Builder();
                 builder.AddMiddleFragment(_fragment);
+                builder.AddBottomFragment(_inventoryFragment);
                 return builder.Build();
             }
         }
@@ -362,6 +401,7 @@ namespace BeaverBuddies.Power
             containerDefinition.Bind<PowerExchangeInventoryInitializer>().AsSingleton();
             containerDefinition.Bind<PowerExchangeService>().AsSingleton();
             containerDefinition.Bind<PowerExchangeFragment>().AsSingleton();
+            containerDefinition.Bind<PowerExchangeInventoryFragment>().AsSingleton();
             containerDefinition.MultiBind<TemplateModule>().ToProvider<TemplateModuleProvider>().AsSingleton();
             containerDefinition.MultiBind<EntityPanelModule>().ToProvider<EntityPanelModuleProvider>().AsSingleton();
         }
