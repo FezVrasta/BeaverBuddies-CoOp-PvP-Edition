@@ -43,6 +43,7 @@ namespace BeaverBuddies
             BeaverBuddies.Players.OwnerTintConfigurator.Configure(containerDefinition);
             BeaverBuddies.Specializations.SpecializationConfigurator.Configure(containerDefinition);
             BeaverBuddies.Power.PowerExchangeConfigurator.Configure(containerDefinition);
+            BeaverBuddies.Ziplines.TollStationConfigurator.Configure(containerDefinition);
 
             containerDefinition.Bind<BeaverBuddies.Factions.MixedFactionsService>().AsSingleton();
             BeaverBuddies.Factions.FactionsConfigurator.Configure(containerDefinition);

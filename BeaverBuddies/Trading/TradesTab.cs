@@ -1,6 +1,7 @@
 using BeaverBuddies.Players;
 using BeaverBuddies.Power;
 using BeaverBuddies.Util;
+using BeaverBuddies.Ziplines;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -34,6 +35,7 @@ namespace BeaverBuddies.Trading
 
         private readonly List<DistrictTrade> _trades = new();
         private readonly List<PowerExchange> _exchanges = new();
+        private readonly List<TollStation> _tolls = new();
         private string _layoutKey;
 
         public TradesBatchControlTab(VisualElementLoader visualElementLoader, BatchControlDistrict batchControlDistrict,
@@ -54,6 +56,7 @@ namespace BeaverBuddies.Trading
         {
             _trades.Clear();
             _exchanges.Clear();
+            _tolls.Clear();
             foreach (EntityComponent entity in entities)
             {
                 // One group per pair: the Trading Post's side A, and the
@@ -62,10 +65,13 @@ namespace BeaverBuddies.Trading
                 if (trade && trade.Linked != null && trade.SideA == trade) _trades.Add(trade);
                 PowerExchange exchange = entity.GetComponent<PowerExchange>();
                 if (exchange && exchange.Linked != null && IsFirstHalf(exchange)) _exchanges.Add(exchange);
+                TollStation toll = entity.GetComponent<TollStation>();
+                if (toll && toll.NetworkDistrict != null) _tolls.Add(toll);
             }
             _layoutKey = LayoutKey();
             foreach (DistrictTrade trade in _trades) yield return new TradeGroup(this, trade).Group;
             foreach (PowerExchange exchange in _exchanges) yield return new ExchangeGroup(this, exchange).Group;
+            foreach (TollStation toll in _tolls) yield return new TollGroup(this, toll).Group;
         }
 
         public override void Update()
@@ -88,6 +94,7 @@ namespace BeaverBuddies.Trading
                 PowerExchange seller = exchange.Seller;
                 parts.Add($"P{exchange.GetHashCode()}:{seller?.GetHashCode()}:{seller?.Prices.Count}:{exchange.CanEdit(PlayerIdentity.LocalID)}:{exchange.Linked?.CanEdit(PlayerIdentity.LocalID)}");
             }
+            parts.Add("Z" + string.Join(",", _tolls.Where(t => t).Select(t => $"{t.GetHashCode()}:{t.NetworkDistrict?.GetHashCode()}:{t.CanSetToll(PlayerIdentity.LocalID)}")));
             return string.Join("|", parts);
         }
 
@@ -392,6 +399,59 @@ namespace BeaverBuddies.Trading
                 if (index >= prices.Count) return;
                 change(prices[index]);
                 Change(seller, prices: prices);
+            }
+        }
+        /**
+         * A toll station on another district's zipline network: the
+         * network's owner sets the toll and can close it.
+         */
+        private class TollGroup
+        {
+            private const string NotSet = "#NotSet";
+
+            public BatchControlRowGroup Group { get; }
+
+            private readonly TollStation _toll;
+
+            public TollGroup(TradesBatchControlTab tab, TollStation toll)
+            {
+                _toll = toll;
+                TradesUi ui = tab._ui;
+                // A station on roads only the ziplines reach has no district yet
+                Func<bool> visible = () => _toll && (_toll.District == null || tab.Touches(_toll.District, _toll.NetworkDistrict));
+
+                var header = new BatchControlRow(ui.Header(() => string.Format(T("BeaverBuddies.Toll.GroupHeader"),
+                    DistrictName(_toll.District), DistrictName(_toll.NetworkDistrict))));
+                Group = tab._rowGroupFactory.CreateUnsorted(header);
+
+                Group.AddRow(new BatchControlRow(ui.Row(), null, visible,
+                    ui.Text(() => _toll ? TollStationFragment.StatusText(_toll) : "")));
+
+                bool editable = toll.CanSetToll(PlayerIdentity.LocalID);
+                var goods = new[] { NotSet }.Concat(ui.GoodsWithNothing).ToList();
+                var items = new List<IBatchControlRowItem>
+                {
+                    ui.Dropdown("BeaverBuddies.Toll.Good", editable, goods,
+                        () => _toll ? _toll.TollGood ?? NotSet : NotSet,
+                        v => Change(good: v == NotSet ? null : v),
+                        v => v == NotSet ? T("BeaverBuddies.Toll.NotSet") : v == TradesUi.NoGood ? T("BeaverBuddies.Toll.Free") : ui.DescribeGood(v),
+                        v => v == NotSet ? null : ui.GoodIcon(v)),
+                    ui.Dropdown("BeaverBuddies.Toll.Amount", editable, TradesUi.Amounts,
+                        () => _toll ? _toll.TollAmount.ToString() : null, v => Change(amount: int.Parse(v)), v => v),
+                };
+                if (editable)
+                {
+                    items.Add(ui.Button("BeaverBuddies.Toll.Close", () => Change(closed: true), () => _toll && !_toll.Closed));
+                    items.Add(ui.Button("BeaverBuddies.Toll.Open", () => Change(closed: false), () => _toll && _toll.Closed));
+                }
+                Group.AddRow(new BatchControlRow(ui.Row(), null, visible, items.ToArray()));
+            }
+
+            private void Change(string good = NotSet, int? amount = null, bool? closed = null)
+            {
+                if (!_toll) return;
+                TollStationSetEvent.Send(_toll, good == NotSet ? _toll.TollGood : good,
+                    amount ?? _toll.TollAmount, closed ?? _toll.Closed);
             }
         }
     }

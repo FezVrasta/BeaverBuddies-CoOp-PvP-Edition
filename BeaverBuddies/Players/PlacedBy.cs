@@ -82,6 +82,8 @@ namespace BeaverBuddies.Players
             if (!__result) return;
             string placedBy = __instance.GetComponent<PlacedBy>()?.PlayerID;
             if (placedBy == null) return;
+            // Anyone can place a toll station on another player's roads
+            if (__instance.GetComponent<BeaverBuddies.Ziplines.TollStation>()) return;
             string owner = DistrictOwnershipService.Instance?.GetDistrictOwner(district);
             if (owner == null || owner == placedBy) return;
             __result = false;
@@ -101,6 +103,8 @@ namespace BeaverBuddies.Players
         {
             string placedBy = __instance.GetComponent<PlacedBy>()?.PlayerID;
             if (placedBy == null) return true;
+            // Anyone can place a toll station on another player's roads
+            if (__instance.GetComponent<BeaverBuddies.Ziplines.TollStation>()) return true;
             DistrictCenter district = workplaceAccessible.GetComponent<DistrictBuilding>()?.District;
             if (!district) return true;
             string owner = DistrictOwnershipService.Instance?.GetDistrictOwner(district);
