@@ -1,7 +1,11 @@
+using HarmonyLib;
 using System.Collections.Generic;
+using System.Linq;
+using Timberborn.AreaSelectionSystem;
 using Timberborn.BaseComponentSystem;
 using Timberborn.BlockSystem;
 using Timberborn.BlueprintSystem;
+using Timberborn.Coordinates;
 using Timberborn.Buildings;
 using Timberborn.TimbermeshAnimations;
 using Timberborn.TimeSystem;
@@ -74,6 +78,21 @@ namespace BeaverBuddies.Power
             {
                 animator.Enabled = spinning;
             }
+        }
+    }
+
+    /**
+     * Places the second half of a Power Exchange mirrored, so both halves'
+     * shafts are on the same side of the pair and meet across the border.
+     */
+    [HarmonyPatch(typeof(AreaPicker), "HalvesCoordinates")]
+    public static class PowerExchangeHalvesPatch
+    {
+        static void Postfix(PlaceableBlockObjectSpec blockObjectSpec, ref IEnumerable<Placement> __result)
+        {
+            if (!blockObjectSpec.HasSpec<PowerExchangeSpec>()) return;
+            __result = __result.Select((placement, i) => i == 0 ? placement
+                : new Placement(placement.Coordinates, placement.Orientation, placement.FlipMode.Flip())).ToList();
         }
     }
 }

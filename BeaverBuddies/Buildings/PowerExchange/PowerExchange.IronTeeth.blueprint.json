@@ -91,7 +91,7 @@
     },
     "BaseZ": 0,
     "Overridable": false,
-    "Flippable": false
+    "Flippable": true
   },
   "PlaceableBlockObjectSpec": {
     "ToolGroupId": "Power",
@@ -327,7 +327,7 @@
           "Y": 0,
           "Z": 0
         },
-        "Directions": "Left",
+        "Directions": "Down",
         "ReverseRotation": false
       }
     ],

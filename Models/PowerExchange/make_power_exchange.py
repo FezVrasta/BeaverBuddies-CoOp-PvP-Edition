@@ -11,9 +11,10 @@
 #
 # One half of the pair is 3 wide (x from -3 to 0), 1 deep (y from -1 to 0,
 # entrance side at y = 0) and 2 tall, the same as the District Crossing. The
-# crates and shelf under one side porch make way for a piece of the game's
-# power shaft, running from the port on the outer face into the building and
-# turning while power flows. The other porch keeps its goods.
+# crates and shelf under one side porch make way for a power shaft running
+# front to back, connecting on the entrance side and turning while power
+# flows. The other porch keeps its goods. The second half of the pair is
+# placed mirrored, so both shafts meet across the border on the same side.
 
 import math
 import os
@@ -31,8 +32,8 @@ MODELS_DIR, OUT_DIR = argv[0], argv[1]
 
 FACTIONS = ("Folktails", "IronTeeth")
 FRAMES = 48  # one turn every two seconds at 24 fps
-# The shaft port block, x from -1 to 0 (the game's x = 0 column, whose
-# transput faces left). A shaft axle sits at the block's middle height.
+# The shaft port block, x from -1 to 0 (the game's x = 0 column), with its
+# transput facing the entrance side. A shaft axle sits at middle height.
 PORT_BLOCK = (-0.5, -0.5, 0.0)
 # The District Crossing's side porch over that block
 BAY = (-0.8, -0.05)
@@ -69,16 +70,18 @@ def bounds(obj):
 
 
 def is_porch_prop(obj):
-    """Crates, sacks and the shelf under the port's porch, and the shelf lip in the shaft's way."""
+    """Crates, sacks and the shelf under the port's porch, and the rails in the shaft's way."""
     lo, hi = bounds(obj)
-    if lo.x < BAY[0] or hi.x > BAY[1] or lo.y < -0.92 or hi.z > 0.95:
+    if lo.x < BAY[0] or hi.x > BAY[1] or hi.z > 0.95:
         return False
     materials = {obj.data.materials[p.material_index].name.split(".")[0] for p in obj.data.polygons}
+    if lo.z >= 0.39 and hi.z <= 0.54 and hi.y - lo.y < 0.7:
+        return True
+    if lo.y < -0.92:
+        return False
     if materials == {"Details"}:
         return True
-    if hi.z <= 0.41 and materials <= {"BaseWood_White", "BaseWood_Indigo"}:
-        return True
-    return lo.z >= 0.39 and hi.z <= 0.54 and lo.y < PORT_BLOCK[1] < hi.y
+    return hi.z <= 0.41 and materials <= {"BaseWood_White", "BaseWood_Indigo"}
 
 
 def strip_porches(base):
@@ -138,16 +141,18 @@ def build(faction):
     base.name = f"PowerExchange.{faction}"
     print(faction, "removed", strip_porches(base), "porch parts")
 
-    # A power shaft through the port block, the same as the game's straight
-    # shaft along x: the axle, and the bearing frame on the outer edge where
-    # the other shaft connects
-    to_port = Matrix.Translation(PORT_BLOCK) @ Matrix.Rotation(math.pi / 2, 4, "Z")
-    frame = place(part_mesh("ShaftFrame", faction, col), "Frame", col, to_port, (0, 0, 0))
+    # A straight power shaft through the port block, front to back like the
+    # game's shafts: the axle, and the bearing frame on the front edge where
+    # the other shaft connects. The second half is placed mirrored, so its
+    # shaft continues this one across the border.
+    to_port = Matrix.Translation(PORT_BLOCK)
+    frame = place(part_mesh("ShaftFrame", faction, col), "Frame", col,
+                  to_port @ Matrix.Rotation(math.pi, 4, "Z"), (0, 0, 0))  # frame is on the -y edge
     select_only([base, frame], base)
     bpy.ops.object.join()
-    axle_origin = (PORT_BLOCK[0], PORT_BLOCK[1], 0.5)
-    axle = place(part_mesh("AxleHorizontal", faction, col), "#Shaft", col, to_port, axle_origin)
-    spin(axle, 0)
+    axle = place(part_mesh("AxleHorizontal", faction, col), "#Shaft", col,
+                 to_port, (PORT_BLOCK[0], PORT_BLOCK[1], 0.5))  # axle is along y
+    spin(axle, 1)
     return col
 
 
