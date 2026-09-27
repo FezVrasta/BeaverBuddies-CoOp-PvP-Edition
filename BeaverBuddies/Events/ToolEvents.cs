@@ -433,7 +433,16 @@ namespace BeaverBuddies.Events
         {
             var building = GetBuilding(context, buildingName);
             if (building == null) return;
-            context.GetSingleton<BuildingUnlockingService>().Unlock(building);
+            var unlockingService = context.GetSingleton<BuildingUnlockingService>();
+            unlockingService.Unlock(building);
+
+            // With per-player unlocks, the tools only unlock for whoever paid
+            var playerUnlocks = BeaverBuddies.Science.PlayerUnlockService.Instance;
+            if (playerUnlocks != null && !playerUnlocks.IsUnlockedFor(
+                unlockingService._buildingService.GetTemplateName(building), BeaverBuddies.Players.PlayerIdentity.LocalID))
+            {
+                return;
+            }
 
             var toolButtonService = context.GetSingleton<ToolButtonService>();
             var toolUnlockingService = toolButtonService._toolUnlockingService;
