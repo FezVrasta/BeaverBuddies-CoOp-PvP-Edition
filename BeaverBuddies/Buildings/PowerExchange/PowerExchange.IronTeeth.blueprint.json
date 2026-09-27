@@ -226,44 +226,68 @@
   "Children": {
     "#Finished": {
       "TimbermeshSpec": {
-        "Model": "Buildings/DistrictManagement/DistrictCrossing/DistrictCrossing.IronTeeth.Model"
+        "Model": "Buildings/PowerExchange/PowerExchange.IronTeeth.Model"
       },
       "CollidersSpec": {
         "BoxColliders": [
           {
             "Center": {
-              "X": 1.50582361,
-              "Y": 0.496590853,
-              "Z": 0.58214134
+              "X": 0.5,
+              "Y": 0.6,
+              "Z": 0.5
             },
             "Size": {
-              "X": 2.76765823,
-              "Y": 1.00564241,
-              "Z": 0.751245141
+              "X": 0.92,
+              "Y": 1.2,
+              "Z": 0.92
             }
           },
           {
             "Center": {
-              "X": 1.49376357,
-              "Y": 0.6928351,
-              "Z": 0.581762
+              "X": 2.5,
+              "Y": 0.6,
+              "Z": 0.5
             },
             "Size": {
-              "X": 1.72682786,
-              "Y": 1.39813089,
-              "Z": 0.7520038
+              "X": 0.92,
+              "Y": 1.2,
+              "Z": 0.92
             }
           },
           {
             "Center": {
-              "X": 1.49376345,
-              "Y": 0.02666691,
-              "Z": 0.48527962
+              "X": 1.5,
+              "Y": 1.0,
+              "Z": 0.5
             },
             "Size": {
-              "X": 3.00085449,
-              "Y": 0.06579453,
-              "Z": 0.9449686
+              "X": 1.16,
+              "Y": 0.18,
+              "Z": 0.92
+            }
+          },
+          {
+            "Center": {
+              "X": 1.5,
+              "Y": 1.55,
+              "Z": 0.5
+            },
+            "Size": {
+              "X": 0.9,
+              "Y": 0.95,
+              "Z": 0.92
+            }
+          },
+          {
+            "Center": {
+              "X": 1.5,
+              "Y": 0.03,
+              "Z": 0.5
+            },
+            "Size": {
+              "X": 3.0,
+              "Y": 0.06,
+              "Z": 1.0
             }
           }
         ],
@@ -352,16 +376,5 @@
     "IgnoreRotation": true
   },
   "PowerExchangeSpec": {},
-  "MechanicalConnectorTargetSpec": {},
-  "PowerExchangeModelSpec": {
-    "Parts": [
-      "Buildings/Power/PowerShaft/Models/AxleVertical.IronTeeth",
-      "Buildings/Power/PowerShaft/Models/GearTopLarge.IronTeeth"
-    ],
-    "Offset": {
-      "X": 1.5,
-      "Y": 1.0,
-      "Z": 0.5
-    }
-  }
+  "PowerExchangeModelSpec": {}
 }
