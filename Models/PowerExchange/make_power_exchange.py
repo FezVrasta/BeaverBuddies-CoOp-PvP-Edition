@@ -3,15 +3,17 @@
 #
 #   python extract_game_models.py <Timberborn data dir> <models dir> \
 #       DistrictCrossing.Folktails.Model DistrictCrossing.IronTeeth.Model \
-#       GearLarge.Folktails.Model GearLarge.IronTeeth.Model
+#       AxleHorizontal.Folktails.Model AxleHorizontal.IronTeeth.Model \
+#       ShaftFrame.Folktails.Model ShaftFrame.IronTeeth.Model
 #   blender --background --python make_power_exchange.py -- <models dir> <out dir>
 #
 # Needs the Timbermesh Blender plugin installed.
 #
 # One half of the pair is 3 wide (x from -3 to 0), 1 deep (y from -1 to 0,
 # entrance side at y = 0) and 2 tall, the same as the District Crossing. The
-# crates and shelves under its two side porches make way for large shaft
-# gears, one per port, that turn while power flows.
+# crates and shelf under one side porch make way for a piece of the game's
+# power shaft, running from the port on the outer face into the building and
+# turning while power flows. The other porch keeps its goods.
 
 import math
 import os
@@ -29,11 +31,11 @@ MODELS_DIR, OUT_DIR = argv[0], argv[1]
 
 FACTIONS = ("Folktails", "IronTeeth")
 FRAMES = 48  # one turn every two seconds at 24 fps
-PORT_Y, PORT_Z = -0.55, 0.5
-# Slightly smaller than a shaft's gear, to clear the porch posts
-GEAR_SCALE = Matrix.Scale(0.9, 4)
-# Side porches of the District Crossing, where the shaft ports are
-BAYS = ((-2.92, -2.3), (-0.7, -0.08))
+# The shaft port block, x from -1 to 0 (the game's x = 0 column, whose
+# transput faces left). A shaft axle sits at the block's middle height.
+PORT_BLOCK = (-0.5, -0.5, 0.0)
+# The District Crossing's side porch over that block
+BAY = (-0.8, -0.05)
 
 
 def plugin_modules():
@@ -67,14 +69,16 @@ def bounds(obj):
 
 
 def is_porch_prop(obj):
-    """Crates, sacks and the shelf under a side porch."""
+    """Crates, sacks and the shelf under the port's porch, and the shelf lip in the shaft's way."""
     lo, hi = bounds(obj)
-    if not any(lo.x >= a and hi.x <= b for a, b in BAYS) or lo.y < -0.92 or hi.z > 0.95:
+    if lo.x < BAY[0] or hi.x > BAY[1] or lo.y < -0.92 or hi.z > 0.95:
         return False
     materials = {obj.data.materials[p.material_index].name.split(".")[0] for p in obj.data.polygons}
     if materials == {"Details"}:
         return True
-    return hi.z <= 0.41 and materials <= {"BaseWood_White", "BaseWood_Indigo"}
+    if hi.z <= 0.41 and materials <= {"BaseWood_White", "BaseWood_Indigo"}:
+        return True
+    return lo.z >= 0.39 and hi.z <= 0.54 and lo.y < PORT_BLOCK[1] < hi.y
 
 
 def strip_porches(base):
@@ -94,11 +98,13 @@ def strip_porches(base):
     return len(props)
 
 
-def gear_mesh(name, faction, collection):
-    """The rest pose mesh of a game gear, centered on its block."""
+def part_mesh(name, faction, collection):
+    """The rest pose mesh of a game model's first mesh node, in model space."""
     objs = load(f"{name}.{faction}.Model", collection, prefix="tmp_")
+    bpy.context.view_layer.update()
     node = next(o for o in objs.values() if o.type == "MESH")
     mesh = node.data.copy()
+    mesh.transform(node.matrix_world)
     for o in objs.values():
         bpy.data.objects.remove(o)
     return mesh
@@ -132,18 +138,16 @@ def build(faction):
     base.name = f"PowerExchange.{faction}"
     print(faction, "removed", strip_porches(base), "porch parts")
 
-    # Large shaft gears in the porches, axles out to the ports. They share
-    # one axis, so one node turns both.
-    large = gear_mesh("GearLarge", faction, col)  # axle along +y
-    origin = (-1.5, PORT_Y, PORT_Z)
-    left = place(large, "#PortGears", col,
-                 Matrix.Translation((-2.5, PORT_Y, PORT_Z)) @ Matrix.Rotation(math.pi / 2, 4, "Z") @ GEAR_SCALE, origin)
-    right = place(large, "PortRight", col,
-                  Matrix.Translation((-0.5, PORT_Y, PORT_Z)) @ Matrix.Rotation(-math.pi / 2, 4, "Z") @ GEAR_SCALE, origin)
-    select_only([left, right], left)
+    # A power shaft through the port block, the same as the game's straight
+    # shaft along x: the axle, and the bearing frame on the outer edge where
+    # the other shaft connects
+    to_port = Matrix.Translation(PORT_BLOCK) @ Matrix.Rotation(math.pi / 2, 4, "Z")
+    frame = place(part_mesh("ShaftFrame", faction, col), "Frame", col, to_port, (0, 0, 0))
+    select_only([base, frame], base)
     bpy.ops.object.join()
-    spin(left, 0)
-
+    axle_origin = (PORT_BLOCK[0], PORT_BLOCK[1], 0.5)
+    axle = place(part_mesh("AxleHorizontal", faction, col), "#Shaft", col, to_port, axle_origin)
+    spin(axle, 0)
     return col
 
 

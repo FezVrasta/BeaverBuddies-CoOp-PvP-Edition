@@ -329,24 +329,6 @@
         },
         "Directions": "Left",
         "ReverseRotation": false
-      },
-      {
-        "Coordinates": {
-          "X": 2,
-          "Y": 0,
-          "Z": 0
-        },
-        "Directions": "Right",
-        "ReverseRotation": false
-      },
-      {
-        "Coordinates": {
-          "X": 1,
-          "Y": 0,
-          "Z": 1
-        },
-        "Directions": "Top",
-        "ReverseRotation": false
       }
     ],
     "IgnoreRotation": true
