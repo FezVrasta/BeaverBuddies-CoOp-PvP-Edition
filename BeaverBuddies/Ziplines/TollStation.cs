@@ -105,6 +105,19 @@ namespace BeaverBuddies.Ziplines
             _pausableBuilding = GetComponent<PausableBuilding>();
         }
 
+        public bool IsTube => HasComponent<TollTubeStationSpec>();
+
+        // The texts that name ziplines have a tubeway version
+        private static readonly HashSet<string> TubeTexts = new()
+        {
+            "BeaverBuddies.Toll.Status.NotConnected", "BeaverBuddies.Toll.Status.OwnNetwork",
+            "BeaverBuddies.Toll.Status.NetworkBusy", "BeaverBuddies.Toll.Status.Open",
+            "BeaverBuddies.Toll.GroupHeader", "BeaverBuddies.Toll.Problem.NetworkBusy.Short",
+        };
+
+        public string Text(string key) =>
+            RegisteredLocalizationService.T(IsTube && TubeTexts.Contains(key) ? key + ".Tube" : key);
+
         public void InitializeEntity()
         {
             StatusSubject subject = GetComponent<StatusSubject>();
@@ -112,8 +125,8 @@ namespace BeaverBuddies.Ziplines
             foreach (var (status, sprite) in Problems)
             {
                 StatusToggle toggle = StatusToggle.CreateNormalStatusWithAlertAndFloatingIcon(sprite,
-                    RegisteredLocalizationService.T("BeaverBuddies.Toll.Problem." + status),
-                    RegisteredLocalizationService.T("BeaverBuddies.Toll.Problem." + status + ".Short"));
+                    Text("BeaverBuddies.Toll.Problem." + status),
+                    Text("BeaverBuddies.Toll.Problem." + status + ".Short"));
                 subject.RegisterStatus(toggle);
                 _statusToggles[status] = toggle;
             }

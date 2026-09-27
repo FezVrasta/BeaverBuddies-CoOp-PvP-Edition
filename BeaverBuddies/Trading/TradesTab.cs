@@ -420,7 +420,7 @@ namespace BeaverBuddies.Trading
                 // A station on roads only the ziplines reach has no district yet
                 Func<bool> visible = () => _toll && (_toll.District == null || tab.Touches(_toll.District, _toll.NetworkDistrict));
 
-                var header = new BatchControlRow(ui.Header(() => string.Format(T("BeaverBuddies.Toll.GroupHeader"),
+                var header = new BatchControlRow(ui.Header(() => string.Format(_toll.Text("BeaverBuddies.Toll.GroupHeader"),
                     DistrictName(_toll.District), DistrictName(_toll.NetworkDistrict))));
                 Group = tab._rowGroupFactory.CreateUnsorted(header);
 

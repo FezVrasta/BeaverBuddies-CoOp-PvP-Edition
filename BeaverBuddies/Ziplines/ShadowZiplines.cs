@@ -141,7 +141,7 @@ namespace BeaverBuddies.Ziplines
                     if (toll.NetworkDistrict != null) continue;
                     toll.NetworkDistrict = network.District;
                     DistrictCenter riding = rider ?? network.Rider;
-                    status = TollStatusFor(toll, riding, network);
+                    status = TollStatusFor(toll, riding, network.Rider);
                     if (status == TollStatus.Open || status == TollStatus.OutOfGoods || status == TollStatus.NoSpace)
                     {
                         network.Rider = riding;
@@ -266,10 +266,15 @@ namespace BeaverBuddies.Ziplines
             if (link.shadow.IsConnectedTo(link.toll)) link.shadow.RemoveConnection(link.toll);
         }
 
-        private static TollStatus TollStatusFor(TollStation toll, DistrictCenter rider, Network network)
+        /**
+         * Whether a toll station on another district's network is open, or
+         * why not. Only one district can ride a network (two would join
+         * through it).
+         */
+        public static TollStatus TollStatusFor(TollStation toll, DistrictCenter rider, DistrictCenter networkRider)
         {
             if (rider == null) return TollStatus.NotConnected;
-            if (network.Rider != null && network.Rider != rider) return TollStatus.NetworkBusy;
+            if (networkRider != null && networkRider != rider) return TollStatus.NetworkBusy;
             if (toll.TollGood == null) return TollStatus.NoToll;
             if (toll.Closed) return TollStatus.Closed;
             if (toll.Paused) return TollStatus.Paused;

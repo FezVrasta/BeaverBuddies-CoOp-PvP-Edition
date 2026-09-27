@@ -79,7 +79,7 @@ namespace BeaverBuddies.Ziplines
             {
                 return T("BeaverBuddies.Toll.Problem.NotConnected");
             }
-            return string.Format(T("BeaverBuddies.Toll.Status." + station.Status), DistrictName(station.NetworkDistrict));
+            return string.Format(station.Text("BeaverBuddies.Toll.Status." + station.Status), DistrictName(station.NetworkDistrict));
         }
 
         public static string DescribeToll(TollStation station, IGoodService goodService)
@@ -198,6 +198,7 @@ namespace BeaverBuddies.Ziplines
         public static void Configure(IContainerDefinition containerDefinition)
         {
             containerDefinition.Bind<ShadowZiplines>().AsSingleton();
+            containerDefinition.Bind<ShadowTubeways>().AsSingleton();
             containerDefinition.Bind<TollStation>().AsTransient();
             containerDefinition.Bind<TollStationWorkplaceBehavior>().AsTransient();
             containerDefinition.Bind<TollStationInventoryInitializer>().AsSingleton();
