@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+using Timberborn.Timbermesh;
+using Timberborn.AssetSystem;
+using System.IO;
 using Timberborn.BaseComponentSystem;
 using Timberborn.BlockSystem;
 using Timberborn.Buildings;
@@ -27,7 +30,26 @@ namespace BeaverBuddies.Players
         // A finished district center shows its owner on the faction glyph
         public Color? GlyphColor { get; set; }
 
-        private readonly List<Material> _glyphMaterials = new();
+        private List<Material> _glyphMaterials;
+
+        /**
+         * The materials of the faction glyph overlay, attached to the finished
+         * district center the first time it's asked for. The game draws the
+         * district center with one merged material, so the glyph gets its own
+         * copy on top to be tinted alone.
+         */
+        public List<Material> GetGlyphMaterials(OwnerTintService service)
+        {
+            if (_glyphMaterials != null) return _glyphMaterials;
+            if (!DistrictCenter || !BlockObject || !BlockObject.IsFinished) return Empty;
+            BuildingModel model = GetComponent<BuildingModel>();
+            if (!model || !model.FinishedModel) return Empty;
+            _glyphMaterials = service.AttachGlyph(model.FinishedModel.transform, GameObject.name);
+            return _glyphMaterials;
+        }
+
+        private static readonly List<Material> Empty = new();
+
         private List<(ParticleSystem system, ParticleSystem.MinMaxGradient color)> _flames;
         private List<(Light light, Color color)> _fireLights;
 
@@ -64,28 +86,6 @@ namespace BeaverBuddies.Players
             if (_flames.Count == 0 && _fireLights.Count == 0) _flames = null;
         }
 
-        public List<Material> GlyphMaterials
-        {
-            get
-            {
-                if (_glyphMaterials.Count == 0 && DistrictCenter && BlockObject && BlockObject.IsFinished)
-                {
-                    BuildingModel model = GetComponent<BuildingModel>();
-                    EntityMaterials materials = GetComponent<EntityMaterials>();
-                    if (model && model.FinishedModel && materials)
-                    {
-                        var all = new List<Material>();
-                        materials.GetChildMaterials(model.FinishedModel.transform, all);
-                        foreach (Material material in all)
-                        {
-                            if (material && material.name.StartsWith(OwnerTintService.GlyphMaterialPrefix)) _glyphMaterials.Add(material);
-                        }
-                    }
-                }
-                return _glyphMaterials;
-            }
-        }
-
         public void Awake()
         {
             DistrictCenter = GetComponent<DistrictCenter>();
@@ -116,7 +116,8 @@ namespace BeaverBuddies.Players
         private const float GlyphStrength = 0.7f;
         // The glyph's material on both factions' district centers, used by
         // nothing else on them
-        public const string GlyphMaterialPrefix = "Details.";
+        private const string GlyphModelPath = "Buildings/DistrictCenterGlyph/DistrictCenterGlyph";
+        private const string GlyphObjectName = "#OwnerGlyph";
         public const string FireObjectName = "DistrictCenterFire";
         // Mixed into the fire's color so it still reads as flames
         private const float FireWhiteness = 0.35f;
@@ -137,10 +138,39 @@ namespace BeaverBuddies.Players
 
         public static OwnerTintService Instance => SingletonManager.GetSingleton<OwnerTintService>();
 
-        public OwnerTintService(Highlighter highlighter, DistrictCenterRegistry districtCenterRegistry)
+        private readonly IAssetLoader _assetLoader;
+        private readonly TimbermeshImporter _timbermeshImporter;
+
+        public OwnerTintService(Highlighter highlighter, DistrictCenterRegistry districtCenterRegistry,
+            IAssetLoader assetLoader, TimbermeshImporter timbermeshImporter)
         {
             _highlighter = highlighter;
             _districtCenterRegistry = districtCenterRegistry;
+            _assetLoader = assetLoader;
+            _timbermeshImporter = timbermeshImporter;
+        }
+
+        public List<Material> AttachGlyph(Transform finishedModel, string templateName)
+        {
+            var materials = new List<Material>();
+            string faction = templateName.Contains("IronTeeth") ? "IronTeeth" : "Folktails";
+            BinaryData data = _assetLoader.LoadSafe<BinaryData>($"{GlyphModelPath}.{faction}.Model");
+            if (!data)
+            {
+                Plugin.LogWarning($"No district center glyph model for {faction}");
+                return materials;
+            }
+            var glyph = new GameObject(GlyphObjectName);
+            glyph.transform.SetParent(finishedModel, false);
+            using (var stream = new MemoryStream(data.Bytes))
+            {
+                _timbermeshImporter.Import(stream, glyph.transform);
+            }
+            foreach (MeshRenderer renderer in glyph.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                materials.AddRange(renderer.materials);
+            }
+            return materials;
         }
 
         public void Register(OwnerTint tint) => _tints.Add(tint);
@@ -150,7 +180,7 @@ namespace BeaverBuddies.Players
             if (_tints.Remove(tint) && tint.AppliedColor.HasValue) _highlighter.UnhighlightSecondary(tint);
         }
 
-        private static bool UsesGlyph(OwnerTint tint) => tint.GlyphMaterials.Count > 0;
+        private bool UsesGlyph(OwnerTint tint) => tint.GetGlyphMaterials(this).Count > 0;
 
         public void UpdateSingleton()
         {
@@ -266,15 +296,9 @@ namespace BeaverBuddies.Players
                 tint.AppliedColor = null;
             }
             Color target = color ?? Color.clear;
-            foreach (Material material in tint.GlyphMaterials)
+            foreach (Material material in tint.GetGlyphMaterials(this))
             {
-                if (!material) continue;
-                Color current = material.GetColor(EmissionColorProperty);
-                // The game's highlights (hovering, selecting) use the same
-                // color and clear it when they end: leave them alone, and put
-                // the glyph back once they're gone
-                bool ours = current == Color.clear || tint.GlyphColor.HasValue && current == tint.GlyphColor.Value;
-                if (ours && current != target) material.SetColor(EmissionColorProperty, target);
+                if (material) material.SetColor(EmissionColorProperty, target);
             }
             tint.GlyphColor = color;
         }
