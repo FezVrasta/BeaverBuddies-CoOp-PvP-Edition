@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using Timberborn.BaseComponentSystem;
 using Timberborn.BlockSystem;
+using Timberborn.Buildings;
 using Timberborn.Coordinates;
 using Timberborn.EntitySystem;
 using Timberborn.GameDistricts;
 using Timberborn.PathSystem;
+using Timberborn.Rendering;
 using Timberborn.SelectionSystem;
 using Timberborn.SingletonSystem;
 using UnityEngine;
@@ -22,6 +24,32 @@ namespace BeaverBuddies.Players
         public PlacedBy PlacedBy { get; private set; }
         public bool IsPath { get; private set; }
         public Color? AppliedColor { get; set; }
+        // A finished district center shows its owner on the faction glyph
+        public Color? GlyphColor { get; set; }
+
+        private readonly List<Material> _glyphMaterials = new();
+
+        public List<Material> GlyphMaterials
+        {
+            get
+            {
+                if (_glyphMaterials.Count == 0 && DistrictCenter && BlockObject && BlockObject.IsFinished)
+                {
+                    BuildingModel model = GetComponent<BuildingModel>();
+                    EntityMaterials materials = GetComponent<EntityMaterials>();
+                    if (model && model.FinishedModel && materials)
+                    {
+                        var all = new List<Material>();
+                        materials.GetChildMaterials(model.FinishedModel.transform, all);
+                        foreach (Material material in all)
+                        {
+                            if (material && material.name.StartsWith(OwnerTintService.GlyphMaterialPrefix)) _glyphMaterials.Add(material);
+                        }
+                    }
+                }
+                return _glyphMaterials;
+            }
+        }
 
         public void Awake()
         {
@@ -39,16 +67,22 @@ namespace BeaverBuddies.Players
     }
 
     /**
-     * Gives each player's district centers, paths and unbuilt construction
-     * sites a faint tint of their color, so it's clear who owns what and
-     * who is going to build what. It only changes how things look on this
-     * machine, never the game.
+     * Shows each player's color on their district centers' faction glyphs,
+     * and as a faint tint on their paths and unbuilt construction sites, so
+     * it's clear who owns what and who is going to build what. It only
+     * changes how things look on this machine, never the game.
      */
     public class OwnerTintService : RegisteredSingleton, IUpdatableSingleton
     {
         // Highlights are added on top of the model, so a small fraction of
         // the color is enough (the game's own highlights are around 0.2)
         private const float Strength = 0.2f;
+        // The glyph is small, so it takes more of the color to read
+        private const float GlyphStrength = 0.7f;
+        // The glyph's material on both factions' district centers, used by
+        // nothing else on them
+        public const string GlyphMaterialPrefix = "Details.";
+        private static readonly int EmissionColorProperty = Shader.PropertyToID("_EmissionColor");
         private const float UpdateSeconds = 1f;
         // Other systems can reset an object's highlights, so reapply now
         // and then even if the owner didn't change
@@ -78,6 +112,8 @@ namespace BeaverBuddies.Players
             if (_tints.Remove(tint) && tint.AppliedColor.HasValue) _highlighter.UnhighlightSecondary(tint);
         }
 
+        private static bool UsesGlyph(OwnerTint tint) => tint.GlyphMaterials.Count > 0;
+
         public void UpdateSingleton()
         {
             float now = Time.unscaledTime;
@@ -101,6 +137,11 @@ namespace BeaverBuddies.Players
                 // Previews and deleted objects don't always get DeleteEntity
                 if (!tint) { _dead.Add(tint); continue; }
                 Color? color = GetColor(tint, ownership);
+                if (UsesGlyph(tint))
+                {
+                    ApplyGlyph(tint, color);
+                    continue;
+                }
                 if (color == tint.AppliedColor && !reapply) continue;
                 Apply(tint, color);
             }
@@ -136,7 +177,7 @@ namespace BeaverBuddies.Players
             }
             Color? color = ownership.GetPlayerColor(owner);
             if (!color.HasValue) return null;
-            Color c = color.Value * Strength;
+            Color c = color.Value * (UsesGlyph(tint) ? GlyphStrength : Strength);
             c.a = 1f;
             return c;
         }
@@ -148,12 +189,36 @@ namespace BeaverBuddies.Players
             tint.AppliedColor = color;
         }
 
+        private void ApplyGlyph(OwnerTint tint, Color? color)
+        {
+            // In case the district center was tinted whole before it finished
+            if (tint.AppliedColor.HasValue)
+            {
+                _highlighter.UnhighlightSecondary(tint);
+                tint.AppliedColor = null;
+            }
+            Color target = color ?? Color.clear;
+            foreach (Material material in tint.GlyphMaterials)
+            {
+                if (!material) continue;
+                Color current = material.GetColor(EmissionColorProperty);
+                // The game's highlights (hovering, selecting) use the same
+                // color and clear it when they end: leave them alone, and put
+                // the glyph back once they're gone
+                bool ours = current == Color.clear || tint.GlyphColor.HasValue && current == tint.GlyphColor.Value;
+                if (ours && current != target) material.SetColor(EmissionColorProperty, target);
+            }
+            tint.GlyphColor = color;
+        }
+
         private void ClearAll()
         {
             foreach (OwnerTint tint in _tints)
             {
-                if (tint && tint.AppliedColor.HasValue) _highlighter.UnhighlightSecondary(tint);
-                if (tint) tint.AppliedColor = null;
+                if (!tint) continue;
+                if (tint.AppliedColor.HasValue) _highlighter.UnhighlightSecondary(tint);
+                tint.AppliedColor = null;
+                if (tint.GlyphColor.HasValue) ApplyGlyph(tint, null);
             }
         }
     }
