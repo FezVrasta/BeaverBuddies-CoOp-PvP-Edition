@@ -11,14 +11,17 @@ using Timberborn.BlockSystem;
 using Timberborn.BlueprintSystem;
 using Timberborn.BottomBarSystem;
 using Timberborn.BuilderPrioritySystemUI;
+using Timberborn.CoreUI;
 using Timberborn.CursorToolSystem;
 using Timberborn.GameDistricts;
 using Timberborn.InputSystem;
 using Timberborn.ToolButtonSystem;
 using Timberborn.ToolSystem;
 using Timberborn.ToolSystemUI;
+using Timberborn.SingletonSystem;
 using Timberborn.UISound;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace BeaverBuddies.Players
 {
@@ -172,14 +175,16 @@ namespace BeaverBuddies.Players
     /**
      * The "Ownership" group in the bottom bar, next to the builder
      * priorities, with a tool to share buildings and one to claim them.
-     * Only shown in co-op games.
+     * Only shown in co-op games. The host builds the bottom bar before it
+     * starts hosting, so it's always built and shown once co-op starts.
      */
-    public class OwnershipToolsButton : IBottomBarElementsProvider
+    public class OwnershipToolsButton : IBottomBarElementsProvider, IUpdatableSingleton
     {
         private const string ToolGroupId = "BeaverBuddiesOwnership";
 
         private readonly ToolGroupButtonFactory _toolGroupButtonFactory;
         private readonly ToolGroupService _toolGroupService;
+        private VisualElement _root;
         private readonly ToolButtonFactory _toolButtonFactory;
         private readonly AreaBlockObjectPickerFactory _areaBlockObjectPickerFactory;
         private readonly BlockObjectSelectionDrawerFactory _blockObjectSelectionDrawerFactory;
@@ -211,9 +216,6 @@ namespace BeaverBuddies.Players
 
         public IEnumerable<BottomBarElement> GetElements()
         {
-            // Sharing only means something with other players
-            if (EventIO.IsNull) yield break;
-
             BottomBarElement element;
             try
             {
@@ -222,6 +224,8 @@ namespace BeaverBuddies.Players
                 AddTool(groupButton, toolGroup, shared: true, "Sprites/BeaverBuddies/Ownership/MakeSharedIcon");
                 AddTool(groupButton, toolGroup, shared: false, "Sprites/BeaverBuddies/Ownership/MakeMineIcon");
                 element = BottomBarElement.CreateMultiLevel(groupButton.Root, groupButton.ToolButtonsElement);
+                _root = groupButton.Root;
+                UpdateSingleton();
             }
             catch (Exception e)
             {
@@ -230,6 +234,14 @@ namespace BeaverBuddies.Players
                 yield break;
             }
             yield return element;
+        }
+
+        // Sharing only means something with other players
+        public void UpdateSingleton()
+        {
+            if (_root == null) return;
+            bool visible = !EventIO.IsNull;
+            if ((_root.style.display != DisplayStyle.None) != visible) _root.ToggleDisplayStyle(visible);
         }
 
         private void AddTool(ToolGroupButton groupButton, ToolGroupSpec toolGroup, bool shared, string icon)
