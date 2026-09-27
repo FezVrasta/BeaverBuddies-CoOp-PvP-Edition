@@ -167,3 +167,6 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"Die verkaufende Seite hat keine En
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"Wartet, dass die Arbeiter des Käufers die Bezahlung bringen.",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"Die Hälfte des Verkäufers ist voll: Seine Arbeiter müssen die Bezahlung ausladen.",""
 BeaverBuddies.PowerExchange.Status.Sending,"Sende {0} PS (max. {1} PS).",""
+BeaverBuddies.PowerExchange.ThisSide,"Diese Seite: {0}",""
+BeaverBuddies.PowerExchange.OtherSide,"Andere Seite: {0}",""
+BeaverBuddies.PowerExchange.Empty,"leer",""

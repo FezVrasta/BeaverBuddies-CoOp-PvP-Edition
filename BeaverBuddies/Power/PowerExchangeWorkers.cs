@@ -1,5 +1,6 @@
 using BeaverBuddies.Events;
 using BeaverBuddies.Players;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using Timberborn.BaseComponentSystem;
@@ -9,6 +10,7 @@ using Timberborn.Emptying;
 using Timberborn.Goods;
 using Timberborn.InventoryNeedSystem;
 using Timberborn.InventorySystem;
+using Timberborn.LinkedBuildingSystem;
 using Timberborn.TemplateInstantiation;
 using Timberborn.WorkSystem;
 
@@ -45,6 +47,30 @@ namespace BeaverBuddies.Power
             initializer.Initialize();
             subject.InitializeInventory(decorator);
             _inventoryNeedBehaviorInitializer.AddNeedBehavior(decorator);
+        }
+    }
+
+    /**
+     * The game mirrors every reservation between the inventories of a linked
+     * pair, which is right for construction materials but not for the
+     * exchange: each half's payment inventory is its own, and mirroring
+     * fails once the other half is full.
+     */
+    [HarmonyPatch(typeof(LinkedInventories), "OnInventoryCapacityReservationChanged")]
+    public static class LinkedInventoriesReservationPatch
+    {
+        static bool Prefix(object sender)
+        {
+            return (sender as Inventory)?.ComponentName != PowerExchangeInventoryInitializer.InventoryComponentName;
+        }
+    }
+
+    [HarmonyPatch(typeof(LinkedInventories), "MirrorInventoryReservations")]
+    public static class LinkedInventoriesMirrorPatch
+    {
+        static bool Prefix(Inventory myInventory)
+        {
+            return myInventory.ComponentName != PowerExchangeInventoryInitializer.InventoryComponentName;
         }
     }
 

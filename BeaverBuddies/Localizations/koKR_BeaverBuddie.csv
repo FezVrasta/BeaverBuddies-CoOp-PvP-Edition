@@ -167,3 +167,6 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"판매 측에 남는 동력이 없
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"구매자의 작업자가 대금을 가져오길 기다리는 중입니다.",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"판매 측이 가득 찼습니다. 작업자가 대금을 내려야 합니다.",""
 BeaverBuddies.PowerExchange.Status.Sending,"{0} 마력 전송 중 (최대 {1} 마력).",""
+BeaverBuddies.PowerExchange.ThisSide,"이쪽: {0}",""
+BeaverBuddies.PowerExchange.OtherSide,"상대편: {0}",""
+BeaverBuddies.PowerExchange.Empty,"비어 있음",""

@@ -39,6 +39,8 @@ namespace BeaverBuddies.Power
         private VisualElement _root;
         private VisualElement _content;
         private Label _status;
+        private Label _thisStock;
+        private Label _otherStock;
         private PowerExchange _exchange;
         private string _layoutKey;
         private readonly List<Dropdown> _dropdowns = new();
@@ -62,6 +64,10 @@ namespace BeaverBuddies.Power
             var statusBox = SubPanel();
             _status = Text();
             statusBox.Add(_status);
+            _thisStock = Text();
+            statusBox.Add(_thisStock);
+            _otherStock = Text();
+            statusBox.Add(_otherStock);
             _root.Add(statusBox);
             _root.ToggleDisplayStyle(visible: false);
             return _root;
@@ -100,6 +106,19 @@ namespace BeaverBuddies.Power
             _status.text = seller == null
                 ? T("BeaverBuddies.PowerExchange.NotSelling")
                 : string.Format(T("BeaverBuddies.PowerExchange.Status." + seller.Status), seller.Sent, seller.MaxPower);
+            _thisStock.text = string.Format(T("BeaverBuddies.PowerExchange.ThisSide"), DescribeStock(_exchange.Inventory));
+            PowerExchange linked = _exchange.Linked;
+            _otherStock.ToggleDisplayStyle(linked != null);
+            if (linked != null)
+            {
+                _otherStock.text = string.Format(T("BeaverBuddies.PowerExchange.OtherSide"), DescribeStock(linked.Inventory));
+            }
+        }
+
+        private string DescribeStock(Inventory inventory)
+        {
+            if (inventory == null || inventory.IsEmpty) return T("BeaverBuddies.PowerExchange.Empty");
+            return string.Join(", ", inventory.Stock.Select(g => $"{g.Amount} {DescribeGood(g.GoodId)}"));
         }
 
         private Label _priceList;

@@ -167,3 +167,6 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"The selling side has no power to s
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"Waiting for the buyer's workers to bring the payment.",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"The seller's half is full: its workers need to unload the payments.",""
 BeaverBuddies.PowerExchange.Status.Sending,"Sending {0} hp (max {1} hp).",""
+BeaverBuddies.PowerExchange.ThisSide,"This side: {0}",""
+BeaverBuddies.PowerExchange.OtherSide,"Other side: {0}",""
+BeaverBuddies.PowerExchange.Empty,"empty",""

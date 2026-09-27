@@ -167,3 +167,6 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"У продающей сторон
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"Ждём, пока рабочие покупателя принесут оплату.",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"Половина продавца заполнена: его рабочие должны разгрузить оплату.",""
 BeaverBuddies.PowerExchange.Status.Sending,"Отправляется {0} л.с. (макс. {1} л.с.).",""
+BeaverBuddies.PowerExchange.ThisSide,"Эта сторона: {0}",""
+BeaverBuddies.PowerExchange.OtherSide,"Другая сторона: {0}",""
+BeaverBuddies.PowerExchange.Empty,"пусто",""

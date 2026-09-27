@@ -167,3 +167,6 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"ฝั่งผู้ขายไ�
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"กำลังรอคนงานของผู้ซื้อนำค่าตอบแทนมา",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"ครึ่งของผู้ขายเต็มแล้ว คนงานต้องขนค่าตอบแทนออก",""
 BeaverBuddies.PowerExchange.Status.Sending,"กำลังส่ง {0} แรงม้า (สูงสุด {1} แรงม้า)",""
+BeaverBuddies.PowerExchange.ThisSide,"ฝั่งนี้: {0}",""
+BeaverBuddies.PowerExchange.OtherSide,"อีกฝั่ง: {0}",""
+BeaverBuddies.PowerExchange.Empty,"ว่าง",""

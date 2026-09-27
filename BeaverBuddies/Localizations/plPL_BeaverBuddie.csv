@@ -167,3 +167,6 @@ BeaverBuddies.PowerExchange.Status.NoSurplus,"Strona sprzedająca nie ma nadwyż
 BeaverBuddies.PowerExchange.Status.WaitingForPayment,"Czeka, aż robotnicy kupującego przyniosą zapłatę.",""
 BeaverBuddies.PowerExchange.Status.SellerFull,"Połowa sprzedającego jest pełna: jego robotnicy muszą wyładować zapłatę.",""
 BeaverBuddies.PowerExchange.Status.Sending,"Wysyła {0} KM (maks. {1} KM).",""
+BeaverBuddies.PowerExchange.ThisSide,"Ta strona: {0}",""
+BeaverBuddies.PowerExchange.OtherSide,"Druga strona: {0}",""
+BeaverBuddies.PowerExchange.Empty,"pusto",""
