@@ -41,7 +41,19 @@ namespace TimberNet
                 {
                     while (!isStopped)
                     {
-                        accepted.Enqueue(listener.AcceptClient());
+                        ISocketStream socket;
+                        try
+                        {
+                            socket = listener.AcceptClient();
+                        }
+                        catch (Exception)
+                        {
+                            // A stopped listener ends its wait with an error
+                            if (isStopped) return;
+                            throw;
+                        }
+                        if (isStopped) return;
+                        if (socket != null) accepted.Enqueue(socket);
                     }
                 });
             }
@@ -54,8 +66,14 @@ namespace TimberNet
 
         public void Stop()
         {
-            listeners.ForEach(listener => listener.Stop());
             isStopped = true;
+            listeners.ForEach(listener =>
+            {
+                try { listener.Stop(); }
+                catch (Exception) { }
+            });
+            // Wakes up whoever is waiting for the next client, with none
+            accepted.Enqueue(null);
         }
 
         public T GetListener<T>()

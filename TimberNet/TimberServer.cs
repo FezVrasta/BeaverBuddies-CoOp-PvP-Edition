@@ -32,7 +32,11 @@ namespace TimberNet
 
         public List<string?> GetConnectedClients()
         {
-            return clients.Select(c => c.Name).ToList();
+            // Clients join from the listening thread
+            lock (queuedMessages)
+            {
+                return clients.Where(c => c != null).Select(c => c.Name).ToList();
+            }
         }
 
         public TimberServer(ISocketListener listener, Func<Task<byte[]>> mapProvider, Func<JObject>? initEventProvider)
@@ -75,8 +79,17 @@ namespace TimberNet
                         client = listener.AcceptClient();
                     } catch (Exception e)
                     {
+                        // Closing the server stops its listener, which ends
+                        // the wait for the next client with an error
+                        if (IsStopped) break;
                         Log("Error accepting client.");
                         Log(e.StackTrace);
+                        continue;
+                    }
+                    // Woken up empty by the listener stopping
+                    if (client == null)
+                    {
+                        if (IsStopped) break;
                         continue;
                     }
                     Task.Run(async () =>
@@ -194,13 +207,9 @@ namespace TimberNet
 
         private void SendEventToClients(JObject message, bool sendNow)
         {
-            for (int i = 0; i < clients.Count; i++)
+            lock (queuedMessages)
             {
-                if (!clients[i].Connected)
-                {
-                    clients.RemoveAt(i);
-                    i--;
-                }
+                clients.RemoveAll(c => c == null || !c.Connected);
             }
             // Make sure we're not running this while a client is being
             // setup to start or stop queueing

@@ -137,6 +137,11 @@ namespace BeaverBuddies
             // created on other threads and PlayerPrefs only works here
             _ = BeaverBuddies.Players.PlayerIdentity.LocalID;
 
+            // Close the connection while the game is still whole: its
+            // listening threads call into Steam, which crashes the game on
+            // Windows once Steam has shut down for quitting
+            UnityEngine.Application.quitting += EventIO.Reset;
+
             // apply all harmony patches automatically.
             Harmony harmony = new Harmony(ID);
             harmony.PatchAll();

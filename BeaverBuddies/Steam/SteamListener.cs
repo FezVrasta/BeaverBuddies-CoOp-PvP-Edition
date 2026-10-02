@@ -15,6 +15,7 @@ namespace BeaverBuddies.Steam
         private List<IDisposable> callbacks = new List<IDisposable>();
         private ConcurrentQueueWithWait<SteamSocket> joiningUsers = new ConcurrentQueueWithWait<SteamSocket>();
         private SteamPacketListener steamPacketListener;
+        private volatile bool stopped;
 
         public SteamListener()
         {
@@ -77,23 +78,40 @@ namespace BeaverBuddies.Steam
             }
         }
 
+        /**
+         * Waits for the next player to join the lobby. Returns null once
+         * the listener is stopped, so whoever waits isn't stuck for good.
+         */
         public ISocketStream AcceptClient()
         {
             Plugin.Log("Waiting to accept a client...");
-            SteamSocket socket;
-            while (!joiningUsers.WaitAndTryDequeue(out socket)) { }
+            SteamSocket socket = null;
+            while (!stopped && (!joiningUsers.WaitAndTryDequeue(out socket) || socket == null)) { }
+            if (stopped) return null;
             Plugin.Log("New client accepted!");
             return socket;
         }
 
         public void Stop()
         {
+            if (stopped) return;
+            stopped = true;
             Plugin.Log("Stopping SteamListener...");
-            SteamMatchmaking.LeaveLobby(LobbyID);
-            foreach (IDisposable callback in callbacks)
+            // Steam may be gone already when the game is quitting
+            try
             {
-                callback.Dispose();
+                SteamMatchmaking.LeaveLobby(LobbyID);
+                foreach (IDisposable callback in callbacks)
+                {
+                    callback.Dispose();
+                }
             }
+            catch (Exception e)
+            {
+                Plugin.LogWarning($"Couldn't leave the Steam lobby: {e.Message}");
+            }
+            callbacks.Clear();
+            joiningUsers.Enqueue(null);
         }
 
         public void ShowInviteFriendsPanel()
