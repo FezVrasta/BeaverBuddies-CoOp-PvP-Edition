@@ -146,6 +146,10 @@ namespace BeaverBuddies
             GameSaverSavePatcher.Install();
             TimeTimePatcher.Install();
 
+            // After our own patches, so the optimizations' checks for other
+            // patches on the methods they replace see ours
+            BeaverBuddies.Performance.RuntimePatches.Install();
+
             Log(UnityEngine.Application.consoleLogPath);
         }
 
