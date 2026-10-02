@@ -75,7 +75,11 @@ namespace BeaverBuddies.DevTools
          */
         public static bool ShouldDropReplayedEvent(ReplayEvent replayEvent)
         {
-            return replayEvent is DevToolEvent && IsHost && !Settings.AllowDevTools;
+            if (!IsHost || Settings.AllowDevTools) return false;
+            // Only the dev mode deletion tool removes terrain, though its event
+            // is the ordinary deconstruction one
+            return replayEvent is DevToolEvent
+                || replayEvent is Events.BuildingsDeconstructedEvent { terrainCoordinates.Count: > 0 };
         }
 
         private static void Notify(string key)
@@ -86,7 +90,7 @@ namespace BeaverBuddies.DevTools
         }
     }
 
-    public class DevToolsService : RegisteredSingleton, IPostLoadableSingleton
+    public class DevToolsService : RegisteredSingleton, IPostLoadableSingleton, IUpdatableSingleton
     {
         private readonly DevModeManager _devModeManager;
         private readonly QuickNotificationService _quickNotificationService;
@@ -120,6 +124,22 @@ namespace BeaverBuddies.DevTools
         {
             _settings.AllowDevToolsInCoop.ValueChanged += OnAllowDevToolsChanged;
             EnforcePolicy();
+        }
+
+        private bool _sentPolicy;
+
+        /**
+         * The host tells clients whether dev tools are allowed when they
+         * connect, but that happens while it's still loading, before its
+         * mod settings are read, so it can say no when they're on. Once the
+         * game runs, send the real setting.
+         */
+        public void UpdateSingleton()
+        {
+            if (_sentPolicy || !DevToolsPolicy.IsHost || ReplayEvent.GetReplayServiceIfReady() == null) return;
+            _sentPolicy = true;
+            bool allowed = Settings.AllowDevTools;
+            ReplayEvent.DoPrefix(() => new DevToolsAllowedEvent() { allowed = allowed });
         }
 
         public void Notify(string message)
