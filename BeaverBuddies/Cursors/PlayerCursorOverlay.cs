@@ -8,6 +8,10 @@ namespace BeaverBuddies.Cursors
 {
     public class PlayerCursorOverlay : MonoBehaviour
     {
+        // Whether another player's cursor at this world position may be
+        // shown, for mods that hide parts of the map; any false hides it
+        public static readonly List<System.Func<Vector3, bool>> ShowAt = new();
+
         public PlayerCursorService Service;
         public CameraService CameraService;
 
@@ -28,6 +32,7 @@ namespace BeaverBuddies.Cursors
             foreach (RemoteCursor cursor in Service.Cursors)
             {
                 if (!cursor.Visible) continue;
+                if (!ShowAt.TrueForAll(show => show(cursor.DisplayedPosition))) continue;
 
                 Vector3 sp = cam.WorldToScreenPoint(cursor.DisplayedPosition);
                 if (sp.z < 0f) continue;

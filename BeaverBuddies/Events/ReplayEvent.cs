@@ -19,8 +19,11 @@ namespace BeaverBuddies.Events
 
         public int ticksSinceLoad;
         public int? randomS0Before;
-        // The stable ID of the player who caused this event
-        public string playerID = Players.PlayerIdentity.LocalID;
+        // The stable ID of the player who caused this event. Stamped when
+        // the event is recorded, not when it's made: a field initializer
+        // would also run as an event arrives, and fill in each receiving
+        // machine's own ID wherever the sender left it out
+        public string playerID;
 
         public string type => GetType().Name;
 
@@ -105,6 +108,24 @@ namespace BeaverBuddies.Events
             return spec?.GetSpec<TemplateSpec>()?.TemplateName;
         }
 
+        private static int _unrecorded;
+
+        private class UnrecordedScope : IDisposable
+        {
+            public void Dispose() => _unrecorded--;
+        }
+
+        /**
+         * Lets what's done inside run as is, on every machine alike, rather
+         * than go out as a player's event: for game logic acting on ticks
+         * through methods players also call from the UI.
+         */
+        public static IDisposable Unrecorded()
+        {
+            _unrecorded++;
+            return new UnrecordedScope();
+        }
+
         public static ReplayService GetReplayServiceIfReady()
         {
             // If we haven't loaded yet, we're not ready
@@ -128,7 +149,7 @@ namespace BeaverBuddies.Events
         {
             // If we're already replaying events, just let the original method run.
             // This handles nested calls (e.g., Replay() calls Unlock() which triggers this prefix again)
-            if (ReplayService.IsReplayingEvents) return true;
+            if (ReplayService.IsReplayingEvents || _unrecorded > 0) return true;
 
             // If the replay service is not available, just use default behavior
             ReplayService replayService = GetReplayServiceIfReady();

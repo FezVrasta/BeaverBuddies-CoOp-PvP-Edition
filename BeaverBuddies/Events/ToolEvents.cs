@@ -45,9 +45,13 @@ namespace BeaverBuddies.Events
                 isFlipped ? FlipMode.Flipped : FlipMode.Unflipped);
             // Skip validation for district centers - the preview object interferes with nav mesh
             bool isDistrictCenter = prefabName != null && prefabName.StartsWith("DistrictCenter.");
-            if (!isDistrictCenter && !IsPlacementValid(context, placement, buildingSpec))
+            bool valid = isDistrictCenter
+                ? PlacementHooks.AllowOn(Footprint(blockObjectSpec, placement), playerID)
+                : IsPlacementValid(context, placement, buildingSpec, playerID);
+            if (!valid)
             {
                 Plugin.LogWarning($"Invalid placement for {prefabName} at {coordinates}");
+                PlacementHooks.NotifyRefused(buildingSpec, placement, playerID);
                 return;
             }
 
@@ -62,20 +66,34 @@ namespace BeaverBuddies.Events
             {
                 builder.AddInitComponent(new DuplicationInit(duplicationSource));
             }
-            // A faction's first District Center in a mixed game is a free start
-            if (Factions.SettlementFounding.Instance?.TryFound(buildingSpec, builder, placement, playerID) != true)
+            if (!PlacementHooks.TryPlaceInstead(buildingSpec, builder, placement, playerID))
             {
-                using (Players.PlacedBy.Placing(playerID))
+                using (PlacementHooks.OpenScopes(playerID))
                 {
                     placer.Place(builder, placement);
                 }
             }
-            Players.DistrictOwnershipService.Instance?.OnBuildingPlaced(placement.Coordinates, playerID);
+            PlacementHooks.NotifyPlaced(placement, playerID);
         }
 
         // Note: This may not catch every possible invalid placement (e.g. if terrain height changes or something)
         // but I think it should catch the vast majority of cases due to double placement.
-        private static bool IsPlacementValid(IReplayContext context, Placement placement, BuildingSpec spec)
+        // The ground tiles a building covers, without instantiating it
+        private static IEnumerable<Vector3Int> Footprint(BlockObjectSpec spec, Placement placement)
+        {
+            bool turned = placement.Orientation == Orientation.Cw90 || placement.Orientation == Orientation.Cw270;
+            int width = turned ? spec.Size.y : spec.Size.x;
+            int depth = turned ? spec.Size.x : spec.Size.y;
+            Vector3Int origin = placement.Coordinates;
+            int x0 = placement.Orientation == Orientation.Cw180 || placement.Orientation == Orientation.Cw270 ? origin.x - width + 1 : origin.x;
+            int y0 = placement.Orientation == Orientation.Cw90 || placement.Orientation == Orientation.Cw180 ? origin.y - depth + 1 : origin.y;
+            for (int x = x0; x < x0 + width; x++)
+            {
+                for (int y = y0; y < y0 + depth; y++) yield return new Vector3Int(x, y, origin.z);
+            }
+        }
+
+        private static bool IsPlacementValid(IReplayContext context, Placement placement, BuildingSpec spec, string playerID)
         {
             var templateInstantiator = context.GetSingleton<TemplateInstantiator>();
             var roots = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
@@ -91,6 +109,11 @@ namespace BeaverBuddies.Events
             blockObject.MarkAsPreviewAndInitialize();
             blockObject.Reposition(placement);
             bool isValid = blockObject.IsValid();
+            if (isValid && !PlacementHooks.AllowOn(blockObject.PositionedBlocks.GetAllCoordinates(), playerID))
+            {
+                Plugin.LogWarning($"Placement refused for {playerID}");
+                isValid = false;
+            }
             UnityEngine.Object.Destroy(gameObject);
             return isValid;
         }
@@ -425,8 +448,12 @@ namespace BeaverBuddies.Events
     }
 
     [Serializable]
-    class BuildingUnlockedEvent : ReplayEvent
+    public class BuildingUnlockedEvent : ReplayEvent
     {
+        // Whether unlocking a building also unlocks its tools on this
+        // machine; any false keeps them locked here
+        public static readonly List<Func<string, bool>> UnlocksToolsHere = new();
+
         public string buildingName;
 
         public override void Replay(IReplayContext context)
@@ -436,13 +463,9 @@ namespace BeaverBuddies.Events
             var unlockingService = context.GetSingleton<BuildingUnlockingService>();
             unlockingService.Unlock(building);
 
-            // With per-player unlocks, the tools only unlock for whoever paid
-            var playerUnlocks = BeaverBuddies.Science.PlayerUnlockService.Instance;
-            if (playerUnlocks != null && !playerUnlocks.IsUnlockedFor(
-                unlockingService._buildingService.GetTemplateName(building), BeaverBuddies.Players.PlayerIdentity.LocalID))
-            {
-                return;
-            }
+            // A mod can keep the tools locked for players who didn't unlock it
+            string templateName = unlockingService._buildingService.GetTemplateName(building);
+            if (!UnlocksToolsHere.All(hook => hook(templateName))) return;
 
             var toolButtonService = context.GetSingleton<ToolButtonService>();
             var toolUnlockingService = toolButtonService._toolUnlockingService;
@@ -491,19 +514,17 @@ namespace BeaverBuddies.Events
     }
 
     [Serializable]
-    class WorkingHoursChangedEvent : ReplayEvent
+    public class WorkingHoursChangedEvent : ReplayEvent
     {
+        // Sets the player's working hours some other way; true when it did
+        public static readonly List<Func<string, int, bool>> SetHoursInstead = new();
+
         public int hours;
 
         public override void Replay(IReplayContext context)
         {
-            // In co-op each player has their own working hours
-            var playerHours = BeaverBuddies.Players.PlayerWorkingHours.Instance;
-            if (playerHours != null && playerID != null)
-            {
-                playerHours.SetHours(playerID, hours);
-                return;
-            }
+            // A mod can take the change for the player instead
+            if (playerID != null && SetHoursInstead.Any(hook => hook(playerID, hours))) return;
             var panel = context.GetSingleton<WorkingHoursPanel>();
             panel._hours = hours;
             panel.OnHoursChanged();

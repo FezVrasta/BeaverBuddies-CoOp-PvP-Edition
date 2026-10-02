@@ -69,57 +69,6 @@ namespace BeaverBuddies
                 .SetLocalizedTooltip("BeaverBuddies.Settings.PauseReduction.Tooltip")
         );
 
-        public ModSetting<bool> SciencePerPlayerSetting { get; } =
-            new(true,
-                ModSettingDescriptor.CreateLocalized(
-                    "BeaverBuddies.Settings.SciencePerPlayer"
-                ).SetLocalizedTooltip("BeaverBuddies.Settings.SciencePerPlayer.Tooltip")
-        );
-
-        public ModSetting<bool> TopBarShowsOwnDistrictsSetting { get; } =
-            new(true,
-                ModSettingDescriptor.CreateLocalized(
-                    "BeaverBuddies.Settings.TopBarShowsOwnDistricts"
-                ).SetLocalizedTooltip("BeaverBuddies.Settings.TopBarShowsOwnDistricts.Tooltip")
-        );
-
-        public ModSetting<bool> ShowOwnerColorsSetting { get; } =
-            new(true,
-                ModSettingDescriptor.CreateLocalized(
-                    "BeaverBuddies.Settings.ShowOwnerColors"
-                ).SetLocalizedTooltip("BeaverBuddies.Settings.ShowOwnerColors.Tooltip")
-        );
-
-        public ModSetting<bool> DistrictSpecializationsSetting { get; } =
-            new(true,
-                ModSettingDescriptor.CreateLocalized(
-                    "BeaverBuddies.Settings.DistrictSpecializations"
-                ).SetLocalizedTooltip("BeaverBuddies.Settings.DistrictSpecializations.Tooltip")
-        );
-
-        public ModSetting<bool> BorderProtectionSetting { get; } =
-            new(true,
-                ModSettingDescriptor.CreateLocalized(
-                    "BeaverBuddies.Settings.BorderProtection"
-                ).SetLocalizedTooltip("BeaverBuddies.Settings.BorderProtection.Tooltip")
-        );
-
-        public ModSetting<bool> MixedFactionsSetting { get; } =
-            new(false,
-                ModSettingDescriptor.CreateLocalized(
-                    "BeaverBuddies.Settings.MixedFactions"
-                ).SetLocalizedTooltip("BeaverBuddies.Settings.MixedFactions.Tooltip")
-        );
-
-        public LimitedStringModSetting MyFactionSetting { get; } =
-            new(0, new[] {
-                new LimitedStringModSettingValue("", "BeaverBuddies.Settings.MyFaction.Host"),
-                new LimitedStringModSettingValue("Folktails", "Faction.Folktails.DisplayName"),
-                new LimitedStringModSettingValue("IronTeeth", "Faction.IronTeeth.DisplayName"),
-            }, ModSettingDescriptor.CreateLocalized("BeaverBuddies.Settings.MyFaction")
-                .SetLocalizedTooltip("BeaverBuddies.Settings.MyFaction.Tooltip")
-        );
-
         public ModSetting<bool> AllowDevToolsInCoop { get; } =
             new(true,
                 ModSettingDescriptor.CreateLocalized(
@@ -189,13 +138,6 @@ namespace BeaverBuddies
         public static bool LobbyJoinable => instance?.FriendsCanJoinSteamGame.Value ?? true;
         public static bool ShouldShowFirstTimerMessage => instance?.ShowFirstTimerMessage.Value ?? true;
         public static bool AllowDevTools => instance?.AllowDevToolsInCoop.Value ?? true;
-        public static bool SciencePerPlayer => instance?.SciencePerPlayerSetting.Value ?? true;
-        public static bool DistrictSpecializations => instance?.DistrictSpecializationsSetting.Value ?? true;
-        public static bool BorderProtection => instance?.BorderProtectionSetting.Value ?? true;
-        public static string MyFaction => instance?.MyFactionSetting?.Value ?? "";
-        public static bool MixedFactions => instance?.MixedFactionsSetting.Value ?? false;
-        public static bool ShowOwnerColors => instance?.ShowOwnerColorsSetting.Value ?? true;
-        public static bool TopBarShowsOwnDistricts => instance?.TopBarShowsOwnDistrictsSetting.Value ?? true;
 
         public static PauseReductionLevel PauseReductionSetting
         {

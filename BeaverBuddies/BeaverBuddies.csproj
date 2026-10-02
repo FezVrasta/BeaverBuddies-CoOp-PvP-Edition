@@ -108,10 +108,6 @@
     <None Update="Localizations\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="KeyBindings\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="KeyBindingGroups\*" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Buildings\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="TemplateCollections\*" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="ToolGroups\*" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Sprites\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Resources.Designer.cs">
@@ -143,10 +139,6 @@
       <LocalizationFileToCopy Include="$(ProjectDir)$(OutDir)Localizations\*" />
       <KeyBindingFileToCopy Include="$(ProjectDir)$(OutDir)KeyBindings\*" />
       <KeyBindingGroupFileToCopy Include="$(ProjectDir)$(OutDir)KeyBindingGroups\*" />
-      <BuildingFileToCopy Include="$(ProjectDir)$(OutDir)Buildings\**\*" />
-      <TemplateCollectionFileToCopy Include="$(ProjectDir)$(OutDir)TemplateCollections\*" />
-      <ToolGroupFileToCopy Include="$(ProjectDir)$(OutDir)ToolGroups\*" />
-      <SpriteFileToCopy Include="$(ProjectDir)$(OutDir)Sprites\**\*" />
       <RootDirFilesToCopy Include="$(ProjectDir)thumbnail.png; $(ProjectDir)workshop_data.json" />
     </ItemGroup>
     <!-- Clear VersionOutputPath Directory & Copy Output files inside -->
@@ -156,10 +148,6 @@
     <Copy SourceFiles="@(LocalizationFileToCopy)" DestinationFolder="$(VersionOutputPath)\Localizations" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(KeyBindingFileToCopy)" DestinationFolder="$(VersionOutputPath)\KeyBindings" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(KeyBindingGroupFileToCopy)" DestinationFolder="$(VersionOutputPath)\KeyBindingGroups" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(BuildingFileToCopy)" DestinationFolder="$(VersionOutputPath)\Buildings\%(RecursiveDir)" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(TemplateCollectionFileToCopy)" DestinationFolder="$(VersionOutputPath)\TemplateCollections" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(ToolGroupFileToCopy)" DestinationFolder="$(VersionOutputPath)\ToolGroups" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(SpriteFileToCopy)" DestinationFolder="$(VersionOutputPath)\Sprites\%(RecursiveDir)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(RootDirFilesToCopy)" DestinationFolder="$(BeaverBuddiesModsPath)" SkipUnchangedFiles="true" />
   </Target>
 

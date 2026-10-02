@@ -259,8 +259,8 @@ namespace BeaverBuddies
             // successful.
             if (IsReplayingEvents) return;
             if (!IsLoaded) return;
-            // Don't send actions on someone else's buildings
-            if (Players.BorderProtection.Instance?.AllowLocal(replayEvent) == false) return;
+            replayEvent.playerID ??= Players.PlayerIdentity.LocalID;
+            if (!ReplayHooks.AllowSend(replayEvent)) return;
 
             string json = JsonSettings.Serialize(replayEvent);
             Plugin.Log($"RecordEvent: {json}");
@@ -310,70 +310,75 @@ namespace BeaverBuddies
 
             int currentTick = ticksSinceLoad;
             IsReplayingEvents = true;
-            for (int i = 0; i < eventsToReplay.Count; i++)
+            // Reset however the loop ends, so a failure can't leave every later
+            // local action looking like a replay
+            try
             {
-                ReplayEvent replayEvent = eventsToReplay[i];
-                int eventTime = replayEvent.ticksSinceLoad;
-                if (eventTime > currentTick)
-                    break;
-                if (eventTime < currentTick)
+                for (int i = 0; i < eventsToReplay.Count; i++)
                 {
-                    Plugin.LogWarning($"Event past time: {eventTime} < {currentTick}");
-                }
-                //Plugin.Log($"Replaying event [{replayEvent.ticksSinceLoad}]: {replayEvent.type}");
-
-                // Don't play or relay dev events when the host has disabled dev tools
-                if (DevToolsPolicy.ShouldDropReplayedEvent(replayEvent))
-                {
-                    Plugin.LogWarning($"Dropping {replayEvent.type}: dev tools are disabled");
-                    continue;
-                }
-
-                // Every machine drops actions on buildings of someone else's
-                // district (and trims multi-building ones)
-                if (Players.BorderProtection.Instance?.Filter(replayEvent, replayEvent.playerID, out _) == false)
-                {
-                    Plugin.LogWarning($"Dropping {replayEvent.type} by {replayEvent.playerID}: not their building");
-                    continue;
-                }
-                
-                // If this event was played (e.g. on the server) and recorded a 
-                // random state, make sure we're in the same state.
-                // Skip if we're in Debug mode, since we'll get more details
-                // if we look at the full trace.
-                if (!Settings.Debug && replayEvent.randomS0Before != null)
-                {
-                    int s0 = UnityEngine.Random.state.s0;
-                    int randomS0Before = (int)replayEvent.randomS0Before;
-                    if (s0 != randomS0Before)
-                    {
-                        Plugin.LogWarning($"Random state mismatch: {s0:X8} != {randomS0Before:X8}");
-                        HandleDesync();
+                    ReplayEvent replayEvent = eventsToReplay[i];
+                    int eventTime = replayEvent.ticksSinceLoad;
+                    if (eventTime > currentTick)
                         break;
-                    }
-                }
-                try
-                {
-                    // For these events, make sure to record s0 beforehand
-                    replayEvent.randomS0Before = UnityEngine.Random.state.s0;
-                    // Science spent or earned by the event belongs to its player
-                    using (Science.ScienceContext.Use(replayEvent.playerID))
+                    if (eventTime < currentTick)
                     {
-                        replayEvent.Replay(this);
+                        Plugin.LogWarning($"Event past time: {eventTime} < {currentTick}");
                     }
-                    // Only send the event if it played successfully and
-                    // the IO says we shouldn't skip recording
-                    if (!EventIO.SkipRecording)
+                    //Plugin.Log($"Replaying event [{replayEvent.ticksSinceLoad}]: {replayEvent.type}");
+
+                    // Don't play or relay dev events when the host has disabled dev tools
+                    if (DevToolsPolicy.ShouldDropReplayedEvent(replayEvent))
                     {
-                        EnqueueEventForSending(replayEvent);
+                        Plugin.LogWarning($"Dropping {replayEvent.type}: dev tools are disabled");
+                        continue;
                     }
-                } catch (Exception e)
-                {
-                    Plugin.LogError($"Failed to replay event: {e}");
-                    Plugin.LogError(e.ToString());
+
+                    if (!ReplayHooks.AllowPlay(replayEvent))
+                    {
+                        Plugin.LogWarning($"Dropping {replayEvent.type} by {replayEvent.playerID}: refused by a hook");
+                        continue;
+                    }
+                
+                    // If this event was played (e.g. on the server) and recorded a 
+                    // random state, make sure we're in the same state.
+                    // Skip if we're in Debug mode, since we'll get more details
+                    // if we look at the full trace.
+                    if (!Settings.Debug && replayEvent.randomS0Before != null)
+                    {
+                        int s0 = UnityEngine.Random.state.s0;
+                        int randomS0Before = (int)replayEvent.randomS0Before;
+                        if (s0 != randomS0Before)
+                        {
+                            Plugin.LogWarning($"Random state mismatch: {s0:X8} != {randomS0Before:X8}");
+                            HandleDesync();
+                            break;
+                        }
+                    }
+                    try
+                    {
+                        // For these events, make sure to record s0 beforehand
+                        replayEvent.randomS0Before = UnityEngine.Random.state.s0;
+                        using (ReplayHooks.OpenScopes(replayEvent))
+                        {
+                            replayEvent.Replay(this);
+                        }
+                        // Only send the event if it played successfully and
+                        // the IO says we shouldn't skip recording
+                        if (!EventIO.SkipRecording)
+                        {
+                            EnqueueEventForSending(replayEvent);
+                        }
+                    } catch (Exception e)
+                    {
+                        Plugin.LogError($"Failed to replay event: {e}");
+                        Plugin.LogError(e.ToString());
+                    }
                 }
             }
-            IsReplayingEvents = false;
+            finally
+            {
+                IsReplayingEvents = false;
+            }
         }
 
         public void HandleDesync()
@@ -384,6 +389,7 @@ namespace BeaverBuddies
             {
                 desyncID = DesyncDetecterService.GetLastDesyncID(),
                 desyncTrace = DesyncDetecterService.GetLastDesyncTrace(),
+                playerID = Players.PlayerIdentity.LocalID,
             };
             // Set IsDesynced to true so event play instead of sending
             // to the host, allowing the Client to continue play.

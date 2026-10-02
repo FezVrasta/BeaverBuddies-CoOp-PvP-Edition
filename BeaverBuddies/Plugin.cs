@@ -1,4 +1,4 @@
-﻿using BeaverBuddies.Connect;
+using BeaverBuddies.Connect;
 using BeaverBuddies.DesyncDetecter;
 using BeaverBuddies.Editor;
 using BeaverBuddies.Events;
@@ -39,24 +39,6 @@ namespace BeaverBuddies
             containerDefinition.Bind<Settings>().AsSingleton();
 
             MultiStartConfigurator.Configure(containerDefinition);
-            BeaverBuddies.Trading.TradingConfigurator.Configure(containerDefinition);
-            BeaverBuddies.Players.OwnerTintConfigurator.Configure(containerDefinition);
-            BeaverBuddies.Specializations.SpecializationConfigurator.Configure(containerDefinition);
-            BeaverBuddies.Power.PowerExchangeConfigurator.Configure(containerDefinition);
-            BeaverBuddies.Ziplines.TollStationConfigurator.Configure(containerDefinition);
-
-            containerDefinition.Bind<BeaverBuddies.Factions.MixedFactionsService>().AsSingleton();
-            BeaverBuddies.Factions.FactionsConfigurator.Configure(containerDefinition);
-
-            // Bound in every game, so per-player science in a co-op save
-            // survives being saved in single player
-            containerDefinition.Bind<BeaverBuddies.Players.DistrictOwnershipService>().AsSingleton();
-            containerDefinition.Bind<BeaverBuddies.Players.DistrictOwnerSelector>().AsSingleton();
-            containerDefinition.Bind<BeaverBuddies.Science.PlayerScienceService>().AsSingleton();
-            containerDefinition.Bind<BeaverBuddies.Science.PlayerUnlockService>().AsSingleton();
-            containerDefinition.Bind<BeaverBuddies.Players.OwnPopulation>().AsSingleton();
-            containerDefinition.Bind<BeaverBuddies.Players.CuttingAreaOwners>().AsSingleton();
-            containerDefinition.Bind<BeaverBuddies.Players.PlayerWorkingHours>().AsSingleton();
 
             // EventIO gets set before load, so if it's null, this is a regular
             // game, so don't initialize these services.

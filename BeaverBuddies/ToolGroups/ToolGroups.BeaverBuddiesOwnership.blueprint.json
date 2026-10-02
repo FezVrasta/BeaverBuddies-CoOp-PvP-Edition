@@ -1,8 +1,0 @@
-{
-  "ToolGroupSpec": {
-    "Id": "BeaverBuddiesOwnership",
-    "DisplayNameLocKey": "BeaverBuddies.Ownership.ToolGroup",
-    "Icon": "Sprites/BeaverBuddies/Ownership/OwnershipToolGroupIcon"
-  },
-  "ConstructionModeToolGroupSpec": {}
-}

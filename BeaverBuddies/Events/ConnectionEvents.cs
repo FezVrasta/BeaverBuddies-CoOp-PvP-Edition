@@ -25,6 +25,8 @@ namespace BeaverBuddies.Events
         public bool isDebugMode;
         // Defaults to true for hosts that don't send it
         public bool allowDevTools = true;
+        // The host's add-on mods; null from hosts that don't send it
+        public string serverAddOns;
 
         public override void Replay(IReplayContext context)
         {
@@ -40,6 +42,11 @@ namespace BeaverBuddies.Events
             {
                 warningMessage = $"Warning! Server mod version ({serverModVersion}) does not match client mod version ({Plugin.Version}).\n" +
                     $"Please ensure that you are running the same version of the {Plugin.ID} mod.";
+            } else if (serverAddOns != null && serverAddOns != ReplayHooks.AddOnList)
+            {
+                warningMessage = $"Warning! The host plays with these add-on mods: {Describe(serverAddOns)}.\n" +
+                    $"You play with: {Describe(ReplayHooks.AddOnList)}.\n" +
+                    $"Please install the same mods, at the same versions, or the game will fall out of sync.";
             } else if (isDebugMode != Settings.Debug)
             {
                 // TODO: Should debug mode just come from the server?
@@ -54,6 +61,8 @@ namespace BeaverBuddies.Events
             }
         }
 
+        private static string Describe(string addOns) => string.IsNullOrEmpty(addOns) ? "none" : addOns;
+
         public static InitializeClientEvent Create()
         {
             InitializeClientEvent message = new InitializeClientEvent()
@@ -62,6 +71,7 @@ namespace BeaverBuddies.Events
                 serverGameVersion = GameVersions.CurrentVersion.ToString(),
                 isDebugMode = Settings.Debug,
                 allowDevTools = Settings.AllowDevTools,
+                serverAddOns = ReplayHooks.AddOnList,
                 //mapName = mapName,
             };
             return message;
