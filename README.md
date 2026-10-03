@@ -29,6 +29,12 @@ We appreciate your help! To get started working on BeaverBuddies, see [the guide
 
 Building on Linux is similar to on Mac.
 
+## Building Mods on BeaverBuddies
+
+Mods that add to multiplayer games don't need to reference BeaverBuddies to compile. `BeaverBuddies.Modding.ModBridge` is a static class whose methods only use .NET, Unity and Timberborn types: find it by name at runtime and bind its methods to delegates. Through it a mod reads the game's state (multiplayer, host, loaded, replaying, the local player), sends its own events (any serializable object, handed back to the mod to play on every machine) and adds hooks (who may send or play an event, where a player may build, placing for a player, cursors, tool unlocks, working hours). Timber Empires' `Bridge/BeaverBuddiesBridge.cs` is a standalone binding any mod can copy.
+
+The bridge only grows: existing methods keep their signatures, and `Version()` goes up when that can't be helped.
+
 ## How to Test Your Build
 
 1. Make sure your project has been built with no errors.
