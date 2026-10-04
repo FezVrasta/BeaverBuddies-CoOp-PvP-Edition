@@ -2,8 +2,6 @@
 
 BeaverBuddies keeps every machine in a game in sync by running the same simulation everywhere: each player's actions go out as events, and every machine plays them on the same tick. A mod that changes the game (new buildings, new orders, new rules) has to play by the same rules or the game falls out of sync.
 
-This is how Timber Empires, the PvP add-on, is built. Everything here is what it does.
-
 ## The bridge
 
 A mod doesn't reference BeaverBuddies to compile. `BeaverBuddies.Modding.ModBridge` is a static class whose methods only take and return .NET, Unity and Timberborn types. Your mod finds it by name at runtime and binds each method to a delegate once, so calling it costs no more than a normal call.
@@ -14,25 +12,50 @@ The bridge only grows. Existing methods keep their signatures, new ones get adde
 
 ### Binding it
 
-Copy Timber Empires' `Bridge/BeaverBuddiesBridge.cs` into your mod and change the namespace and the log prefix. It stands alone. The core of it is this:
+Put a small class in your mod that finds the bridge once and binds each method the first time it's used:
 
 ```csharp
-private static Type _type = AppDomain.CurrentDomain.GetAssemblies()
-    .Select(a => a.GetType("BeaverBuddies.Modding.ModBridge", false))
-    .FirstOrDefault(t => t != null);
-
-private static T Bind<T>(string name) where T : Delegate
+public static class BeaverBuddiesBridge
 {
-    MethodInfo method = _type?.GetMethod(name, BindingFlags.Public | BindingFlags.Static);
-    return method == null ? null : (T)Delegate.CreateDelegate(typeof(T), method, false);
-}
+    private static readonly Type BridgeType = AppDomain.CurrentDomain.GetAssemblies()
+        .Select(a => a.GetType("BeaverBuddies.Modding.ModBridge", false))
+        .FirstOrDefault(t => t != null);
+    private static readonly Dictionary<string, Delegate> Bound = new();
 
-public static bool IsMultiplayer => Bind<Func<bool>>("IsMultiplayer")?.Invoke() ?? false;
-public static bool DoPrefix(string mod, Func<object> getEvent) =>
-    Bind<Func<string, Func<object>, bool>>("DoPrefix")?.Invoke(mod, getEvent) ?? true;
+    public static bool Available => BridgeType != null;
+
+    private static T Bind<T>(string name) where T : Delegate
+    {
+        if (Bound.TryGetValue(name, out Delegate bound)) return (T)bound;
+        MethodInfo method = BridgeType?.GetMethod(name, BindingFlags.Public | BindingFlags.Static);
+        T result = method == null ? null : (T)Delegate.CreateDelegate(typeof(T), method, false);
+        Bound[name] = result;
+        return result;
+    }
+
+    public static int Version => Bind<Func<int>>("Version")?.Invoke() ?? 0;
+    public static bool IsMultiplayer => Bind<Func<bool>>("IsMultiplayer")?.Invoke() ?? false;
+    public static string LocalPlayerID => Bind<Func<string>>("LocalPlayerID")?.Invoke();
+
+    public static void RegisterEvents(string mod, Action<object, string, Func<Type, object>> play) =>
+        Bind<Action<string, Action<object, string, Func<Type, object>>>>("RegisterEvents")?.Invoke(mod, play);
+
+    public static bool DoPrefix(string mod, Func<object> getEvent) =>
+        Bind<Func<string, Func<object>, bool>>("DoPrefix")?.Invoke(mod, getEvent) ?? true;
+
+    public static IDisposable Unrecorded() => Bind<Func<IDisposable>>("Unrecorded")?.Invoke() ?? Nothing.Instance;
+
+    public static void AddAddOn(string nameAndVersion) => Bind<Action<string>>("AddAddOn")?.Invoke(nameAndVersion);
+
+    private class Nothing : IDisposable
+    {
+        public static readonly Nothing Instance = new();
+        public void Dispose() { }
+    }
+}
 ```
 
-Cache the bound delegates (the real file keeps them in a dictionary). Every fallback is what single player would do: `IsMultiplayer` is false, `DoPrefix` returns true so the caller just does the thing.
+Bind the rest of the methods below the same way, with the delegate type matching the signature in `ModBridge.cs`. Every fallback is what single player would do: `IsMultiplayer` is false, `DoPrefix` returns true so the caller just does the thing, `Unrecorded` returns something harmless to dispose. Check `Version` against the one you built for if you depend on newer methods.
 
 List BeaverBuddies under `RequiredMods` in your manifest (`{ "Id": "beaverbuddies" }`) so it loads first and the type is there when you first look it up. Leave it out if your mod should also run without it.
 
@@ -51,7 +74,7 @@ List BeaverBuddies under `RequiredMods` in your manifest (`{ "Id": "beaverbuddie
 | `LocalPlayerName()`, `LocalPlayerColor()` | What other players see |
 | `Log`, `LogWarning`, `LogError` | BeaverBuddies' own log, so your lines land next to its event log in error reports |
 
-`LocalPlayerID()` is what you store when something belongs to a player. Timber Empires keys land claims, districts and science on it.
+`LocalPlayerID()` is what you store when something belongs to a player: who owns a building, a district, a stockpile of points.
 
 ## Sending your own events
 
@@ -62,12 +85,19 @@ Anything a player does that changes the game has to be an event. Clicking a butt
 **Sending it.** Call `DoPrefix(mod, getEvent)` where the player acted. It returns whether you should go on and apply the change here too: true in single player, before the game has loaded, while events are already playing, or when this machine plays its own events at once. If it returns false, the event went out and will come back to you to play.
 
 ```csharp
-public static void Send(MineLauncher launcher)
+[Serializable]
+public class OpenGateEvent
 {
-    string entityID = GetEntityID(launcher);
-    if (entityID == null) return;
-    if (BeaverBuddiesBridge.DoPrefix("mymod", () => new MineReleaseEvent { entityID = entityID }))
-        launcher.RequestRelease();
+    public string entityID;
+    public bool open;
+}
+
+// The panel's button
+public static void SetOpen(Gate gate, bool open)
+{
+    string entityID = gate.GetComponent<EntityComponent>().EntityId.ToString();
+    if (BeaverBuddiesBridge.DoPrefix("mymod", () => new OpenGateEvent { entityID = entityID, open = open }))
+        gate.SetOpen(open);
 }
 ```
 
@@ -78,13 +108,17 @@ The same call works as a Harmony prefix on a game method the player triggers: re
 ```csharp
 BeaverBuddiesBridge.RegisterEvents("mymod", (payload, playerID, singleton) =>
 {
-    if (payload is MyEvent e) e.Play(playerID, singleton);
+    if (payload is OpenGateEvent e && Guid.TryParse(e.entityID, out Guid id))
+    {
+        var registry = (EntityRegistry)singleton(typeof(EntityRegistry));
+        registry.GetEntity(id)?.GetComponent<Gate>()?.SetOpen(e.open);
+    }
 });
 ```
 
 BeaverBuddies calls it on every machine, on the same tick, with the event, the ID of the player who sent it, and `singleton(typeof(T))` to get the game's singletons (an `EntityRegistry` to look up the entity by ID, for one). Check the entity still exists and the player is still allowed to do it: the world may have moved on between the click and the tick.
 
-Timber Empires wraps all of this in its own `Bridge/ReplayEvent.cs`, a base class with `Replay(context)`, `DoPrefix` and the entity lookups, shaped like BeaverBuddies' own `ReplayEvent`. Copying it gets you the same API BeaverBuddies' events use.
+With more than a couple of events, give them a base class with an abstract `Replay` method, the sender's `playerID` and the entity lookups, and have the registered callback set `playerID` and call `Replay`. That's the shape of BeaverBuddies' own `ReplayEvent`, so its events in `Events/` read as examples.
 
 **Game logic that calls patched methods.** If your tick code calls a game method you (or BeaverBuddies) patched to send an event, wrap the call in `using (BeaverBuddiesBridge.Unrecorded())`. Inside it the method runs as is on every machine instead of sending an event, which is what you want from logic every machine is already running.
 
@@ -117,9 +151,9 @@ Add these once, when your mod starts. Each one combines with every other mod's: 
 | Method | What it's for |
 |---|---|
 | `AddAddOn(nameAndVersion)` | Names your mod and version. When players join, BeaverBuddies compares the host's add-ons with theirs and warns if they differ, since a different mod set falls out of sync |
-| `AddCanSend(event => bool)` | Keeps the local player from sending an event (BeaverBuddies' own events too). Timber Empires stops players giving orders to another player's buildings this way |
+| `AddCanSend(event => bool)` | Keeps the local player from sending an event (BeaverBuddies' own events too), like orders to a building the player doesn't own |
 | `AddCanPlay((event, playerID) => bool)` | Drops an event on every machine when the player who sent it may not do it. It can also trim the event's fields. Runs on every machine, so it's the check that can't be bypassed by a modified client |
-| `AddPlayScope((event, playerID) => IDisposable)` | Opened around each event while it plays. Timber Empires uses it to charge science to the player who sent the event |
+| `AddPlayScope((event, playerID) => IDisposable)` | Opened around each event while it plays, to charge a cost to the player who sent it, for one |
 | `AddCanPlaceOn((tiles, playerID) => bool)` | Whether a player may build on these tiles. Land claims are this |
 | `CanPlace(tiles, playerID)` | Asks every mod's placement rules at once |
 | `AddPlaceInstead((spec, builder, placement, playerID) => bool)` | Places a building some other way. Return true when you did |
@@ -127,7 +161,7 @@ Add these once, when your mod starts. Each one combines with every other mod's: 
 | `AddPlaced((placement, playerID) => void)` | After a player's building was placed, on every machine |
 | `AddRefused((spec, placement, playerID) => void)` | A player's building that couldn't be placed, on every machine |
 | `PlaceFor(placers, spec, placement, playerID)` | Places a building for a player from tick logic, sending nothing |
-| `AddShowCursorAt(world => bool)` | Hides another player's cursor at a spot. Timber Empires hides cursors in the fog of war |
+| `AddShowCursorAt(world => bool)` | Hides another player's cursor at a spot, somewhere the local player can't see |
 | `AddUnlocksToolsHere(templateName => bool)` | Whether a building one player unlocked unlocks its tool on this machine, for per-player research |
 | `AddSetWorkingHoursInstead((playerID, hours) => bool)` | Sets a player's working hours some other way, for per-player schedules |
 
