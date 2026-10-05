@@ -3,7 +3,7 @@
   "Version": "1.1.0-1.1.0",
   "Id": "beaverbuddies",
   "MinimumGameVersion": "1.1.0.0",
-  "Description": "Multiplayer co-op for Timberborn, with player cursors, general fixes and improvements, and hooks other mods use to add PvP. This is a fork of BeaverBuddies by thomaswp: disable the original BeaverBuddies before enabling it.",
+  "Description": "Multiplayer for Timberborn: play co-op, or PvP with mods built on it. Adds player cursors and general fixes and improvements. This is a fork of BeaverBuddies by thomaswp: disable the original BeaverBuddies before enabling it.",
   "RequiredMods": [
     { "Id": "Harmony" },
     {
