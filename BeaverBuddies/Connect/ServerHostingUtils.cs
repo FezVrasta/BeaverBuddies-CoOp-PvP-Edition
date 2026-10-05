@@ -101,7 +101,7 @@ namespace BeaverBuddies.Connect
             });
         }
 
-        private static IEnumerator UpdateDialogBox(DialogBox box, ServerEventIO io, ILoc loc)
+        private static IEnumerator UpdateDialogBox(DialogBox box, ServerEventIO io, ILoc loc, Action start)
         {
             var label = box._root.Q<Label>("Message");
             string baseMessage = loc.T("BeaverBuddies.Host.ConnectedClients");
@@ -116,6 +116,16 @@ namespace BeaverBuddies.Connect
                     content += $"\n* {name}";
                 }
                 label.text = content;
+#if IS_STEAM
+                // A match's game starts by itself once the other player is in
+                if (Matchmaking.MatchmakingSession.ShouldStartWith(clients.Count))
+                {
+                    Matchmaking.MatchmakingSession.Finish();
+                    box.Close();
+                    start();
+                    yield break;
+                }
+#endif
                 yield return 0;
             }
         }
@@ -161,21 +171,22 @@ namespace BeaverBuddies.Connect
             Plugin.Log($"Steam listener: {steamListener}");
 
             var loc = shower._loc;
+            Action start = () =>
+            {
+                if (coroutine != null)
+                {
+                    behavior.StopCoroutine(coroutine);
+                }
+
+                // Make sure to set the RNG seed before loading the map
+                // The client will do the same
+                DeterminismService.InitGameStartState(data);
+
+                sceneLoader.StartSaveGame(saveReference);
+            };
             var boxCreator = shower.Create()
                 .SetMessage("")
-                .SetConfirmButton(() =>
-                {
-                    if (coroutine != null)
-                    {
-                        behavior.StopCoroutine(coroutine);
-                    }
-
-                    // Make sure to set the RNG seed before loading the map
-                    // The client will do the same
-                    DeterminismService.InitGameStartState(data);
-
-                    sceneLoader.StartSaveGame(saveReference);
-                }, loc.T("BeaverBuddies.Host.StartGame"))
+                .SetConfirmButton(start, loc.T("BeaverBuddies.Host.StartGame"))
                 .SetCancelButton(() =>
                 {
                     if (coroutine != null)
@@ -194,7 +205,7 @@ namespace BeaverBuddies.Connect
             boxCreator.SetDefaultCancelButton(loc.T(CommonLocKeys.CancelKey));
 
             DialogBox box = boxCreator.Show();
-            coroutine = behavior.StartCoroutine(UpdateDialogBox(box, io, shower._loc));
+            coroutine = behavior.StartCoroutine(UpdateDialogBox(box, io, shower._loc, start));
 
         }
     }

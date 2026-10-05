@@ -53,6 +53,10 @@ namespace BeaverBuddies.Steam
                 var type = Settings.LobbyJoinable ? ELobbyType.k_ELobbyTypeFriendsOnly : ELobbyType.k_ELobbyTypeInvisible;
                 SteamMatchmaking.SetLobbyType(LobbyID, type);
                 Plugin.Log($"Lobby created with ID: {LobbyID} is joinable={Settings.LobbyJoinable}");
+#if IS_STEAM
+                // A match's game: the other player joins it by this ID
+                Matchmaking.MatchmakingSession.ServerReady(LobbyID);
+#endif
             }
             else
             {

@@ -163,6 +163,8 @@ namespace BeaverBuddies.Steam
 
         private void OnLobbyEntered(LobbyEnter_t callback)
         {
+            // A match's lobby only pairs players up: its owner isn't hosting a game
+            if (Matchmaking.MatchmakingSession.IsMatchLobby(new CSteamID(callback.m_ulSteamIDLobby))) return;
             ClearWaitForSteamOverlay();
             var owner = SteamMatchmaking.GetLobbyOwner(new CSteamID(callback.m_ulSteamIDLobby));
             if (owner != SteamUser.GetSteamID())

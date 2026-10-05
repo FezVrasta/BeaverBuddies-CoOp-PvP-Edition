@@ -1,6 +1,7 @@
 using BeaverBuddies.Cursors;
 using BeaverBuddies.Events;
 using BeaverBuddies.IO;
+using BeaverBuddies.Matchmaking;
 using BeaverBuddies.Players;
 using System;
 using System.Collections.Generic;
@@ -135,5 +136,16 @@ namespace BeaverBuddies.Modding
 
         // Sets a player's working hours some other way; true when it did
         public static void AddSetWorkingHoursInstead(Func<string, int, bool> hook) => WorkingHoursChangedEvent.SetHoursInstead.Add(hook);
+
+        // ---- Matches (see Matchmaking) ----
+
+        // Whether a game can have players of different factions; any true
+        // lets each player in a match keep the faction they picked
+        public static void AddCanMixFactions(Func<bool> hook) => MatchHooks.CanMixFactions.Add(hook);
+
+        // Before a match's game starts on this machine: the faction this
+        // player plays, whether the game mixes factions, and whether this
+        // machine hosts it
+        public static void AddMatchStarting(Action<string, bool, bool> hook) => MatchHooks.Starting += hook;
     }
 }

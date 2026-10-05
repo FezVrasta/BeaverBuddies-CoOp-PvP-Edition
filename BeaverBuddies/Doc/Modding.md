@@ -164,6 +164,8 @@ Add these once, when your mod starts. Each one combines with every other mod's: 
 | `AddShowCursorAt(world => bool)` | Hides another player's cursor at a spot, somewhere the local player can't see |
 | `AddUnlocksToolsHere(templateName => bool)` | Whether a building one player unlocked unlocks its tool on this machine, for per-player research |
 | `AddSetWorkingHoursInstead((playerID, hours) => bool)` | Sets a player's working hours some other way, for per-player schedules |
+| `AddCanMixFactions(() => bool)` | Whether a game can have players of different factions. When any mod says yes, each player in a match keeps the faction they picked; otherwise a coin flip picks one for both |
+| `AddMatchStarting((faction, mixed, isHost) => void)` | Before a match's game starts on this machine: the faction this player plays, whether the game mixes factions, and whether this machine hosts it |
 
 Hooks get your own events as you sent them and BeaverBuddies' events as they are, so a hook can tell them apart by type.
 

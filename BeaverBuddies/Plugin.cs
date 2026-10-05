@@ -40,6 +40,12 @@ namespace BeaverBuddies
 
             MultiStartConfigurator.Configure(containerDefinition);
 
+            // A match's host saves and hosts its new game, which starts alone
+            containerDefinition.Bind<RehostingService>().AsSingleton();
+#if IS_STEAM
+            containerDefinition.Bind<Matchmaking.MatchHosting>().AsSingleton();
+#endif
+
             // EventIO gets set before load, so if it's null, this is a regular
             // game, so don't initialize these services.
             if (EventIO.IsNull) return;
@@ -51,7 +57,6 @@ namespace BeaverBuddies
             containerDefinition.Bind<TickingService>().AsSingleton();
             containerDefinition.Bind<DeterminismService>().AsSingleton();
             containerDefinition.Bind<TickReplacerService>().AsSingleton();
-            containerDefinition.Bind<RehostingService>().AsSingleton();
             containerDefinition.Bind<ReportingService>().AsSingleton();
             containerDefinition.Bind<LateTickableBuffer>().AsSingleton();
             containerDefinition.Bind<WaterSourceStrengthFixService>().AsSingleton();
@@ -86,6 +91,9 @@ namespace BeaverBuddies
 
             //new ReportingService().PostDesync("test").ContinueWith(result => Plugin.Log($"Posted: {result.Result}"));
             containerDefinition.Bind<SteamOverlayConnectionService>().AsSingleton();
+#if IS_STEAM
+            containerDefinition.Bind<Matchmaking.MatchmakingUI>().AsSingleton();
+#endif
 
             //ReflectionUtils.PrintChildClasses(typeof(MonoBehaviour),
             //    "Start", "Awake", "Update", "FixedUpdate", "LateUpdate", "OnEnable", "OnDisable", "OnDestroy");
