@@ -139,7 +139,9 @@
       <LocalizationFileToCopy Include="$(ProjectDir)$(OutDir)Localizations\*" />
       <KeyBindingFileToCopy Include="$(ProjectDir)$(OutDir)KeyBindings\*" />
       <KeyBindingGroupFileToCopy Include="$(ProjectDir)$(OutDir)KeyBindingGroups\*" />
-      <RootDirFilesToCopy Include="$(ProjectDir)thumbnail.png; $(ProjectDir)workshop_data.json" />
+      <RootDirFilesToCopy Include="$(ProjectDir)thumbnail.png" />
+      <!-- The Steam Workshop item to update: the uploader writes it into the mod folder on the first upload -->
+      <RootDirFilesToCopy Include="$(ProjectDir)workshop_data.json" Condition="Exists('$(ProjectDir)workshop_data.json')" />
     </ItemGroup>
     <!-- Clear VersionOutputPath Directory & Copy Output files inside -->
     <RemoveDir Directories="$(VersionOutputPath)" />
