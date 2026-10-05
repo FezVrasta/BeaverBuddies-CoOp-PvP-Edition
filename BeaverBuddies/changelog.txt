@@ -1,3 +1,13 @@
+v1.1.0-1.1.0
+* This is BeaverBuddies Co-Op/PvP Edition, my fork of BeaverBuddies. It replaces the original mod (same mod id), so everyone in a game needs this version.
+* New: see where the other players are pointing. Turn it off with "Show Player Cursors" in the mod settings.
+* New: dev tools work in co-op and what you do with them is synced. The host can turn them off for everyone with "Allow Dev Tools in Co-op".
+* Faster simulation in big settlements, from the optimizations of T3MP (More More More Performance!) by toropippi.
+* Fixed a desync in water source strength.
+* Fixed a crash when quitting the game on Windows.
+* Demolition sounds fade out far from the camera.
+* For modders: other mods can sync their own actions and decide where each player may build, which is what PvP mods build on. See Doc/Modding.md.
+
 v1.1.0-1.0.1
 * Fixed a build bug where Steam options were not included
 

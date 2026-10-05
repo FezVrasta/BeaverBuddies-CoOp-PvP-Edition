@@ -1,13 +1,13 @@
-# BeaverBuddies
+# BeaverBuddies Co-Op/PvP Edition
 
-[![Last commit](https://img.shields.io/github/last-commit/thomaswp/BeaverBuddies?label=Last%20commit&color=lightgray)](https://github.com/thomaswp/BeaverBuddies/commits)
+[![Last commit](https://img.shields.io/github/last-commit/FezVrasta/BeaverBuddies-CoOp-PvP-Edition?label=Last%20commit&color=lightgray)](https://github.com/FezVrasta/BeaverBuddies-CoOp-PvP-Edition/commits)
 [![License](https://img.shields.io/github/license/thomaswp/BeaverBuddies?label=License&color=gray)](https://github.com/thomaswp/BeaverBuddies/blob/master/License.txt)
 [![Timberborn 1.0](https://img.shields.io/badge/Timberborn_1.0-compatible-peru)](https://mechanistry.com)
 [![Discord mod thread](https://img.shields.io/badge/Discord-mod_thread-mediumpurple)](https://discord.com/channels/558398674389172225/1203786573142032445)  
 [![Steam Workshop](https://img.shields.io/badge/Steam_Workshop-available-royalblue)](https://steamcommunity.com/sharedfiles/filedetails/?id=3293380223)
 [![mod.io](https://img.shields.io/badge/mod.io-available-limegreen)](https://mod.io/g/timberborn/m/beaverbuddies)
 
-BeaverBuddies is a mod to allow multiplayer co-op in Timberborn.
+BeaverBuddies is a mod to allow multiplayer co-op in Timberborn. This is my fork of [BeaverBuddies by thomaswp](https://github.com/thomaswp/BeaverBuddies): the same co-op, plus player cursors, synced dev tools, faster simulation in big settlements, a few desync fixes, and hooks other mods use to add PvP. Downloads are on the [Releases](https://github.com/FezVrasta/BeaverBuddies-CoOp-PvP-Edition/releases) page.
 
 > [!IMPORTANT]
 > **If you would like to use the BeaverBuddies mod**, please see [the setup instructions in the wiki](https://github.com/thomaswp/BeaverBuddies/wiki)! This README is for developers.
@@ -18,7 +18,7 @@ We appreciate your help! To get started working on BeaverBuddies, see [the guide
 
 ## How to Build BeaverBuddies
 
-1. Clone this repo `git clone git@github.com:thomaswp/BeaverBuddies`.
+1. Clone this repo `git clone git@github.com:FezVrasta/BeaverBuddies-CoOp-PvP-Edition`.
 2. Set up DotNet C#.  
    For Windows, download & install [Visual Studio community edition](https://visualstudio.microsoft.com/vs/community).  
    For Mac, either run `brew install dotnet` or download & install [DotNet SDK](https://dotnet.microsoft.com/en-us/download).
