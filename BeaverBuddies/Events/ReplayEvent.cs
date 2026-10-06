@@ -24,6 +24,13 @@ namespace BeaverBuddies.Events
         // would also run as an event arrives, and fill in each receiving
         // machine's own ID wherever the sender left it out
         public string playerID;
+        // For measuring how long actions take (Performance/ActionLatency):
+        // when it was made, on its player's machine, and how long the host
+        // held it for the next tick. Neither changes what it does
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public long? sentAtMs;
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int? hostWaitMs;
 
         public string type => GetType().Name;
 

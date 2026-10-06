@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System;
 using Timberborn.BehaviorSystem;
 using Timberborn.BlockSystem;
@@ -262,6 +262,7 @@ namespace BeaverBuddies.DesyncDetecter
                 hash = (hash * 7) + GetHashCode(level);
             }
             DesyncDetecterService.Trace($"Updating water map columns with hash {hash:X8}");
+            TraceAreas(__instance);
             
             hash = 13;
             var counts = __instance._threadSafeColumnCounts;
@@ -270,6 +271,63 @@ namespace BeaverBuddies.DesyncDetecter
                 hash = (hash * 7) + count;
             }
             DesyncDetecterService.Trace($"Updating water map column counts with hash {hash:X8}");
+        }
+
+        // The map in squares of this many tiles, and in bands of rows for the water
+        private const int Area = 16;
+        private const int Band = 32;
+        private static readonly System.Collections.Generic.Dictionary<(int, int), int> lastStructure = new();
+
+        // Each game starts its squares over, so a machine that played
+        // another game before doesn't skip the ones the other traces
+        public static void Reset() => lastStructure.Clear();
+
+        /**
+         * Where the water map differs, not just that it does: what blocks
+         * and holds water (floors, ceilings) for each square of the map,
+         * traced only for squares that changed, since building does that
+         * rarely; and the water itself (depth, contamination, overflow) for
+         * each band of rows, every tick, since it flows all the time.
+         */
+        private static void TraceAreas(ThreadSafeWaterMap map)
+        {
+            var columns = map._threadSafeWaterColumns;
+            var counts = map._threadSafeColumnCounts;
+            int stride = map._mapIndexService.Stride;
+            int maxIndex = map._mapIndexService.MaxIndex;
+            var structure = new System.Collections.Generic.Dictionary<(int, int), int>();
+            var water = new System.Collections.Generic.SortedDictionary<int, int>();
+            for (int index = 0; index < maxIndex; index++)
+            {
+                int x = index % stride, y = index / stride;
+                var area = (x / Area, y / Area);
+                int band = y / Band;
+                for (int z = 0; z < counts[index]; z++)
+                {
+                    int i = index + z * maxIndex;
+                    if (i >= columns.Length) break;
+                    var column = columns[i];
+                    int s = structure.TryGetValue(area, out int sh) ? sh : 13;
+                    s = (s * 7) + BitConverter.SingleToInt32Bits(column.Floor);
+                    s = (s * 7) + BitConverter.SingleToInt32Bits(column.Ceiling);
+                    structure[area] = s;
+                    int w = water.TryGetValue(band, out int wh) ? wh : 13;
+                    w = (w * 7) + BitConverter.SingleToInt32Bits(column.WaterDepth);
+                    w = (w * 7) + BitConverter.SingleToInt32Bits(column.Contamination);
+                    w = (w * 7) + BitConverter.SingleToInt32Bits(column.Overflow);
+                    water[band] = w;
+                }
+            }
+            foreach (var pair in structure)
+            {
+                if (lastStructure.TryGetValue(pair.Key, out int last) && last == pair.Value) continue;
+                lastStructure[pair.Key] = pair.Value;
+                DesyncDetecterService.Trace($"Water structure changed in tiles {pair.Key.Item1 * Area},{pair.Key.Item2 * Area} to {pair.Key.Item1 * Area + Area - 1},{pair.Key.Item2 * Area + Area - 1}: {pair.Value:X8}", true, true);
+            }
+            foreach (var pair in water)
+            {
+                DesyncDetecterService.Trace($"Water in rows {pair.Key * Band}-{pair.Key * Band + Band - 1}: {pair.Value:X8}", true, true);
+            }
         }
 
         private static int GetHashCode(ReadOnlyWaterColumn waterColumn)
@@ -396,6 +454,31 @@ namespace BeaverBuddies.DesyncDetecter
                 hash = (hash * 7) + BitConverter.SingleToInt32Bits(source.Contamination);
             }
             DesyncDetecterService.Trace($"Updating {sources.Count} water sources with hash {hash:X8}", true, true);
+        }
+    }
+
+    // What goes, and where: a building on one machine and not the other changes everything around it
+    [HarmonyPatch(typeof(EntityService), nameof(EntityService.Delete))]
+    public class EntityServiceDeletePatcher
+    {
+        static void Prefix(Timberborn.BaseComponentSystem.BaseComponent entity)
+        {
+            if (!Settings.Debug || !entity) return;
+            var entityComponent = entity.GetComponent<EntityComponent>();
+            var blockObject = entity.GetComponent<BlockObject>();
+            string where = blockObject ? $" at {blockObject.Coordinates}{(blockObject.IsFinished ? "" : ", unfinished")}" : "";
+            DesyncDetecterService.Trace($"Deleting {entity.Name} {entityComponent?.EntityId}{where}", true, true);
+        }
+    }
+
+    // A building finished: from then on it can block water, be walked on, work
+    [HarmonyPatch(typeof(BlockObject), nameof(BlockObject.MarkAsFinished))]
+    public class BlockObjectMarkAsFinishedPatcher
+    {
+        static void Postfix(BlockObject __instance)
+        {
+            if (!Settings.Debug) return;
+            DesyncDetecterService.Trace($"Finished {__instance.Name} {__instance.GetComponent<EntityComponent>()?.EntityId} at {__instance.Coordinates}", true, true);
         }
     }
 }

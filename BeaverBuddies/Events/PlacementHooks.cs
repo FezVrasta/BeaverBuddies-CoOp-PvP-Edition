@@ -39,7 +39,11 @@ namespace BeaverBuddies.Events
 
         public static IDisposable OpenScopes(string playerID) => ReplayHooks.Open(PlaceScopes, playerID);
 
-        public static void NotifyPlaced(Placement placement, string playerID) => Placed?.Invoke(placement, playerID);
+        public static void NotifyPlaced(Placement placement, string playerID)
+        {
+            if (Settings.Debug) DesyncDetecter.DesyncDetecterService.Trace($"Placed at {placement.Coordinates} {placement.Orientation} for {playerID}", true, true);
+            Placed?.Invoke(placement, playerID);
+        }
 
         /**
          * Places a building for the player the way their own placement would
@@ -62,6 +66,10 @@ namespace BeaverBuddies.Events
             NotifyPlaced(placement, playerID);
         }
 
-        public static void NotifyRefused(BuildingSpec spec, Placement placement, string playerID) => Refused?.Invoke(spec, placement, playerID);
+        public static void NotifyRefused(BuildingSpec spec, Placement placement, string playerID)
+        {
+            if (Settings.Debug) DesyncDetecter.DesyncDetecterService.Trace($"Refused {spec.Blueprint?.Name} at {placement.Coordinates} for {playerID}", true, true);
+            Refused?.Invoke(spec, placement, playerID);
+        }
     }
 }

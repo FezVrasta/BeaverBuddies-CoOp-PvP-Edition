@@ -1,4 +1,4 @@
-﻿// Define to force game to run a full tick each
+// Define to force game to run a full tick each
 // update, rather than amortizing ticks over multiple.
 //#define ONE_TICK_PER_UPDATE
 
@@ -109,6 +109,19 @@ namespace BeaverBuddies
         public int TicksSinceLoad => ticksSinceLoad;
 
         public float TargetSpeed  { get; private set; } = 0;
+
+        // A client keeps only this little behind the host, in seconds: once
+        // the host's next tick has been waiting longer than this, it plays
+        // CatchUp times as many buckets a frame until it hasn't. Left alone,
+        // it settles a whole tick behind (0.6 s at normal speed), which
+        // every action waits on the way back
+        private const float ClientCushion = 0.1f, CatchUp = 1.25f;
+        // The tick whose events arrived first while the one before was still
+        // playing, and when they did (realtime)
+        private int _nextTickSeen = -1;
+        // How many times the buckets the game asks for a client plays a frame
+        public float BucketBoost { get; private set; } = 1;
+        private float _nextTickArrived;
         public bool IsDesynced { get; private set; } = false;
 
         private ConcurrentQueue<ReplayEvent> eventsToSend = new ConcurrentQueue<ReplayEvent>();
@@ -176,9 +189,11 @@ namespace BeaverBuddies
             ZiplineConnectionService ziplineConnectionService,
             Settings settings,
             TemplateInstantiator templateInstantiator,
-            AutomationResetter automationResetter
+            AutomationResetter automationResetter,
+            Timberborn.BlockSystem.BlockValidator blockValidator
         )
         {
+            DesyncDetecter.ThreadSafeWaterMapUpdateDataPatcher.Reset();
             //_tickWathcerService = AddSingleton(tickWathcerService);
             _eventBus = AddSingleton(eventBus);
             _speedManager = AddSingleton(speedManager);
@@ -211,6 +226,7 @@ namespace BeaverBuddies
             AddSingleton(settings);
             AddSingleton(templateInstantiator);
             AddSingleton(automationResetter);
+            AddSingleton(blockValidator);
 
             AddSingleton(this);
 
@@ -230,6 +246,7 @@ namespace BeaverBuddies
         public void PostLoad()
         {
             Plugin.Log("PostLoad");
+            Performance.ActionLatency.Hook();
             _determinismService.UnityThread = Thread.CurrentThread;
         }
 
@@ -261,6 +278,7 @@ namespace BeaverBuddies
             if (!IsLoaded) return;
             replayEvent.playerID ??= Players.PlayerIdentity.LocalID;
             if (!ReplayHooks.AllowSend(replayEvent)) return;
+            Performance.ActionLatency.Stamp(replayEvent);
 
             string json = JsonSettings.Serialize(replayEvent);
             Plugin.Log($"RecordEvent: {json}");
@@ -354,10 +372,21 @@ namespace BeaverBuddies
                             break;
                         }
                     }
+                    // A failed event isn't sent on, so it mustn't leave the
+                    // random numbers moved on this machine alone
+                    var randomState = UnityEngine.Random.state;
                     try
                     {
                         // For these events, make sure to record s0 beforehand
                         replayEvent.randomS0Before = UnityEngine.Random.state.s0;
+                        // Only what every machine plays alike: the client alone plays its
+                        // InitializeClientEvent, and a mod's payload can print differently
+                        if (Settings.Debug && replayEvent is not HeartbeatEvent && replayEvent is not InitializeClientEvent
+                            && !(replayEvent.GetType().Namespace ?? "").Contains("DesyncDetecter"))
+                        {
+                            string action = replayEvent is Modding.ModEvent modEvent ? modEvent.mod : replayEvent.ToActionString();
+                            DesyncDetecterService.Trace($"Playing {replayEvent.type} by {replayEvent.playerID}: {action}", true, true);
+                        }
                         using (ReplayHooks.OpenScopes(replayEvent))
                         {
                             replayEvent.Replay(this);
@@ -370,6 +399,7 @@ namespace BeaverBuddies
                         }
                     } catch (Exception e)
                     {
+                        UnityEngine.Random.state = randomState;
                         Plugin.LogError($"Failed to replay event: {e}");
                         Plugin.LogError(e.ToString());
                     }
@@ -491,6 +521,15 @@ namespace BeaverBuddies
             {
                 DoTickIO();
             }
+            else if (io is ClientEventIO)
+            {
+                // A client's own actions go to the host straight away rather
+                // than at its next tick: it doesn't play them itself, and the
+                // host gives them the tick they arrive in. Held to the tick,
+                // they'd reach the host just after its tick began and wait
+                // nearly all of it there
+                SendEvents();
+            }
             UpdateSpeed();
         }
 
@@ -504,7 +543,13 @@ namespace BeaverBuddies
         {
             if (EventIO.IsNull) return;
 
-            if (io.IsOutOfEvents)
+            // Out of events, a client still plays out the tick it's in: it
+            // got that tick's events when it started it, and only needs the
+            // next one's to start that (see IsReadyToStartTick). Pausing as
+            // soon as its queue empties, at the start of every tick, kept it
+            // a whole tick behind the host
+            bool midTick = io is ClientEventIO && (_tickingService.NextBucket != 0 || _tickingService.HasTickedReplayService);
+            if (io.IsOutOfEvents && !midTick)
             {
                 // Also pause the game (silently) if we're out of events
                 if (_speedManager.CurrentSpeed != 0)
@@ -525,12 +570,27 @@ namespace BeaverBuddies
                 targetSpeed = Math.Min(ticksBehind, 10);
                 //Plugin.Log($"Upping target speed to: {targetSpeed}");
             }
+            BucketBoost = io is ClientEventIO && targetSpeed > 0 && ticksBehind <= targetSpeed && ClientWaitingOnItself() ? CatchUp : 1;
 
             if (_speedManager.CurrentSpeed != targetSpeed)
             {
                 //Plugin.Log($"Setting speed to target speed: {targetSpeed}");
                 SpeedChangePatcher.SetSpeedSilentlyNow(_speedManager, targetSpeed);
             }
+        }
+
+        // Whether the host's next tick has been here a while, the client
+        // still busy with the one before
+        private bool ClientWaitingOnItself()
+        {
+            int next = ticksSinceLoad + 1;
+            if (!io.HasEventsForTick(next)) return false;
+            if (_nextTickSeen != next)
+            {
+                _nextTickSeen = next;
+                _nextTickArrived = UnityEngine.Time.realtimeSinceStartup;
+            }
+            return UnityEngine.Time.realtimeSinceStartup - _nextTickArrived > ClientCushion;
         }
 
         // This will be called at the very begining of a tick before
@@ -735,6 +795,8 @@ namespace BeaverBuddies
             return false;
         }
 
+        private float _extraBuckets;
+
         public bool TickBuckets(TickableBucketService __instance, int numberOfBucketsToTick)
         {
 
@@ -751,6 +813,17 @@ namespace BeaverBuddies
                 numberOfBucketsToTick = __instance.NumberOfBuckets;
             }
 #endif
+
+            // A client catching up with the host plays a few more buckets a
+            // frame (see ReplayService.BucketBoost): the game's own speed
+            // doesn't change how fast it ticks
+            if (numberOfBucketsToTick > 0 && replayService != null && replayService.BucketBoost > 1)
+            {
+                _extraBuckets += numberOfBucketsToTick * (replayService.BucketBoost - 1);
+                int extra = (int)_extraBuckets;
+                _extraBuckets -= extra;
+                numberOfBucketsToTick += extra;
+            }
 
             while (ShouldTick(__instance, numberOfBucketsToTick--))
             {

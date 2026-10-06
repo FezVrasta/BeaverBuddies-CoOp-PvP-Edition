@@ -35,6 +35,12 @@ namespace BeaverBuddies.Events
         public Orientation orientation;
         public bool isFlipped;
         public string duplicationSourceID;
+        // Whether the placer built it at once with dev mode's instant build,
+        // as decided on their machine: the game reads it from the keyboard
+        public bool instant;
+
+        // The placement being replayed, for BuildingPlacer.ShouldBePlacedFinished
+        internal static bool? InstantOverride;
 
         public override void Replay(IReplayContext context)
         {
@@ -43,10 +49,12 @@ namespace BeaverBuddies.Events
             var placer = context.GetSingleton<BlockObjectPlacerService>().GetMatchingPlacer(blockObjectSpec);
             Placement placement = new Placement(coordinates, orientation,
                 isFlipped ? FlipMode.Flipped : FlipMode.Unflipped);
-            // Skip validation for district centers - the preview object interferes with nav mesh
+            // No preview for district centers (it interferes with the nav mesh),
+            // just their blocks: placing one where it can't go throws halfway
             bool isDistrictCenter = prefabName != null && prefabName.StartsWith("DistrictCenter.");
             bool valid = isDistrictCenter
-                ? PlacementHooks.AllowOn(Footprint(blockObjectSpec, placement), playerID)
+                ? context.GetSingleton<BlockValidator>().BlocksValid(blockObjectSpec, placement)
+                    && PlacementHooks.AllowOn(Footprint(blockObjectSpec, placement), playerID)
                 : IsPlacementValid(context, placement, buildingSpec, playerID);
             if (!valid)
             {
@@ -70,7 +78,15 @@ namespace BeaverBuddies.Events
             {
                 using (PlacementHooks.OpenScopes(playerID))
                 {
-                    placer.Place(builder, placement);
+                    InstantOverride = instant;
+                    try
+                    {
+                        placer.Place(builder, placement);
+                    }
+                    finally
+                    {
+                        InstantOverride = null;
+                    }
                 }
             }
             PlacementHooks.NotifyPlaced(placement, playerID);
@@ -94,6 +110,22 @@ namespace BeaverBuddies.Events
         }
 
         private static bool IsPlacementValid(IReplayContext context, Placement placement, BuildingSpec spec, string playerID)
+        {
+            // The preview mustn't touch the game's random numbers (entity IDs
+            // come from them): a placement refused on the host never reaches
+            // the clients, so whatever it changed would be the host's alone
+            var randomState = UnityEngine.Random.state;
+            try
+            {
+                return IsPlacementValidWithPreview(context, placement, spec, playerID);
+            }
+            finally
+            {
+                UnityEngine.Random.state = randomState;
+            }
+        }
+
+        private static bool IsPlacementValidWithPreview(IReplayContext context, Placement placement, BuildingSpec spec, string playerID)
         {
             var templateInstantiator = context.GetSingleton<TemplateInstantiator>();
             var roots = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
@@ -120,17 +152,19 @@ namespace BeaverBuddies.Events
 
         public override string ToActionString()
         {
-            return $"Placing {prefabName}, {coordinates}, {orientation}, {isFlipped}";
+            return $"Placing {prefabName}, {coordinates}, {orientation}, {isFlipped}{(instant ? ", instant" : "")}";
         }
     }
 
     [HarmonyPatch(typeof(BuildingPlacer), nameof(BuildingPlacer.Place))]
     class PlacePatcher
     {
-        static bool Prefix(EntitySetup.Builder entitySetupBuilder, Placement placement)
+        static bool Prefix(BuildingPlacer __instance, EntitySetup.Builder entitySetupBuilder, Placement placement)
         {
             return ReplayEvent.DoPrefix(() =>
             {
+                // Instant build is a dev tool, held down on this machine only
+                bool instant = ShouldBePlacedFinishedPatcher.InstantKeyHeld(__instance) && DevTools.DevToolsPolicy.IsAllowed;
                 string prefabName = ReplayEvent.GetBuildingName(entitySetupBuilder);
                 // If there's a duplication source, get the source's EntityID
                 var dupInit = (DuplicationInit)entitySetupBuilder._initComponents.Find(c => c is DuplicationInit);
@@ -147,8 +181,31 @@ namespace BeaverBuddies.Events
                     orientation = placement.Orientation,
                     isFlipped = placement.FlipMode.IsFlipped,
                     duplicationSourceID = duplicationSourceID,
+                    instant = instant,
                 };
             });
+        }
+    }
+
+    // A replayed placement is finished or not as it was on the placer's
+    // machine, whatever keys are held on this one. Instant build wins over
+    // other mods' rules (like roads that have to be built), so it's last
+    [HarmonyPatch(typeof(BuildingPlacer), nameof(BuildingPlacer.ShouldBePlacedFinished))]
+    class ShouldBePlacedFinishedPatcher
+    {
+        public static bool InstantKeyHeld(BuildingPlacer placer) => placer._inputService.IsKeyHeld(BuildingPlacer.PlaceFinishedKey);
+
+        static bool Prefix(BuildingSpec buildingSpec, ref bool __result)
+        {
+            if (BuildingPlacedEvent.InstantOverride == null) return true;
+            __result = buildingSpec.PlaceFinished;
+            return false;
+        }
+
+        [HarmonyPriority(Priority.Last)]
+        static void Postfix(BuildingPlacer __instance, ref bool __result)
+        {
+            if (BuildingPlacedEvent.InstantOverride ?? InstantKeyHeld(__instance)) __result = true;
         }
     }
 

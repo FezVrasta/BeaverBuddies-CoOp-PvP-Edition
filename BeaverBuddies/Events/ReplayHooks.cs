@@ -24,6 +24,10 @@ namespace BeaverBuddies.Events
         public static readonly List<string> AddOns = new();
 
         public static string AddOnList => string.Join(", ", AddOns.OrderBy(a => a, StringComparer.Ordinal));
+        // Every faction the game has loaded, other mods' too: a faction mod
+        // can be content alone, with no code to add itself as an add-on, and
+        // a player without it can't load a game that has it
+        public static string FactionList { get; internal set; } = "";
 
         public static bool AllowSend(ReplayEvent replayEvent) => Ask(CanSend, replayEvent, "send");
 
