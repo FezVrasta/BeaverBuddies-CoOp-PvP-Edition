@@ -126,6 +126,13 @@ namespace BeaverBuddies.Connect
                     yield break;
                 }
 #endif
+                // So does a test match (see DevTools.TestHarness)
+                if (DevTools.TestHarness.HostsMatch && clients.Count > 0)
+                {
+                    box.Close();
+                    start();
+                    yield break;
+                }
                 yield return 0;
             }
         }
@@ -199,7 +206,7 @@ namespace BeaverBuddies.Connect
             {
                 boxCreator.SetInfoButton(() =>
                 {
-                    steamListener.ShowInviteFriendsPanel();
+                    SteamInvites.Show(shower, steamListener.LobbyID);
                 }, loc.T("BeaverBuddies.Host.InviteFriends"));
             }
             boxCreator.SetDefaultCancelButton(loc.T(CommonLocKeys.CancelKey));

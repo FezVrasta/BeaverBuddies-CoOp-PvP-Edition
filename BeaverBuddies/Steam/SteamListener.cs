@@ -117,10 +117,5 @@ namespace BeaverBuddies.Steam
             callbacks.Clear();
             joiningUsers.Enqueue(null);
         }
-
-        public void ShowInviteFriendsPanel()
-        {
-            SteamFriends.ActivateGameOverlayInviteDialog(LobbyID);
-        }
     }
 }

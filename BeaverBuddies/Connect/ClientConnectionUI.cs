@@ -1,4 +1,4 @@
-﻿using BeaverBuddies.IO;
+using BeaverBuddies.IO;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -14,15 +14,6 @@ using UnityEngine.UIElements;
 
 namespace BeaverBuddies.Connect
 {
-    [HarmonyPatch(typeof(MainMenuPanel), "GetPanel")]
-    public class MainMenuGetPanelPatcher
-    {
-        public static void Postfix(IPanelController __instance, ref VisualElement __result)
-        {
-            SingletonManager.GetSingleton<ClientConnectionUI>().AddJoinButton(__result);
-        }
-    }
-
     [HarmonyPatch(typeof(GameOptionsBox), "GetPanel")]
     public class GameOptionsBoxGetPanelPatcher
     {
@@ -61,7 +52,7 @@ namespace BeaverBuddies.Connect
             });
         }
 
-        private void ShowBox()
+        public void ShowBox()
         {
             ILoc _loc = _inputBoxShower._loc;
             var builder = _inputBoxShower.Create()

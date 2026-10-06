@@ -42,6 +42,8 @@ namespace BeaverBuddies
 
             // A match's host saves and hosts its new game, which starts alone
             containerDefinition.Bind<RehostingService>().AsSingleton();
+            containerDefinition.Bind<NewGameHosting>().AsSingleton();
+            if (DevTools.TestHarness.Active) containerDefinition.Bind<DevTools.TestHarness>().AsSingleton();
 #if IS_STEAM
             containerDefinition.Bind<Matchmaking.MatchHosting>().AsSingleton();
 #endif
@@ -83,6 +85,8 @@ namespace BeaverBuddies
             Plugin.Log($"Registering Main Menu Services");
             containerDefinition.Bind<ClientConnectionService>().AsSingleton();
             containerDefinition.Bind<ClientConnectionUI>().AsSingleton();
+            containerDefinition.Bind<MultiplayerMenu>().AsSingleton();
+            if (DevTools.TestHarness.Active) containerDefinition.Bind<DevTools.TestHarness>().AsSingleton();
             containerDefinition.Bind<FirstTimerService>().AsSingleton();
             containerDefinition.Bind<ChangeLogService>().AsSingleton();
             containerDefinition.Bind<RegisteredLocalizationService>().AsSingleton();
@@ -93,6 +97,7 @@ namespace BeaverBuddies
             containerDefinition.Bind<SteamOverlayConnectionService>().AsSingleton();
 #if IS_STEAM
             containerDefinition.Bind<Matchmaking.MatchmakingUI>().AsSingleton();
+            containerDefinition.Bind<Matchmaking.HostBrowser>().AsSingleton();
 #endif
 
             //ReflectionUtils.PrintChildClasses(typeof(MonoBehaviour),

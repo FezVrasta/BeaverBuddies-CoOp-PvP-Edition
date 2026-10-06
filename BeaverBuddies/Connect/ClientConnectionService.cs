@@ -1,4 +1,4 @@
-﻿using BeaverBuddies.IO;
+using BeaverBuddies.IO;
 using BeaverBuddies.Steam;
 using BeaverBuddies.Util;
 using Steamworks;
@@ -121,9 +121,13 @@ namespace BeaverBuddies.Connect
         {
             if (success)
             {
-                _dialogBoxShower.Create()
+                // It only says the map is on its way: the game loads by
+                // itself when it's in, so the one thing to do is give up
+                var box = _dialogBoxShower.Create()
                     .SetLocalizedMessage("BeaverBuddies.JoinCoopGame.Success")
+                    .SetCancelButton(CancelJoin, _dialogBoxShower._loc.T(Timberborn.Common.CommonLocKeys.CancelKey))
                     .Show();
+                UnityEngine.UIElements.UQueryExtensions.Q<UnityEngine.UIElements.Button>(box._root, "ConfirmButton")?.ToggleDisplayStyle(false);
             }
             else
             {
@@ -131,7 +135,17 @@ namespace BeaverBuddies.Connect
             }
         }
 
-        private void ShowError(string reasonKey, string details = null)
+        // Stops waiting for the host's map: disconnects, and leaves the match it was for
+        private void CancelJoin()
+        {
+            Plugin.Log("Cancelled joining before the map arrived");
+            EventIO.Reset();
+#if IS_STEAM
+            Matchmaking.MatchmakingSession.Cancel();
+#endif
+        }
+
+                private void ShowError(string reasonKey, string details = null)
         {
             string messageKey;
             if (reasonKey != null)
