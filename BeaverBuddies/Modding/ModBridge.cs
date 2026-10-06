@@ -147,5 +147,10 @@ namespace BeaverBuddies.Modding
         // player plays, whether the game mixes factions, and whether this
         // machine hosts it
         public static void AddMatchStarting(Action<string, bool, bool> hook) => MatchHooks.Starting += hook;
+
+        // Whether each player in a match places their own start; any true
+        // starts the match's game with no starting building, for the mod
+        // to found each player's settlement where they place it
+        public static void AddPlayersPlaceStart(Func<bool> hook) => MatchHooks.PlayersPlaceStart.Add(hook);
     }
 }

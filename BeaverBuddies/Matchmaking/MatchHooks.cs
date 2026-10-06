@@ -12,11 +12,16 @@ namespace BeaverBuddies.Matchmaking
     public static class MatchHooks
     {
         public static readonly List<Func<bool>> CanMixFactions = new();
+        // Whether each player places their own start: then the match's new
+        // game starts with no starting building, and the mod founds each
+        // player's settlement where they put it
+        public static readonly List<Func<bool>> PlayersPlaceStart = new();
         // The faction this player plays, whether the game mixes factions,
         // and whether this machine hosts it
         public static event Action<string, bool, bool> Starting;
 
         public static bool FactionsMix => CanMixFactions.Any(hook => hook());
+        public static bool PlaceStart => PlayersPlaceStart.Any(hook => hook());
 
         public static void RaiseStarting(string faction, bool mixed, bool host)
         {

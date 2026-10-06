@@ -1,4 +1,4 @@
-﻿using BeaverBuddies.Editor;
+using BeaverBuddies.Editor;
 using BeaverBuddies.Util;
 using HarmonyLib;
 using System;
@@ -44,6 +44,22 @@ namespace BeaverBuddies.MultiStart
             var startBuildingService = GetSingleton<StartBuildingsService>();
 
             var startingLocations = GetAllStartingLocations(__instance._startingLocationService);
+
+#if IS_STEAM
+            // A match where each player places their own start: no starting
+            // building, the camera on where the map would have put it
+            if ((Matchmaking.MatchmakingSession.HostsNewGame || DevTools.TestHarness.HostsMatch) && Matchmaking.MatchHooks.PlaceStart)
+            {
+                Plugin.Log("[Match] Each player places their own start");
+                if (startingLocations.Count > 0)
+                {
+                    __instance._startingBuildingSpawner._cameraTargeter.CenterCameraOn(startingLocations[0].GetComponent<SelectableObject>());
+                    __instance.SetCamera();
+                }
+                __instance._startingLocationService.DeleteStartingLocations();
+                return false;
+            }
+#endif
 
 			Plugin.Log($"Found {startingLocations.Count} starting locations");
 

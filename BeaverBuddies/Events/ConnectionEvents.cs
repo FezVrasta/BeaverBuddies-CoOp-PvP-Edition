@@ -1,4 +1,4 @@
-﻿using BeaverBuddies.Connect;
+using BeaverBuddies.Connect;
 using BeaverBuddies.DevTools;
 using BeaverBuddies.IO;
 using BeaverBuddies.Reporting;
@@ -27,6 +27,8 @@ namespace BeaverBuddies.Events
         public bool allowDevTools = true;
         // The host's add-on mods; null from hosts that don't send it
         public string serverAddOns;
+        // The host's factions, other mods' too; null from hosts that don't send it
+        public string serverFactions;
 
         public override void Replay(IReplayContext context)
         {
@@ -47,12 +49,18 @@ namespace BeaverBuddies.Events
                 warningMessage = $"Warning! The host plays with these add-on mods: {Describe(serverAddOns)}.\n" +
                     $"You play with: {Describe(ReplayHooks.AddOnList)}.\n" +
                     $"Please install the same mods, at the same versions, or the game will fall out of sync.";
-            } else if (isDebugMode != Settings.Debug)
+            } else if (serverFactions != null && serverFactions != ReplayHooks.FactionList)
             {
-                // TODO: Should debug mode just come from the server?
-                // Could be a bit tricky, since it must come before load
-                warningMessage = $"Warning! Server debug mode ({isDebugMode}) does not match client debug mode ({Settings.Debug}).\n" +
-                    $"Please update your config files to be in or not in debug mode.";
+                warningMessage = $"Warning! The host's game has these factions: {Describe(serverFactions)}.\n" +
+                    $"Yours has: {Describe(ReplayHooks.FactionList)}.\n" +
+                    $"Please install the same faction mods, at the same versions, or the game won't load or will fall out of sync.";
+            }
+            // Debug mode only changes how desyncs are caught: both ends need it
+            // on for a detailed desync report, but play the same either way
+            if (isDebugMode != Settings.Debug)
+            {
+                Plugin.LogWarning($"Host debug mode ({isDebugMode}) differs from ours ({Settings.Debug}): " +
+                    "a desync report needs detailed logging on for both players");
             }
             if (warningMessage != null)
             {
@@ -72,6 +80,7 @@ namespace BeaverBuddies.Events
                 isDebugMode = Settings.Debug,
                 allowDevTools = Settings.AllowDevTools,
                 serverAddOns = ReplayHooks.AddOnList,
+                serverFactions = ReplayHooks.FactionList,
                 //mapName = mapName,
             };
             return message;

@@ -169,6 +169,16 @@ Add these once, when your mod starts. Each one combines with every other mod's: 
 
 Hooks get your own events as you sent them and BeaverBuddies' events as they are, so a hook can tell them apart by type.
 
+## Faction mods
+
+A mod that adds a faction works in multiplayer as it is, as long as every player has it. A faction made of content alone (blueprints, models, textures) is the same on every machine by definition, so there's nothing to sync.
+
+BeaverBuddies checks that part for you. It notes every faction the game loads, other mods' too, and compares the host's with each player's as they join: a player missing one gets a warning saying which, instead of a game that won't load or falls out of sync. Matchmaking only pairs players with the same factions. A faction mod with no code needs no `AddAddOn` call for this.
+
+A faction mod with code is like any other mod here: call `AddAddOn` with its name and version, and send what players do through events.
+
+In a match, each player picks a faction as they look for an opponent. Unless a mod says factions can mix (`AddCanMixFactions`, below), a coin flip picks one of the two for both. Timber Empires says they can, and plays other mods' factions too: its [Modding.md](https://github.com/FezVrasta/TimberEmpires/blob/master/Docs/Modding.md) has what a faction needs for it.
+
 ## Testing alone
 
 `Tools/FakePlayer` joins a game you host as another player, with a name and a color, and moves a cursor around. It doesn't run the game, so it won't catch desyncs, but it's enough to test anything that depends on there being other players: ownership, per-player rules, the player list, cursors.
