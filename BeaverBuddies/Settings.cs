@@ -1,4 +1,4 @@
-﻿using ModSettings.Common;
+using ModSettings.Common;
 using ModSettings.Core;
 using Timberborn.Modding;
 using Timberborn.SettingsSystem;
@@ -155,7 +155,10 @@ namespace BeaverBuddies
 
         public static string PingDisplayName => instance?.PingPlayerName.Value ?? DefaultPingPlayerName;
 
-        public static UnityEngine.Color PingColorValue => instance?.PingColor.Color ?? UnityEngine.Color.white;
+        public static UnityEngine.Color PingColorValue =>
+            // Two test copies share these settings: the second plays in red (see DevTools.TestHarness)
+            DevTools.TestHarness.Active && DevTools.TestHarness.Instance != "host" ? new UnityEngine.Color(0.85f, 0.15f, 0.12f)
+            : instance?.PingColor.Color ?? UnityEngine.Color.white;
 
         public static bool ShowCursors => instance?.ShowPlayerCursors.Value ?? true;
 

@@ -35,7 +35,13 @@
     <ModSettingsPath>$(ModSettingsBasePath)version-$(TimberbornTargetVersion)\Scripts\</ModSettingsPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug Steam' OR '$(Configuration)' == 'Release Steam'">
+  <!-- Every build is the Steam one, whatever the configuration: the mod ships on the Workshop, and a
+       build without Steam networking and matchmaking installs over it in the Mods folder all the same.
+       A build without them only on purpose: dotnet build -p:Steam=false -->
+  <PropertyGroup>
+    <Steam Condition="'$(Steam)' == ''">true</Steam>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Steam)' == 'true'">
     <DefineConstants>$(DefineConstants);IS_STEAM</DefineConstants>
   </PropertyGroup>
 
