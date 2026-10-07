@@ -158,3 +158,6 @@ BeaverBuddies.Match.Incompatible.LoggingMine,"你開啟了詳細日誌而對方�
 BeaverBuddies.Match.Incompatible.Protocol,"對方的 BeaverBuddies 尋找對局的方式與你的不同。版本較舊的一方需要更新。","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
 BeaverBuddies.Match.Incompatible.OldMod,"對方的 BeaverBuddies 版本太舊，無法說明差異。版本較舊的一方需要更新。","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"無法一起遊玩的玩家已隱藏。勾選列表下方的「顯示不相容的對局」即可查看他們及原因。","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
+BeaverBuddies.Match.GameMode,"多人模式","Multiplayer mode"
+BeaverBuddies.Match.GameMode.CoOp,"合作","Co-op"
+BeaverBuddies.Match.GameMode.CoOp.Description,"所有人一起建設同一個定居地。","Everyone builds one settlement together."

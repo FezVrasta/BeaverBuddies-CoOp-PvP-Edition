@@ -198,6 +198,7 @@ namespace BeaverBuddies.Connect
             var configuration = new NewGameConfiguration(panel._factionSpec.Id, panel._map.MapFileReference, mode, settlement);
             Plugin.Log($"Hosting a new game: {configuration}");
             NewGameHosting.Pending = true;
+            Matchmaking.MatchOptions.StartGameWith(Matchmaking.MatchOptions.Current());
             _gameSceneLoader.StartNewGame(configuration);
         }
     }
@@ -250,6 +251,7 @@ namespace BeaverBuddies.Connect
     {
         public static void Postfix(NewGameModePanel __instance)
         {
+            SingletonManager.GetSingleton<Matchmaking.MatchOptionsPanel>()?.AddTo(__instance);
             SingletonManager.GetSingleton<MultiplayerMenu>()?.AddHostButton(__instance);
 #if IS_STEAM
             SingletonManager.GetSingleton<Matchmaking.MatchmakingUI>()?.AddButton(__instance);
@@ -274,6 +276,7 @@ namespace BeaverBuddies.Connect
             if (intent == NewGameIntent.Match) intent = NewGameIntent.Play;
 #endif
             Show(__instance, MultiplayerMenu.HostButtonName, intent == NewGameIntent.Host);
+            Matchmaking.MatchOptionsPanel.Show(__instance, intent == NewGameIntent.Host || intent == NewGameIntent.Match);
             __instance._nextButton.ToggleDisplayStyle(intent == NewGameIntent.Play);
         }
 

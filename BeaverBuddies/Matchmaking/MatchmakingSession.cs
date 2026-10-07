@@ -72,12 +72,12 @@ namespace BeaverBuddies.Matchmaking
 
         // Lobby data, set by the lobby's owner: what the search filters on
         internal const string MatchKey = "bb.match", BaseKey = "bb.match.base", CompatKey = "bb.match.compat", ModsKey = "bb.match.mods",
-            OpenKey = "bb.match.open", MapKey = "bb.match.map", ModeKey = "bb.match.mode", PicksKey = "bb.match.picks", ResultKey = "bb.match.result";
+            OpenKey = "bb.match.open", MapKey = "bb.match.map", ModeKey = "bb.match.mode", OptionsKey = "bb.match.options", PicksKey = "bb.match.picks", ResultKey = "bb.match.result";
         // What Base is made of, in the clear: the list of open matches
         // shows players it can't match with why
         internal const string ProtocolKey = "bb.match.protocol", GameKey = "bb.match.game", DebugKey = "bb.match.debug";
         // Matchmaking's own version: two that differ can't find each other
-        internal const int Protocol = 4;
+        internal const int Protocol = 5;
         // Member data: the hosting player's game, who may not own the
         // lobby, and a player getting the owner's mods to come back with
         private const string ServerKey = "bb.match.server", UpdatingKey = "bb.match.updating";
@@ -241,6 +241,8 @@ namespace BeaverBuddies.Matchmaking
             SteamMatchmaking.AddRequestLobbyListStringFilter(MatchKey, "1", ELobbyComparison.k_ELobbyComparisonEqual);
             SteamMatchmaking.AddRequestLobbyListStringFilter(BaseKey, Base, ELobbyComparison.k_ELobbyComparisonEqual);
             SteamMatchmaking.AddRequestLobbyListStringFilter(OpenKey, "1", ELobbyComparison.k_ELobbyComparisonEqual);
+            // Mods' options always have to match, however long the wait
+            SteamMatchmaking.AddRequestLobbyListStringFilter(OptionsKey, Mine.OptionsKey, ELobbyComparison.k_ELobbyComparisonEqual);
             if (Waited < AnyoneAfter) SteamMatchmaking.AddRequestLobbyListStringFilter(MapKey, Mine.MapKey, ELobbyComparison.k_ELobbyComparisonEqual);
             if (Waited < SameMapAfter) SteamMatchmaking.AddRequestLobbyListStringFilter(ModeKey, Mine.ModeKey, ELobbyComparison.k_ELobbyComparisonEqual);
             SteamMatchmaking.AddRequestLobbyListFilterSlotsAvailable(1);
@@ -305,6 +307,7 @@ namespace BeaverBuddies.Matchmaking
             SteamMatchmaking.SetLobbyData(lobby, ModsKey, MatchMods.ToJson(MatchMods.Local));
             SteamMatchmaking.SetLobbyData(lobby, MapKey, Mine.MapKey);
             SteamMatchmaking.SetLobbyData(lobby, ModeKey, Mine.ModeKey);
+            SteamMatchmaking.SetLobbyData(lobby, OptionsKey, Mine.OptionsKey);
             SteamMatchmaking.SetLobbyData(lobby, PicksKey, Mine.ToJson());
             SteamMatchmaking.SetLobbyData(lobby, OpenKey, "1");
             State = MatchState.Waiting;

@@ -195,7 +195,8 @@ namespace BeaverBuddies.Matchmaking
             OpenMatch match = _matches[index];
             MatchPicks picks = match.picks;
             element.Q<Label>("DisplayName").text = picks.name;
-            element.Q<Label>("GameTime").text = $"{picks.mapTitle}, {Mode(picks)}";
+            string options = string.Join(", ", MatchOptions.All.Where(o => picks.options?.ContainsKey(o.Id) == true).Select(o => o.Label(_loc, picks.options[o.Id])));
+            element.Q<Label>("GameTime").text = string.IsNullOrEmpty(options) ? $"{picks.mapTitle}, {Mode(picks)}" : $"{options}, {picks.mapTitle}, {Mode(picks)}";
             element.Q<Label>("Timestamp").text = !match.compatible ? _loc.T("BeaverBuddies.Match.Incompatible")
                 : match.otherMods ? _loc.T("BeaverBuddies.Match.GetsMods") : Faction(picks.faction);
             // Rows are reused, so every row sets it
@@ -223,7 +224,8 @@ namespace BeaverBuddies.Matchmaking
             _details.text = _loc.T("BeaverBuddies.Match.Host", picks.name) + "\n"
                 + _loc.T("BeaverBuddies.Match.Map", picks.mapTitle) + "\n"
                 + _loc.T("BeaverBuddies.Match.Difficulty", Mode(picks)) + "\n"
-                + _loc.T("BeaverBuddies.Match.HostFaction", Faction(picks.faction)) + "\n\n"
+                + _loc.T("BeaverBuddies.Match.HostFaction", Faction(picks.faction)) + "\n"
+                + (picks.options?.Count > 0 ? MatchOptions.Describe(_loc, picks.options) + "\n" : "") + "\n"
                 + (match.compatible ? "" : Incompatibility(match) + "\n\n")
                 + (match.otherMods && match.compatible ? _loc.T("BeaverBuddies.Match.GetsMods") + "\n\n" : "")
                 + Mods(match);

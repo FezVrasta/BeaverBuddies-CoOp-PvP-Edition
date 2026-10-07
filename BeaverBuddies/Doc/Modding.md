@@ -166,8 +166,26 @@ Add these once, when your mod starts. Each one combines with every other mod's: 
 | `AddSetWorkingHoursInstead((playerID, hours) => bool)` | Sets a player's working hours some other way, for per-player schedules |
 | `AddCanMixFactions(() => bool)` | Whether a game can have players of different factions. When any mod says yes, each player in a match keeps the faction they picked; otherwise a coin flip picks one for both |
 | `AddMatchStarting((faction, mixed, isHost) => void)` | Before a match's game starts on this machine: the faction this player plays, whether the game mixes factions, and whether this machine hosts it |
+| `AddPlayersPlaceStart(() => bool)` | Whether each player in a match places their own start: the match's game starts with no starting building, for your mod to found each player's settlement where they place it |
+| `AddGameMode(id, labelLocKey)` | Adds a game mode to the Multiplayer mode list (see below) |
+| `DescribeGameMode(id, descriptionLocKey)` | A line about one of your modes, shown under the list when it's picked |
+| `GetGameMode()` | The game mode the new game loading on this machine was started with, or null |
+| `AddMatchOption(id, labelLocKey, values, valueLocKeys, defaultValue)` | Adds a choice of your own to hosting and matchmaking, a list of its own (see below) |
+| `GetMatchOption(id)` | Your option's pick for the new game loading on this machine, or null |
 
 Hooks get your own events as you sent them and BeaverBuddies' events as they are, so a hook can tell them apart by type.
+
+## Game modes
+
+A multiplayer game has a mode, picked when it's created: the **Multiplayer mode** column on the New Game screens' last page, between the difficulties and their details, when hosting a new game or finding a match: the game's own difficulty buttons, scrolling once there are more than fit. BeaverBuddies ships one, Co-op (`bb.coop`), and any mod can add its own with `AddGameMode(id, labelLocKey)`. Use an id that starts with your mod's, like `timberempires.pvp`. Give each mode a line with `DescribeGameMode(id, descriptionLocKey)`, shown under the list when it's picked. The column only shows once there's more than one mode to pick from, and it remembers each player's last pick.
+
+Matchmaking only pairs players who picked the same mode, and the open match list shows each match's mode. Joining an open match plays it in its host's mode.
+
+Read the pick with `GetGameMode()` as the new game loads (in a singleton's `Load`, say), and save it with the game yourself: it's only there for the new game being started on this machine, and null for a game started alone or loaded from a save. Players who join load the host's save, so they get your saved value, not `GetGameMode()`.
+
+Timber Empires adds PvE (`timberempires.pve`) and PvP (`timberempires.pvp`), and plays BeaverBuddies' Co-op as a shared settlement.
+
+For a choice that isn't a game mode, `AddMatchOption` adds a column of its own next to it, with the same rules: matches pair only players who picked the same, and `GetMatchOption(id)` reads the pick as the game loads.
 
 ## Faction mods
 
@@ -177,7 +195,7 @@ BeaverBuddies checks that part for you. It notes every faction the game loads, o
 
 A faction mod with code is like any other mod here: call `AddAddOn` with its name and version, and send what players do through events.
 
-In a match, each player picks a faction as they look for an opponent. Unless a mod says factions can mix (`AddCanMixFactions`, below), a coin flip picks one of the two for both. Timber Empires says they can, and plays other mods' factions too: its [Modding.md](https://github.com/FezVrasta/TimberEmpires/blob/master/Docs/Modding.md) has what a faction needs for it.
+In a match, each player picks a faction as they look for an opponent. Unless a mod says factions can mix (`AddCanMixFactions`, in the hooks above), a coin flip picks one of the two for both. Timber Empires says they can, and plays other mods' factions too: its [modding guide](https://fezvrasta.github.io/TimberEmpires-Docs/modding.html) has what a faction needs for it.
 
 ## Testing alone
 

@@ -158,3 +158,6 @@ BeaverBuddies.Match.Incompatible.LoggingMine,"Du hast ausführliches Logging an 
 BeaverBuddies.Match.Incompatible.Protocol,"Sein BeaverBuddies sucht Spiele anders als deins. Wer die ältere Version hat, muss aktualisieren.","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
 BeaverBuddies.Match.Incompatible.OldMod,"Sein BeaverBuddies ist zu alt, um zu sagen, was anders ist. Wer die ältere Version hat, muss aktualisieren.","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"Spieler, mit denen du nicht spielen kannst, sind ausgeblendet. Hake unter der Liste ""Inkompatible Spiele anzeigen"" an, um sie und den Grund zu sehen.","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
+BeaverBuddies.Match.GameMode,"Mehrspielermodus","Multiplayer mode"
+BeaverBuddies.Match.GameMode.CoOp,"Koop","Co-op"
+BeaverBuddies.Match.GameMode.CoOp.Description,"Alle bauen gemeinsam eine Siedlung.","Everyone builds one settlement together."

@@ -31,8 +31,12 @@ namespace BeaverBuddies.Matchmaking
         // The difficulty's every setting, and the preset's name if it is one
         public string modeLocKey;
         public Dictionary<string, float> mode = new();
+        // What mods ask of a game, like Timber Empires' game mode (see MatchOptions):
+        // a match only pairs players who picked the same
+        public Dictionary<string, string> options = new();
 
         [JsonIgnore] public string MapKey => builtInMap ? "builtin:" + map : $"custom:{map}#{mapHash}";
+        [JsonIgnore] public string OptionsKey => MatchOptions.Key(options);
         [JsonIgnore] public string ModeKey => Hash(string.Join(";", mode.OrderBy(m => m.Key, StringComparer.Ordinal)
             .Select(m => m.Key + "=" + m.Value.ToString("R", CultureInfo.InvariantCulture))));
 
@@ -65,6 +69,7 @@ namespace BeaverBuddies.Matchmaking
                 mapHash = reference.Resource || mapFile == null ? null : Hash(mapFile),
                 modeLocKey = modeLocKey,
                 mode = Settings(configuration.GameMode),
+                options = MatchOptions.Current(),
             };
         }
 

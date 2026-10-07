@@ -158,3 +158,6 @@ BeaverBuddies.Match.Incompatible.LoggingMine,"당신은 상세 로그가 켜져 
 BeaverBuddies.Match.Incompatible.Protocol,"상대의 BeaverBuddies는 당신과 다른 방식으로 매치를 찾습니다. 이전 버전을 가진 쪽이 업데이트해야 합니다.","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
 BeaverBuddies.Match.Incompatible.OldMod,"상대의 BeaverBuddies가 너무 오래되어 무엇이 다른지 알 수 없습니다. 이전 버전을 가진 쪽이 업데이트해야 합니다.","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"함께 플레이할 수 없는 플레이어는 숨겨져 있습니다. 목록 아래의 ""호환되지 않는 매치 표시""를 체크하면 이유와 함께 볼 수 있습니다.","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
+BeaverBuddies.Match.GameMode,"멀티플레이 모드","Multiplayer mode"
+BeaverBuddies.Match.GameMode.CoOp,"협동","Co-op"
+BeaverBuddies.Match.GameMode.CoOp.Description,"모두 함께 하나의 정착지를 짓습니다.","Everyone builds one settlement together."

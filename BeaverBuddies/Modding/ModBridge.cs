@@ -152,5 +152,27 @@ namespace BeaverBuddies.Modding
         // starts the match's game with no starting building, for the mod
         // to found each player's settlement where they place it
         public static void AddPlayersPlaceStart(Func<bool> hook) => MatchHooks.PlayersPlaceStart.Add(hook);
+
+        // A choice for new multiplayer games, like a game mode: a column of buttons
+        // when hosting a new game or finding a match, by loc keys, which a
+        // match needs both players to have picked the same
+        public static void AddMatchOption(string id, string labelLocKey, string[] values, string[] valueLocKeys, string defaultValue) =>
+            MatchOptions.Add(new MatchOption { Id = id, LabelLocKey = labelLocKey, Values = values, ValueLocKeys = valueLocKeys, Default = defaultValue });
+
+        // A game mode for new multiplayer games: BeaverBuddies shows one Game
+        // mode list with every mod's modes, and a match only pairs players
+        // who picked the same. The first mode added is the default
+        public static void AddGameMode(string id, string labelLocKey) => MatchOptions.AddGameMode(id, labelLocKey);
+
+        // A line about one of your game modes, shown under the modes when it's picked
+        public static void DescribeGameMode(string id, string descriptionLocKey) => MatchOptions.DescribeGameMode(id, descriptionLocKey);
+
+        // The game mode picked for the new game starting on this machine, while
+        // it loads, or null for a game started without one
+        public static string GetGameMode() => MatchOptions.GameValue(MatchOptions.GameModeId);
+
+        // The pick for the new game starting on this machine, while it loads,
+        // or null for a game started without one (alone, or a saved game)
+        public static string GetMatchOption(string id) => MatchOptions.GameValue(id);
     }
 }

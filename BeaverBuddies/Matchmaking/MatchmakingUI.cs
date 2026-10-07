@@ -182,6 +182,7 @@ namespace BeaverBuddies.Matchmaking
             Plugin.Log($"[Match] Starting the game: {configuration}");
             _box.Close();
             _box = null;
+            MatchOptions.StartGameWith(MatchmakingSession.Mine?.options);
             _gameSceneLoader.StartNewGame(configuration);
         }
 

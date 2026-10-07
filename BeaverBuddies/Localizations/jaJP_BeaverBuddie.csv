@@ -158,3 +158,6 @@ BeaverBuddies.Match.Incompatible.LoggingMine,"あなたは詳細ログがオン�
 BeaverBuddies.Match.Incompatible.Protocol,"相手の BeaverBuddies はあなたのものと違う方法でマッチを探しています。古いバージョンの方が更新してください。","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
 BeaverBuddies.Match.Incompatible.OldMod,"相手の BeaverBuddies は古すぎて違いがわかりません。古いバージョンの方が更新してください。","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"一緒にプレイできないプレイヤーは非表示です。リストの下の「互換性のないマッチを表示」にチェックを入れると、理由と一緒に表示されます。","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
+BeaverBuddies.Match.GameMode,"マルチプレイモード","Multiplayer mode"
+BeaverBuddies.Match.GameMode.CoOp,"協力","Co-op"
+BeaverBuddies.Match.GameMode.CoOp.Description,"全員でひとつの開拓地を一緒に築きます。","Everyone builds one settlement together."

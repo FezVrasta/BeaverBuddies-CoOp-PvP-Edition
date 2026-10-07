@@ -113,6 +113,10 @@ namespace BeaverBuddies.DevTools
                     var mode = new MultiplayerNewGameModeSpec(modes.GetDefaultSpec(), 2);
                     string settlement = "Test " + DateTime.Now.ToString("yyyy-MM-dd HH'h'mm", CultureInfo.InvariantCulture);
                     NewGameHosting.Pending = true;
+                    // hostmatch Map Faction [game mode id], as the Game mode dropdown would pick it
+                    Matchmaking.MatchOptions.StartGameWith(a.Length > 3 && a[3] != ""
+                        ? new System.Collections.Generic.Dictionary<string, string> { [Matchmaking.MatchOptions.GameModeId] = a[3] }
+                        : Matchmaking.MatchOptions.Current());
                     _gameSceneLoader.StartNewGame(
                         new NewGameConfiguration(faction, MapFileReference.FromResource(map), mode, settlement));
                     break;
@@ -124,6 +128,8 @@ namespace BeaverBuddies.DevTools
                     var configuration = new NewGameConfiguration(a[2], MapFileReference.FromResource(a[1]),
                         new MultiplayerNewGameModeSpec(_gameModeSpecService.GetDefaultSpec(), 2), string.Empty);
                     var picks = Matchmaking.MatchPicks.Create(Players.PlayerIdentity.LocalName, configuration, a[1], null, null);
+                    // waitmatch Map Faction [game mode id]
+                    if (a.Length > 3 && a[3] != "") picks.options[Matchmaking.MatchOptions.GameModeId] = a[3];
                     Matchmaking.MatchmakingSession.Start(picks, configuration);
                     break;
                 }
@@ -161,6 +167,22 @@ namespace BeaverBuddies.DevTools
                     using var click = UnityEngine.UIElements.ClickEvent.GetPooled();
                     click.target = button;
                     button.SendEvent(click);
+                    break;
+                }
+                case "layout":
+                {
+                    // Where an element of the panel on top and its children are laid out
+                    var panel = _panelStack._stack.Peek().PanelController.GetPanel();
+                    var root = UnityEngine.UIElements.UQueryExtensions.Q(panel, a[1]) ?? throw new Exception($"no {a[1]}");
+                    var lines = new List<string>();
+                    void Walk(UnityEngine.UIElements.VisualElement e, int depth)
+                    {
+                        var r = e.worldBound;
+                        lines.Add($"{new string(' ', depth * 2)}{e.GetType().Name} #{e.name} .{string.Join(".", e.GetClasses())} y={r.y:0} h={r.height:0} x={r.x:0} w={r.width:0} pos={e.resolvedStyle.position} mt={e.resolvedStyle.marginTop:0} mb={e.resolvedStyle.marginBottom:0}");
+                        if (depth < 3) foreach (var child in e.Children()) Walk(child, depth + 1);
+                    }
+                    Walk(root, 0);
+                    Plugin.Log($"[Test] Layout {a[1]}:\n{string.Join("\n", lines)}");
                     break;
                 }
                 case "snap":

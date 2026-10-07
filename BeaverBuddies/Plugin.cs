@@ -86,6 +86,7 @@ namespace BeaverBuddies
             containerDefinition.Bind<ClientConnectionService>().AsSingleton();
             containerDefinition.Bind<ClientConnectionUI>().AsSingleton();
             containerDefinition.Bind<MultiplayerMenu>().AsSingleton();
+            containerDefinition.Bind<Matchmaking.MatchOptionsPanel>().AsSingleton();
             if (DevTools.TestHarness.Active) containerDefinition.Bind<DevTools.TestHarness>().AsSingleton();
             containerDefinition.Bind<FirstTimerService>().AsSingleton();
             containerDefinition.Bind<ChangeLogService>().AsSingleton();
