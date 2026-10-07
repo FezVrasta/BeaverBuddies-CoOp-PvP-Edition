@@ -432,6 +432,28 @@ namespace BeaverBuddies.DevTools
                     }
                     break;
                 }
+                case "rehost":
+                    // Saves the game and hosts it again, as reopening a saved game does
+                    Get<RehostingService>().RehostGame();
+                    break;
+                case "join":
+                    // Joins a host as a player coming back to a saved game: no match pick
+                    (_clientConnectionService ?? throw new Exception("not at the main menu")).TryToConnect(a.Length > 1 ? a[1] : "127.0.0.1");
+                    break;
+                case "avatars":
+                {
+                    // The portrait each district's beavers show
+                    var seen = new HashSet<string>();
+                    foreach (var entity in Get<Timberborn.EntitySystem.EntityRegistry>().Entities)
+                    {
+                        var badge = entity ? entity.GetComponent<Timberborn.BeaversUI.BeaverEntityBadge>() : null;
+                        if (badge == null) continue;
+                        string district = badge.GetComponent<Timberborn.GameDistricts.Citizen>()?.AssignedDistrict?.DistrictName ?? "none";
+                        string line = $"{district}: {badge.GetEntityAvatar()?.name}";
+                        if (seen.Add(line)) Plugin.Log($"[Test] Avatar {line}");
+                    }
+                    break;
+                }
                 case "check":
                 {
                     foreach (BlockObject o in Replay.GetSingleton<IBlockService>().GetObjectsAt(new Vector3Int(I(a[1]), I(a[2]), I(a[3]))))

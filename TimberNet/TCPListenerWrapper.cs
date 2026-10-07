@@ -18,6 +18,9 @@ namespace TimberNet
             // Listen on IPv6 and IPv4
             listener = new TcpListener(IPAddress.IPv6Any, port);
             listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+            // Rehosting listens again on the port the last server just let go,
+            // which its closed connections still hold for a while
+            listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
         }
 
         public ISocketStream AcceptClient()

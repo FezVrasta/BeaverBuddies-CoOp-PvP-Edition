@@ -99,7 +99,7 @@ namespace BeaverBuddies.Connect
                 return button;
             }
             Add("HostNewGameMenuButton", "BeaverBuddies.Menu.HostNewGame", () => OpenNewGame(NewGameIntent.Host));
-            Add("HostSavedGameButton", "BeaverBuddies.Menu.HostSavedGame", () => _panelStack.HideAndPush(_loadGameBox));
+            Add("HostSavedGameButton", "BeaverBuddies.Menu.HostSavedGame", () => _loadGameBox.Open());
             _joinButton = Add("JoinGameButton", "BeaverBuddies.Menu.JoinGame", () => _clientConnectionUI.ShowBox());
 #if IS_STEAM
             _matchButtons.Add(Add("FindMatchMenuButton", "BeaverBuddies.Match.FindMatch", () => OpenNewGame(NewGameIntent.Match)));
