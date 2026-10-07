@@ -373,3 +373,6 @@ FodyWeavers.xsd
 
 # MacOS system temporary files
 .DS_Store
+
+# Local Claude Code settings and screenshots
+.claude/
