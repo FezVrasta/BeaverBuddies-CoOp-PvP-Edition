@@ -517,6 +517,14 @@ namespace BeaverBuddies.DevTools
                     }
                     break;
                 }
+                case "te":
+                {
+                    // Asks Timber Empires' harness probe (its DevTools/HarnessProbe) on this copy only
+                    Type probe = AppDomain.CurrentDomain.GetAssemblies().Select(x => x.GetType("TimberEmpires.DevTools.HarnessProbe")).FirstOrDefault(t => t != null)
+                        ?? throw new Exception("Timber Empires isn't loaded");
+                    Plugin.Log($"[Test] te {string.Join(" ", a.Skip(1))}: {probe.GetMethod("Run").Invoke(null, new object[] { a.Skip(1).ToArray() })}");
+                    break;
+                }
                 case "dismiss":
                     // Presses OK on every dialog showing, as a player would
                     for (int i = 0; i < 5 && _panelStack._stack.Count > 0 && _panelStack._stack.Peek().PanelController is DialogBox box; i++)
