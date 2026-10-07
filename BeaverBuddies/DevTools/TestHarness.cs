@@ -178,7 +178,7 @@ namespace BeaverBuddies.DevTools
                     void Walk(UnityEngine.UIElements.VisualElement e, int depth)
                     {
                         var r = e.worldBound;
-                        lines.Add($"{new string(' ', depth * 2)}{e.GetType().Name} #{e.name} .{string.Join(".", e.GetClasses())} y={r.y:0} h={r.height:0} x={r.x:0} w={r.width:0} pos={e.resolvedStyle.position} mt={e.resolvedStyle.marginTop:0} mb={e.resolvedStyle.marginBottom:0}");
+                        lines.Add($"{new string(' ', depth * 2)}{e.GetType().Name} #{e.name} .{string.Join(".", e.GetClasses())} y={r.y:0} h={r.height:0} x={r.x:0} w={r.width:0} pos={e.resolvedStyle.position} mt={e.resolvedStyle.marginTop:0} mb={e.resolvedStyle.marginBottom:0}{(e is UnityEngine.UIElements.TextElement t && !string.IsNullOrEmpty(t.text) ? " \"" + t.text + "\"" : "")}");
                         if (depth < 3) foreach (var child in e.Children()) Walk(child, depth + 1);
                     }
                     Walk(root, 0);
