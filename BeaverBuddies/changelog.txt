@@ -1,3 +1,11 @@
+v1.1.0-1.2.0
+* New: find a match with anyone through Steam, from Find a match in the main menu.
+* New: a list of open matches to join, and inviting friends without the Steam overlay.
+* New: pick a multiplayer mode when hosting or finding a match. Mods can add their own.
+* Players' factions are checked as they join, and mods can place each player's start.
+* Fixed desyncs from instant build and from refused placements. Clients keep closer to the host.
+* Rehosting a saved game uses the same port.
+
 v1.1.0-1.1.0
 * This is BeaverBuddies Co-Op/PvP Edition, my fork of BeaverBuddies. It replaces the original mod (same mod id), so everyone in a game needs this version.
 * New: see where the other players are pointing. Turn it off with "Show Player Cursors" in the mod settings.
