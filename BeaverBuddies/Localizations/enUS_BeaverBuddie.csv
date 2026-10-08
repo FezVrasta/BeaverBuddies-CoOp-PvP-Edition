@@ -142,6 +142,7 @@ BeaverBuddies.Match.ListEmptyHint,"Players you can't play with are hidden. Tick 
 BeaverBuddies.Match.GameMode,"Multiplayer mode","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"Co-op","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"Everyone builds one settlement together.","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.None,"None",""
 BeaverBuddies.GameSettings.On,"On",""
 BeaverBuddies.GameSettings.Off,"Off",""
 BeaverBuddies.GameSettings.Defaults,"Game settings: the defaults",""

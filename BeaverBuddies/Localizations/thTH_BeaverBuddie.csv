@@ -142,6 +142,7 @@ BeaverBuddies.Match.ListEmptyHint,"ผู้เล่นที่คุณเล
 BeaverBuddies.Match.GameMode,"โหมดผู้เล่นหลายคน","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"เล่นร่วมกัน","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"ทุกคนร่วมกันสร้างถิ่นฐานเดียวกัน","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.None,"ไม่มี",""
 BeaverBuddies.GameSettings.On,"เปิด",""
 BeaverBuddies.GameSettings.Off,"ปิด",""
 BeaverBuddies.GameSettings.Defaults,"การตั้งค่าเกม: ค่าเริ่มต้น",""

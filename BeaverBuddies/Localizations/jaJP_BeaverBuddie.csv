@@ -142,6 +142,7 @@ BeaverBuddies.Match.ListEmptyHint,"一緒にプレイできないプレイヤー
 BeaverBuddies.Match.GameMode,"マルチプレイモード","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"協力","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"全員でひとつの開拓地を一緒に築きます。","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.None,"なし",""
 BeaverBuddies.GameSettings.On,"オン",""
 BeaverBuddies.GameSettings.Off,"オフ",""
 BeaverBuddies.GameSettings.Defaults,"ゲーム設定: デフォルト",""

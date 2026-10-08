@@ -142,6 +142,7 @@ BeaverBuddies.Match.ListEmptyHint,"Jogadores com quem você não pode jogar fica
 BeaverBuddies.Match.GameMode,"Modo multijogador","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"Cooperativo","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"Todos constroem juntos um único assentamento.","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.None,"Nenhum",""
 BeaverBuddies.GameSettings.On,"Sim",""
 BeaverBuddies.GameSettings.Off,"Não",""
 BeaverBuddies.GameSettings.Defaults,"Configurações do jogo: as padrão",""

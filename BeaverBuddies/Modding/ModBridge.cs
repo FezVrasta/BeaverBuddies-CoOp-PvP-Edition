@@ -40,6 +40,8 @@ namespace BeaverBuddies.Modding
         public static string LocalPlayerID() => PlayerIdentity.LocalID;
         public static string LocalPlayerName() => PlayerIdentity.LocalName;
         public static Color LocalPlayerColor() => Settings.PingColorValue;
+        // On the host: the people in the game, itself and every client connected (nobody joins after the first tick)
+        public static int ConnectedPlayers() => EventIO.Get() is ServerEventIO server ? server.NetBase.ClientCount + 1 : EventIO.Get() is LocalEventIO ? 1 : 0;
 
         public static void Log(string message) => Plugin.Log(message);
         public static void LogWarning(string message) => Plugin.LogWarning(message);
@@ -222,6 +224,17 @@ namespace BeaverBuddies.Modding
             {
                 Id = id, GroupLocKey = groupLocKey, LabelLocKey = labelLocKey, TooltipLocKey = tooltipLocKey,
                 Values = values, ValueLocKeys = valueLocKeys, Default = defaultValue, Modes = modes,
+            });
+
+        // A list of up to maxItems picks of a few values, each its own row (itemLabelLocKey takes its number),
+        // with buttons to add one or take one off: saved as the picks joined by commas, "" for none
+        public static void AddGameList(string id, string groupLocKey, string labelLocKey, string tooltipLocKey, string itemLabelLocKey,
+            string[] values, string[] valueLocKeys, string itemDefault, int maxItems, string[] modes) =>
+            GameSettings.Add(new GameSetting
+            {
+                Id = id, GroupLocKey = groupLocKey, LabelLocKey = labelLocKey, TooltipLocKey = tooltipLocKey,
+                Values = values, ValueLocKeys = valueLocKeys, Default = "", Modes = modes,
+                MaxItems = maxItems, ItemLocKey = itemLabelLocKey, ItemDefault = itemDefault,
             });
 
         // A game setting's pick for the new game loading on this machine ("on"

@@ -15,7 +15,11 @@ using UnityEngine.UIElements;
 
 namespace BeaverBuddies.NewGame
 {
-    /** A rule of a game, picked as it's created and saved with it: a toggle, or one of a few values. */
+    /**
+     * A rule of a game, picked as it's created and saved with it: a toggle,
+     * one of a few values, or a list of up to MaxItems picks of those values
+     * (AI opponents and their difficulties, say), saved as "easy,hard".
+     */
     public class GameSetting
     {
         public const string On = "on";
@@ -32,9 +36,19 @@ namespace BeaverBuddies.NewGame
         public string Default;
         // The game modes it's shown for (see MatchOptions.GameModeId, Alone and WithOthers), or null for all
         public string[] Modes;
+        // A list: how many items it can have, the label of each ("Opponent {0}"), and the value a new one starts at
+        public int MaxItems;
+        public string ItemLocKey;
+        public string ItemDefault;
 
         public bool IsToggle => Values == null;
-        public bool Has(string value) => IsToggle ? value == On || value == Off : Values.Contains(value);
+        public bool IsList => MaxItems > 0;
+        public bool Has(string value) => IsToggle ? value == On || value == Off
+            : IsList ? value != null && Items(value).Length <= MaxItems && Items(value).All(Values.Contains)
+            : Values.Contains(value);
+
+        // A list's picks, in order
+        public static string[] Items(string value) => string.IsNullOrEmpty(value) ? Array.Empty<string>() : value.Split(',');
     }
 
     /**
@@ -125,6 +139,16 @@ namespace BeaverBuddies.NewGame
         public static string Label(ILoc loc, GameSetting setting, string value)
         {
             if (setting.IsToggle) return loc.T(value == GameSetting.On ? "BeaverBuddies.GameSettings.On" : "BeaverBuddies.GameSettings.Off");
+            if (setting.IsList)
+            {
+                string[] items = GameSetting.Items(value);
+                return items.Length == 0 ? loc.T("BeaverBuddies.GameSettings.None") : string.Join(", ", items.Select(item => ValueLabel(loc, setting, item)));
+            }
+            return ValueLabel(loc, setting, value);
+        }
+
+        private static string ValueLabel(ILoc loc, GameSetting setting, string value)
+        {
             int index = Array.IndexOf(setting.Values, value);
             return index >= 0 && index < setting.ValueLocKeys.Length ? loc.T(setting.ValueLocKeys[index]) : value;
         }
@@ -390,6 +414,7 @@ namespace BeaverBuddies.NewGame
                 toggle.RegisterValueChangedCallback(e => GameSettings.Pick(setting.Id, e.newValue ? GameSetting.On : GameSetting.Off));
                 return rows;
             }
+            if (setting.IsList) return List(setting);
             // A choice: its name, then a checkbox per value, of which one is ticked
             var name = Wrapper(Label(setting.LabelLocKey));
             if (setting.TooltipLocKey != null) Tip(name, setting.TooltipLocKey);
@@ -416,6 +441,126 @@ namespace BeaverBuddies.NewGame
             return rows;
         }
 
+        /**
+         * A list: its name with how many there are and buttons to take one off
+         * or add one, then a row per item with its label and a checkbox per
+         * value side by side, of which one is ticked.
+         */
+        private VisualElement List(GameSetting setting)
+        {
+            var rows = new VisualElement();
+            var count = new Label();
+            count.AddToClassList(LabelClass);
+            Inline(count);
+            count.style.minWidth = 18;
+            count.style.unityTextAlign = TextAnchor.MiddleCenter;
+            var items = new VisualElement();
+            var less = Step("-");
+            var more = Step("+");
+            Label title = Label(setting.LabelLocKey);
+            title.style.flexGrow = 1;
+            // Its count with a button either side, together at the row's end
+            var stepper = Line(less, count, more);
+            var name = Line(title, stepper);
+            name.AddToClassList(WrapperClass);
+            if (setting.TooltipLocKey != null) Tip(name, setting.TooltipLocKey);
+            rows.Add(name);
+            rows.Add(items);
+            List<string> Picks() => GameSetting.Items(GameSettings.ValueOf(setting.Id)).ToList();
+            void Save(List<string> picks) => GameSettings.Pick(setting.Id, string.Join(",", picks));
+            void Build()
+            {
+                List<string> picks = Picks();
+                count.text = picks.Count.ToString();
+                less.SetEnabled(picks.Count > 0);
+                more.SetEnabled(picks.Count < setting.MaxItems);
+                items.Clear();
+                for (int i = 0; i < picks.Count; i++)
+                {
+                    int index = i;
+                    // On one line: the item's label, then each value with its checkbox
+                    Label itemName = Inline(Label(setting.ItemLocKey, index + 1));
+                    itemName.style.minWidth = 140;
+                    var row = Line(itemName);
+                    row.style.marginLeft = 16;
+                    row.style.marginTop = 2;
+                    for (int v = 0; v < setting.Values.Length; v++)
+                    {
+                        string value = setting.Values[v];
+                        var toggle = new Toggle();
+                        toggle.AddToClassList(ToggleClass);
+                        toggle.SetValueWithoutNotify(picks[index] == value);
+                        Label label = Inline(Label(setting.ValueLocKeys[v]));
+                        label.style.marginRight = 16;
+                        label.RegisterCallback((ClickEvent _) => toggle.value = true);
+                        toggle.RegisterValueChangedCallback(_ =>
+                        {
+                            List<string> now = Picks();
+                            if (index < now.Count) now[index] = value;
+                            Save(now);
+                            Build();
+                        });
+                        row.Add(Line(toggle, label));
+                    }
+                    items.Add(row);
+                }
+            }
+            less.clicked += () =>
+            {
+                List<string> picks = Picks();
+                if (picks.Count == 0) return;
+                picks.RemoveAt(picks.Count - 1);
+                Save(picks);
+                Build();
+            };
+            more.clicked += () =>
+            {
+                List<string> picks = Picks();
+                if (picks.Count >= setting.MaxItems) return;
+                picks.Add(setting.ItemDefault ?? setting.Values[0]);
+                Save(picks);
+                Build();
+            };
+            Build();
+            return rows;
+        }
+
+        // Elements side by side, centred on the line
+        private static VisualElement Line(params VisualElement[] children)
+        {
+            var line = new VisualElement();
+            line.style.flexDirection = FlexDirection.Row;
+            line.style.alignItems = Align.Center;
+            foreach (VisualElement child in children) line.Add(child);
+            return line;
+        }
+
+        // A label only as wide as its words, not the rows' column
+        private static Label Inline(Label label)
+        {
+            label.style.width = StyleKeyword.Auto;
+            label.style.flexGrow = 0;
+            label.style.flexShrink = 0;
+            return label;
+        }
+
+        // A small button for a list's count, in the menus' style
+        private static Button Step(string text)
+        {
+            var button = new NineSliceButton { text = text, focusable = false };
+            button.AddToClassList("menu-button");
+            button.AddToClassList("menu-button--medium");
+            button.style.width = 32;
+            button.style.minWidth = 32;
+            button.style.height = 26;
+            button.style.marginLeft = 2;
+            button.style.marginRight = 2;
+            button.style.paddingLeft = 0;
+            button.style.paddingRight = 0;
+            button.style.unityFontStyleAndWeight = FontStyle.Bold;
+            return button;
+        }
+
         // A checkbox and its label, as the game's Drought and Badtide rows
         private Toggle Row(VisualElement rows, string labelLocKey, string tooltipLocKey)
         {
@@ -432,9 +577,10 @@ namespace BeaverBuddies.NewGame
 
         private void Tip(VisualElement target, string locKey) => Util.WrappedTooltip.Register(_tooltipRegistrar, target, () => _loc.T(locKey));
 
-        private Label Label(string locKey)
+        // A label in the list's style, with its number for one that takes one ("Opponent {0}")
+        private Label Label(string locKey, int? number = null)
         {
-            var label = new Label(_loc.T(locKey));
+            var label = new Label(number is { } n ? _loc.T(locKey, n) : _loc.T(locKey));
             label.AddToClassList(LabelClass);
             label.style.whiteSpace = WhiteSpace.Normal;
             label.style.flexShrink = 1;

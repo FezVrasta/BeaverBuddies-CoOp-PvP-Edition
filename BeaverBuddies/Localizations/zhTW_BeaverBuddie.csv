@@ -142,6 +142,7 @@ BeaverBuddies.Match.ListEmptyHint,"無法一起遊玩的玩家已隱藏。勾選
 BeaverBuddies.Match.GameMode,"多人模式","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"合作","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"所有人一起建設同一個定居地。","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.None,"無",""
 BeaverBuddies.GameSettings.On,"開啟",""
 BeaverBuddies.GameSettings.Off,"關閉",""
 BeaverBuddies.GameSettings.Defaults,"遊戲設定：預設",""
