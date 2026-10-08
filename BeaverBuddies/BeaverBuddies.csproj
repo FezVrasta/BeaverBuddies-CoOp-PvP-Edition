@@ -88,15 +88,8 @@
     <None Include="Fixes\TestingStrategies_Scrap.cs" />
   </ItemGroup>
 
-  <!-- Check and log if pat.properties is added as an embedded resource -->
-  <Target Name="CheckPatProperties" BeforeTargets="BeforeBuild">
-    <Message Importance="high" Text="pat.properties was found and added as an embedded resource..." Condition="Exists('pat.properties')" />
-    <Message Importance="high" Text="pat.properties was NOT found. Please ensure the file exists if required." Condition="!Exists('pat.properties')" />
-  </Target>
   <ItemGroup>
     <None Remove="changelog.txt" />
-    <None Remove="pat.properties" />
-    <EmbeddedResource Include="pat.properties" Condition="Exists('pat.properties')" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="changelog.txt" />

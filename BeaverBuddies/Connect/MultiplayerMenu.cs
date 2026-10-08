@@ -9,6 +9,7 @@ using Timberborn.Localization;
 using Timberborn.MainMenuPanels;
 using Timberborn.NewGameConfigurationSystem;
 using Timberborn.SingletonSystem;
+using Timberborn.TooltipSystem;
 using Timberborn.WebNavigation;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -45,6 +46,7 @@ namespace BeaverBuddies.Connect
         private readonly GameSceneLoader _gameSceneLoader;
         private readonly ClientConnectionUI _clientConnectionUI;
         private readonly UrlOpener _urlOpener;
+        private readonly ITooltipRegistrar _tooltipRegistrar;
 
         private VisualElement _container;
         private Button _menuButton;
@@ -58,10 +60,13 @@ namespace BeaverBuddies.Connect
         private readonly Dictionary<VisualElement, StyleEnum<DisplayStyle>> _hidden = new();
 
         public static NewGameIntent Intent { get; set; }
+        // Whether the Load Game box was opened to host a save, or to play one alone
+        public static bool HostingSave { get; private set; }
 
         public MultiplayerMenu(ILoc loc, PanelStack panelStack, NewGameFactionPanel newGameFactionPanel, LoadGameBox loadGameBox,
-            GameSceneLoader gameSceneLoader, ClientConnectionUI clientConnectionUI, UrlOpener urlOpener)
+            GameSceneLoader gameSceneLoader, ClientConnectionUI clientConnectionUI, UrlOpener urlOpener, ITooltipRegistrar tooltipRegistrar)
         {
+            _tooltipRegistrar = tooltipRegistrar;
             _loc = loc;
             _panelStack = panelStack;
             _newGameFactionPanel = newGameFactionPanel;
@@ -79,6 +84,8 @@ namespace BeaverBuddies.Connect
             _container = newGame.parent;
             // The game's New Game button is an ordinary game, whatever the multiplayer menu opened last
             newGame.RegisterCallback((ClickEvent _) => Intent = NewGameIntent.Play);
+            // and its Load Game button loads a save to play alone
+            mainMenu.Q<Button>("LoadGameButton")?.RegisterCallback((ClickEvent _) => HostingSave = false);
 
             _menuButton = ButtonInserter.DuplicateOrGetButton(mainMenu, "LoadGameButton", MenuButtonName, button =>
             {
@@ -86,25 +93,30 @@ namespace BeaverBuddies.Connect
                 button.RegisterCallback((ClickEvent _) => ShowMultiplayer(true));
             });
             string after = MenuButtonName;
-            Button Add(string name, string locKey, Action click)
+            Button Add(string name, string locKey, Action click, string tooltipLocKey = null)
             {
                 Button button = ButtonInserter.DuplicateOrGetButton(mainMenu, after, name, b =>
                 {
                     b.text = _loc.T(locKey);
                     b.RegisterCallback((ClickEvent _) => click());
+                    if (tooltipLocKey != null) Util.WrappedTooltip.Register(_tooltipRegistrar, b, () => _loc.T(tooltipLocKey));
                 });
                 button.ToggleDisplayStyle(false);
                 _buttons.Add(button);
                 after = name;
                 return button;
             }
-            Add("HostNewGameMenuButton", "BeaverBuddies.Menu.HostNewGame", () => OpenNewGame(NewGameIntent.Host));
-            Add("HostSavedGameButton", "BeaverBuddies.Menu.HostSavedGame", () => _loadGameBox.Open());
-            _joinButton = Add("JoinGameButton", "BeaverBuddies.Menu.JoinGame", () => _clientConnectionUI.ShowBox());
+            Add("HostNewGameMenuButton", "BeaverBuddies.Menu.HostNewGame", () => OpenNewGame(NewGameIntent.Host), "BeaverBuddies.Menu.HostNewGame.Tooltip");
+            Add("HostSavedGameButton", "BeaverBuddies.Menu.HostSavedGame", () =>
+            {
+                HostingSave = true;
+                _loadGameBox.Open();
+            }, "BeaverBuddies.Menu.HostSavedGame.Tooltip");
+            _joinButton = Add("JoinGameButton", "BeaverBuddies.Menu.JoinGame", () => _clientConnectionUI.ShowBox(), "BeaverBuddies.Menu.JoinGame.Tooltip");
 #if IS_STEAM
-            _matchButtons.Add(Add("FindMatchMenuButton", "BeaverBuddies.Match.FindMatch", () => OpenNewGame(NewGameIntent.Match)));
+            _matchButtons.Add(Add("FindMatchMenuButton", "BeaverBuddies.Match.FindMatch", () => OpenNewGame(NewGameIntent.Match), "BeaverBuddies.Match.FindMatch.Tooltip"));
             _matchButtons.Add(Add("OpenMatchesMenuButton", "BeaverBuddies.Match.OpenMatches",
-                () => SingletonManager.GetSingleton<Matchmaking.HostBrowser>()?.Open()));
+                () => SingletonManager.GetSingleton<Matchmaking.HostBrowser>()?.Open(), "BeaverBuddies.Match.OpenMatches.Tooltip"));
 #endif
             Add("MultiplayerBackButton", "BeaverBuddies.Menu.Back", () => ShowMultiplayer(false));
             _discord = DiscordRow(mainMenu);
@@ -277,6 +289,7 @@ namespace BeaverBuddies.Connect
 #endif
             Show(__instance, MultiplayerMenu.HostButtonName, intent == NewGameIntent.Host);
             Matchmaking.MatchOptionsPanel.Show(__instance, intent == NewGameIntent.Host || intent == NewGameIntent.Match);
+            SingletonManager.GetSingleton<NewGame.GameSettingsSection>()?.Refresh();
             __instance._nextButton.ToggleDisplayStyle(intent == NewGameIntent.Play);
         }
 

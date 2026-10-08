@@ -34,11 +34,15 @@ namespace BeaverBuddies.Matchmaking
         // What mods ask of a game, like Timber Empires' game mode (see MatchOptions):
         // a match only pairs players who picked the same
         public Dictionary<string, string> options = new();
+        // Mods' game settings (see NewGame.GameSettings): they go with the
+        // difficulty, so whoever's difficulty is played, their settings are
+        public Dictionary<string, string> settings = new();
 
         [JsonIgnore] public string MapKey => builtInMap ? "builtin:" + map : $"custom:{map}#{mapHash}";
         [JsonIgnore] public string OptionsKey => MatchOptions.Key(options);
         [JsonIgnore] public string ModeKey => Hash(string.Join(";", mode.OrderBy(m => m.Key, StringComparer.Ordinal)
-            .Select(m => m.Key + "=" + m.Value.ToString("R", CultureInfo.InvariantCulture))));
+            .Select(m => m.Key + "=" + m.Value.ToString("R", CultureInfo.InvariantCulture))
+            .Concat((settings ?? new()).OrderBy(s => s.Key, StringComparer.Ordinal).Select(s => s.Key + "=" + s.Value))));
 
         public string ToJson() => JsonConvert.SerializeObject(this);
 
@@ -70,6 +74,7 @@ namespace BeaverBuddies.Matchmaking
                 modeLocKey = modeLocKey,
                 mode = Settings(configuration.GameMode),
                 options = MatchOptions.Current(),
+                settings = NewGame.GameSettings.Current(),
             };
         }
 
@@ -166,7 +171,7 @@ namespace BeaverBuddies.Matchmaking
     {
         // The player whose map it is, who starts the game and hosts it
         public ulong host;
-        // Whose difficulty it is
+        // Whose difficulty it is, and game settings
         public ulong modeFrom;
         // Whose faction both play, when the game can't mix factions; 0 when
         // each plays their own

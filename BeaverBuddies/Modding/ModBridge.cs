@@ -2,6 +2,7 @@ using BeaverBuddies.Cursors;
 using BeaverBuddies.Events;
 using BeaverBuddies.IO;
 using BeaverBuddies.Matchmaking;
+using BeaverBuddies.NewGame;
 using BeaverBuddies.Players;
 using System;
 using System.Collections.Generic;
@@ -174,5 +175,30 @@ namespace BeaverBuddies.Modding
         // The pick for the new game starting on this machine, while it loads,
         // or null for a game started without one (alone, or a saved game)
         public static string GetMatchOption(string id) => MatchOptions.GameValue(id);
+
+        // A rule for new games, saved with them: a checkbox at the end of the
+        // New Game screens' Customize list, under a heading per mod. Modes
+        // are the game modes it shows for ("bb.alone" for a game without
+        // others, "bb.others" for any game with them), or null for every
+        // game. Each player's pick is remembered
+        public static void AddGameToggle(string id, string groupLocKey, string labelLocKey, string tooltipLocKey, bool defaultOn, string[] modes) =>
+            GameSettings.Add(new GameSetting
+            {
+                Id = id, GroupLocKey = groupLocKey, LabelLocKey = labelLocKey, TooltipLocKey = tooltipLocKey,
+                Default = defaultOn ? GameSetting.On : GameSetting.Off, Modes = modes,
+            });
+
+        // The same for one of a few values, a checkbox each under the setting's name
+        public static void AddGameChoice(string id, string groupLocKey, string labelLocKey, string tooltipLocKey,
+            string[] values, string[] valueLocKeys, string defaultValue, string[] modes) =>
+            GameSettings.Add(new GameSetting
+            {
+                Id = id, GroupLocKey = groupLocKey, LabelLocKey = labelLocKey, TooltipLocKey = tooltipLocKey,
+                Values = values, ValueLocKeys = valueLocKeys, Default = defaultValue, Modes = modes,
+            });
+
+        // A game setting's pick for the new game loading on this machine ("on"
+        // or "off" for a toggle), or null for a saved game, which has its own
+        public static string GetGameSetting(string id) => GameSettings.GameValue(id);
     }
 }

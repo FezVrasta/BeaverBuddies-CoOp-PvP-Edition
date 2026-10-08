@@ -31,11 +31,16 @@ namespace BeaverBuddies.Connect
         public static void Postfix(LoadGameBox __instance, ref VisualElement __result)
         {
             ILoc _loc = __instance._loc;
-            ButtonInserter.DuplicateOrGetButton(__result, "LoadButton", "HostButton", (button) =>
+            Button host = ButtonInserter.DuplicateOrGetButton(__result, "LoadButton", "HostButton", (button) =>
             {
-               button.text = _loc.T("BeaverBuddies.Saving.HostCoopGame");
+               button.text = _loc.T("BeaverBuddies.Menu.HostGame");
                button.clicked += () => HostSelectedGame(__instance);
             });
+            // From the main menu, one or the other, by which menu opened it: Load Game
+            // plays alone, Multiplayer's Host saved game hosts. In a game, both
+            if (SingletonManager.GetSingleton<MultiplayerMenu>() == null) return;
+            host.ToggleDisplayStyle(MultiplayerMenu.HostingSave);
+            __result.Q<Button>("LoadButton")?.ToggleDisplayStyle(!MultiplayerMenu.HostingSave);
         }
 
         [ManualMethodOverwrite]

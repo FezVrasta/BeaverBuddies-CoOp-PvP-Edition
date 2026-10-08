@@ -43,7 +43,9 @@ prefs_restore() {
     [ -f "$BB_PREFS_SAVED" ] || return 0
     local k v
     while IFS='|' read -r k v; do
-        if [ -n "$v" ]; then defaults write $BB_PREFS_DOMAIN "$k" -int "$v"; else defaults delete $BB_PREFS_DOMAIN "$k" 2>/dev/null; fi
+        if [ -z "$v" ]; then defaults delete $BB_PREFS_DOMAIN "$k" 2>/dev/null
+        elif [[ "$v" =~ ^-?[0-9]+$ ]]; then defaults write $BB_PREFS_DOMAIN "$k" -int "$v"
+        else defaults write $BB_PREFS_DOMAIN "$k" -string "$v"; fi
     done < "$BB_PREFS_SAVED"
     rm -f "$BB_PREFS_SAVED"
 }
@@ -131,12 +133,15 @@ bb_kill() {
 }
 
 # start_match <host faction> <client faction> [game mode id]: both copies in one
-# match game, dialogs dismissed. Returns 1 if it never got there
+# match game, dialogs dismissed. Returns 1 if it never got there. BB_HOST_SETTINGS and
+# BB_CLIENT_SETTINGS ("id=value ...") are each copy's picks for new games' settings
 start_match() {
-    local hostf=${1:-Folktails} clientf=${2:-IronTeeth} mode=${3:-}
+    local hostf=${1:-Folktails} clientf=${2:-IronTeeth} mode=${3:-} pick
     bb_close
     bb_launch host || return 1
     bb_launch client || return 1
+    for pick in ${BB_HOST_SETTINGS:-}; do send host "gamesetting ${pick%%=*} ${pick#*=}"; done
+    for pick in ${BB_CLIENT_SETTINGS:-}; do send client "gamesetting ${pick%%=*} ${pick#*=}"; done
     send host "hostmatch ${BB_MAP:-Waterfalls} $hostf $mode"
     wait_for host "Server started listening" 120 || return 1
     send client "joinmatch $clientf"

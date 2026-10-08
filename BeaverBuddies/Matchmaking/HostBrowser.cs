@@ -225,10 +225,18 @@ namespace BeaverBuddies.Matchmaking
                 + _loc.T("BeaverBuddies.Match.Map", picks.mapTitle) + "\n"
                 + _loc.T("BeaverBuddies.Match.Difficulty", Mode(picks)) + "\n"
                 + _loc.T("BeaverBuddies.Match.HostFaction", Faction(picks.faction)) + "\n"
-                + (picks.options?.Count > 0 ? MatchOptions.Describe(_loc, picks.options) + "\n" : "") + "\n"
+                + (picks.options?.Count > 0 ? MatchOptions.Describe(_loc, picks.options) + "\n" : "")
+                + GameSettingsText(picks) + "\n\n"
                 + (match.compatible ? "" : Incompatibility(match) + "\n\n")
                 + (match.otherMods && match.compatible ? _loc.T("BeaverBuddies.Match.GetsMods") + "\n\n" : "")
                 + Mods(match);
+        }
+
+        // Every game setting of the host's that applies to the match's mode, one per line
+        private string GameSettingsText(MatchPicks picks)
+        {
+            var lines = NewGame.GameSettings.Describe(_loc, picks.settings, NewGame.GameRecord.ModeOf(picks.options), onlyChanged: false);
+            return lines.Count == 0 ? "" : _loc.T("BeaverBuddies.GameSettings.Heading") + "\n" + string.Join("\n", lines) + "\n";
         }
 
         // Why this player can't play a match, one line for each thing that differs

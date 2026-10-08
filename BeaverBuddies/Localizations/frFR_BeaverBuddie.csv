@@ -9,45 +9,27 @@ BeaverBuddies.Menu.HostGame,"Héberger la partie","Host game"
 BeaverBuddies.Menu.HostFailed,"Impossible d'héberger la nouvelle partie.","Couldn't host the new game."
 BeaverBuddies.JoinCoopGame.EnterIp,"Entrez l'adresse IP de l'Hôte :","Enter the global IP address of the Host:"
 BeaverBuddies.FirstTimer.Message,"Il semble que vous utilisiez BeaverBuddies pour la première fois. Nous vous recommandons de jeter un coup d'œil rapide à notre guide pour vous assurer que vous êtes prêt à jouer. Voulez-vous le faire maintenant ?","It looks like this is your first time using BeaverBuddies. We recommend taking a quick look through our guide to make sure you are set up to play. Would you like to do that now?"
-BeaverBuddies.Saving.HostCoopGame,"Héberger partie co-op","Host co-op game"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessageWithError,"La connexion a échoué en raison d'une erreur :
 {0}
 Souhaitez-vous consulter le guide de dépannage ?","Joining failed with error:
 {0}
 Would you like to open the troubleshooting guide?"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessage,"Échec de connexion à l'Hôte. Souhaitez-vous consulter le guide de dépannage ?","Failed to connect to Host. Would you like to open the troubleshooting guide?"
-BeaverBuddies.ClientDesynced.Message,"Un joueur connecté s'est désynchronisé et ne peut plus continuer à jouer - désolé ! L'hôte doit relancer la partie, et APRÈS cela, le client doit se reconnecter. Vous devrez peut-être redémarrer le jeu si les problèmes persistent. Avant de recharger, souhaitez-vous envoyer un rapport de bug pour nous aider à corriger ce problème ?","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Before reloading, would you like to file a bug report to help us fix this issue?"
+BeaverBuddies.ClientDesynced.Message,"Un joueur connecté s'est désynchronisé et ne peut plus continuer à jouer - désolé ! L'hôte doit relancer la partie, et APRÈS cela, le client doit se reconnecter. Vous devrez peut-être redémarrer le jeu si les problèmes persistent. Le signaler sur notre Discord nous aide à le corriger.","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Reporting it on our Discord helps us fix it."
 BeaverBuddies.ClientDesynced.FailedToRehostMessage,"Échec de réhébergement. Sauvegardez manuellement et hébergez à nouveau.","Failed to Rehost. Manually save and Host again."
 BeaverBuddies.ClientDesynced.SaveAndRehostButton,"Sauvegarder et réhéberger","Save and Rehost"
 BeaverBuddies.ClientDesynced.WaitForRehostButton,"Reconnexion (attendre le réhébergement)","Reconnect (wait for Rehost)"
-BeaverBuddies.ClientDesynced.PostBugReportButton,"Envoyer un rapport de bug","Post Bug Report"
 BeaverBuddies.Editor.StartingLocation1,"Emplacement de départ - Joueur 1",""
 BeaverBuddies.Editor.StartingLocation2,"Emplacement de départ - Joueur 2",""
 BeaverBuddies.Editor.StartingLocation3,"Emplacement de départ - Joueur 3",""
 BeaverBuddies.Editor.StartingLocation4,"Emplacement de départ - Joueur 4",""
 BeaverBuddies.NewGame.MaxStartingLocations,"Emplacements de départ max",""
-BeaverBuddies.ClientDesynced.ReportSuccess,"Succès!",""
-BeaverBuddies.ClientDesynced.ReportFailed,"Échec :(",""
-BeaverBuddies.ClientDesynced.ConsentAgreement,"Oui, j'accepte",""
+BeaverBuddies.NewGame.MaxStartingLocations.Tooltip,"Sur une carte avec plusieurs emplacements de départ, combien d'entre eux reçoivent un centre de district et des castors de départ, dans l'ordre des joueurs. Une carte avec un seul emplacement de départ l'ignore.",""
 BeaverBuddies.ClientDesynced.TracingEnabled,"Activé",""
+BeaverBuddies.ClientDesynced.ReportOnDiscord,"Signaler sur Discord",""
+BeaverBuddies.ClientDesynced.TraceSaved,"Trace enregistrée à côté de Player.log",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Activer la journalisation",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Pour signaler cette désynchronisation, *tous les joueurs* doivent d'abord activer une journalisation plus détaillée en appuyant sur 'Activer la journalisation' ci-dessous. Si une autre désynchronisation se produit, vous pourrez alors envoyer un rapport de bug détaillé et automatisé. Le mode de journalisation peut provoquer un certain décalage, mais il ne sera actif que jusqu'au redémarrage du jeu.",""
-BeaverBuddies.ClientDesynced.ConsentMessage,"Consentement pour partager les données d'utilisation
-
-En choisissant de partager vos données, vous acceptez d'envoyer les informations suivantes de votre session de jeu aux développeurs de ce mod :
-
-- Données de journal : Informations collectées automatiquement pendant votre session de jeu, telles que les événements du jeu et les interactions de l'utilisateur.
-- Fichier de sauvegarde : Votre fichier de sauvegarde actuel du jeu.
-
-Nous nous efforçons de préserver votre vie privée en gardant ces données largement anonymes. Cependant, comme les données sont collectées telles quelles, elles peuvent inclure involontairement des détails pouvant vous identifier (comme des chemins de fichiers ou des noms d'utilisateur). Les développeurs ne tenteront pas de vous identifier à l'aide de ces informations.
-
-Vos choix :
-- Si vous acceptez, ces données seront envoyées en toute sécurité aux développeurs et utilisées pour améliorer le mod.
-- Si vous n'acceptez pas, aucune donnée ne sera envoyée et votre jeu continuera sans aucun changement.
-
-En poursuivant, vous confirmez que vous avez au moins l'âge légal de consentement numérique dans votre pays de résidence.
-
-Acceptez-vous de partager vos données avec les développeurs de ce mod ?",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Pour signaler cette désynchronisation, *tous les joueurs* doivent d'abord activer une journalisation plus détaillée en appuyant sur 'Activer la journalisation' ci-dessous. Si une autre désynchronisation se produit, vous pourrez alors la signaler sur notre Discord avec le journal détaillé. Le mode de journalisation peut provoquer un certain décalage, mais il ne sera actif que jusqu'au redémarrage du jeu.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"Adresse de connexion client",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"Adresse IP par défaut lors de la connexion à un hôte.",""
 BeaverBuddies.Settings.Port,"Port",""
@@ -60,7 +42,6 @@ BeaverBuddies.Settings.AlwaysTrace,"Journal détaillé systématique",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"Si activé, le jeu utilise toujours un journal détaillé, permettant d’envoyer des rapports de désynchronisation dès la première occurrence sans l’activer manuellement.
 Tous les joueurs doivent activer cette option.
 Cela peut provoquer un peu de lag et n’est pas recommandé pour la plupart des joueurs.",""
-BeaverBuddies.Settings.ReportingConsent,"Consentement aux rapports",""
 BeaverBuddies.Settings.EnableSteamConnection,"Activer connexion Steam",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Permet aux joueurs de rejoindre ta partie via le réseau peer‑to‑peer de Steam.
 Les joueurs pourront toujours rejoindre via redirection de port.
@@ -68,8 +49,6 @@ Remarque : cette fonctionnalité peut ne pas fonctionner si ton réseau ne suppo
 De plus, les connexions P2P peuvent être plus lentes que les connexions directes.",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"Autoriser les amis à rejoindre via Steam",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"Si activé, tes amis peuvent rejoindre ta partie directement via Steam sans invitation.",""
-BeaverBuddies.Settings.PauseReduction,"Réduire le nombre de pauses forcées",""
-BeaverBuddies.Settings.PauseReduction.Tooltip,"Si activé, le nombre de pauses forcées (menu principal, déconstructions, etc.) est fortement réduit. Pour une expérience optimale, tous les joueurs devraient utiliser le même réglage.",""
 BeaverBuddies.Settings.PauseReduction,"Réduire le nombre de pauses forcées",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"Pour une expérience optimale, tous les joueurs devraient utiliser le même réglage.
 
@@ -79,8 +58,6 @@ Jamais de pause automatique - Le jeu ne se mettra jamais automatiquement en paus
 BeaverBuddies.Settings.PauseReduction.Off,"Désactivé",""
 BeaverBuddies.Settings.PauseReduction.LowRisk,"Menu uniquement",""
 BeaverBuddies.Settings.PauseReduction.HighRisk,"Jamais de pause automatique",""
-BeaverBuddies.Host.ConnectedClients,"En attente des clients…
-Clients actuellement connectés :",""
 BeaverBuddies.Host.ConnectedClients,"En attente des clients…
 Clients actuellement connectés :",""
 BeaverBuddies.Host.DirectConnectClient,"Client de connexion directe",""
@@ -97,8 +74,8 @@ BeaverBuddies.Settings.PingPlayerName,"Nom affiché des marqueurs",""
 BeaverBuddies.Settings.PingPlayerName.Tooltip,"Le nom affiché aux autres joueurs à côté de vos marqueurs.",""
 BeaverBuddies.Settings.PingColor,"Couleur du marqueur",""
 BeaverBuddies.Settings.PingColor.Tooltip,"La couleur utilisée pour dessiner vos marqueurs sur l'écran de chaque joueur.",""
-BeaverBuddies.Settings.AllowDevTools,"Autoriser les outils de développement en coop",""
-BeaverBuddies.Settings.AllowDevTools.Tooltip,"Quand vous hébergez, tous les joueurs peuvent utiliser les outils de développement. Les modifications faites avec sont synchronisées. Les outils qui ne peuvent pas être synchronisés sont toujours bloqués en coop.",""
+BeaverBuddies.Settings.AllowDevTools,"Outils de développement",""
+BeaverBuddies.Settings.AllowDevTools.Tooltip,"Tous les joueurs peuvent utiliser les outils de développement. Les modifications faites avec sont synchronisées. Les outils qui ne peuvent pas être synchronisés sont toujours bloqués en coop.",""
 BeaverBuddies.DevTools.DisabledByHost,"L'hôte a désactivé les outils de développement pour cette partie.",""
 BeaverBuddies.DevTools.NotSynced,"Cet outil de développement ne peut pas être utilisé en coop car il ne peut pas être synchronisé.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Afficher les curseurs des joueurs",""
@@ -165,3 +142,13 @@ BeaverBuddies.Match.ListEmptyHint,"Les joueurs avec qui tu ne peux pas jouer son
 BeaverBuddies.Match.GameMode,"Mode multijoueur","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"Coopération","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"Tout le monde bâtit ensemble une seule colonie.","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.On,"Oui",""
+BeaverBuddies.GameSettings.Off,"Non",""
+BeaverBuddies.GameSettings.Defaults,"Paramètres de partie : par défaut",""
+BeaverBuddies.GameSettings.Changed,"Paramètres de partie : {0}",""
+BeaverBuddies.GameSettings.Heading,"Paramètres de partie :",""
+BeaverBuddies.Menu.HostNewGame.Tooltip,"Lancez une nouvelle partie que vous hébergez. Vous choisissez la carte, le mode multijoueur et les paramètres de partie, et vos amis rejoignent via une invitation Steam ou votre adresse.",""
+BeaverBuddies.Menu.HostSavedGame.Tooltip,"Hébergez une de vos sauvegardes. Vos amis rejoignent via une invitation Steam ou votre adresse, et la partie garde les paramètres avec lesquels elle a été créée.",""
+BeaverBuddies.Menu.JoinGame.Tooltip,"Rejoignez une partie avec l'adresse de son hôte. Sur Steam, l'invitation d'un ami fonctionne aussi.",""
+BeaverBuddies.Match.FindMatch.Tooltip,"Un 1 contre 1 sur Steam face à un autre joueur ayant choisi le même mode multijoueur. Les joueurs avec la même carte, la même difficulté et les mêmes paramètres de partie sont essayés en premier. Là où vos choix diffèrent, un pile ou face tranche, et celui dont la carte est retenue héberge.",""
+BeaverBuddies.Match.OpenMatches.Tooltip,"Joueurs qui attendent une partie rapide en ce moment. Rejoignez-en un pour jouer sur sa carte, avec sa difficulté et ses paramètres.",""

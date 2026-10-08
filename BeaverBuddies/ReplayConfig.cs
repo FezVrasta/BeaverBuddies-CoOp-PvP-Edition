@@ -12,7 +12,6 @@ namespace BeaverBuddies
         public int Port { get; set; } = 25565;
         public bool Verbose = true;
         public bool FirstTimer = true;
-        public bool ReportingConsent = false;
         public bool AlwaysDebug = false;
     }
 }

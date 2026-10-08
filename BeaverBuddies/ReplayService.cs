@@ -7,7 +7,6 @@ using BeaverBuddies.DevTools;
 using BeaverBuddies.DesyncDetecter;
 using BeaverBuddies.Events;
 using BeaverBuddies.IO;
-using BeaverBuddies.Reporting;
 using HarmonyLib;
 using System;
 using System.Collections.Concurrent;
@@ -182,7 +181,6 @@ namespace BeaverBuddies
             DialogBoxShower dialogBoxShower,
             UrlOpener urlOpener,
             RehostingService rehostingService,
-            ReportingService reportingService,
             GameSaveRepository gameSaveRepository,
             MapNameService mapNameService,
             Autosaver autosaver,
@@ -218,7 +216,6 @@ namespace BeaverBuddies
             AddSingleton(dialogBoxShower);
             AddSingleton(urlOpener);
             AddSingleton(rehostingService);
-            AddSingleton(reportingService);
             AddSingleton(gameSaveRepository);
             AddSingleton(mapNameService);
             AddSingleton(autosaver);

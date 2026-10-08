@@ -133,6 +133,9 @@ namespace BeaverBuddies.Matchmaking
         /** The pick for the game starting on this machine, or null if it wasn't started with one. */
         public static string GameValue(string id) => _forGame.TryGetValue(id, out string value) ? value : null;
 
+        // The picks for the new game starting on this machine, all of them
+        internal static Dictionary<string, string> ForGame => _forGame;
+
 
         /** The options in words, one per line. */
         public static string Describe(ILoc loc, Dictionary<string, string> options)
@@ -184,6 +187,10 @@ namespace BeaverBuddies.Matchmaking
 
         private readonly VisualElementLoader _visualElementLoader;
         private readonly ILoc _loc;
+        // Each column's line about its pick, shown again when what it depends on changes
+        private readonly List<Action> _refreshes = new();
+        private bool _withOthers;
+        private NewGameModePanel _panel;
 
         public MatchOptionsPanel(VisualElementLoader visualElementLoader, ILoc loc)
         {
@@ -193,6 +200,7 @@ namespace BeaverBuddies.Matchmaking
 
         public void AddTo(NewGameModePanel panel)
         {
+            _panel = panel;
             if (!MatchOptions.All.Any(o => o.Values.Length > 1) || panel._root.Q(ContainerName) != null) return;
             VisualElement difficulties = panel._root.Q("Modes");
             if (difficulties?.parent == null) return;
@@ -203,7 +211,8 @@ namespace BeaverBuddies.Matchmaking
             // A choice of one isn't one
             foreach (MatchOption option in MatchOptions.All.Where(o => o.Values.Length > 1)) columns.Add(Column(option, details));
             difficulties.parent.Insert(difficulties.parent.IndexOf(difficulties) + 1, columns);
-            // With a column more, the difficulty's details wrap instead of running wide
+            // With a column more, the difficulty's details wrap instead of running wide (the
+            // Customize list isn't in them: it opens in a dialog, see NewGame.GameSettingsSection)
             if (details != null)
             {
                 details.style.maxWidth = 280;
@@ -249,8 +258,10 @@ namespace BeaverBuddies.Matchmaking
                 string picked = MatchOptions.ValueOf(option.Id);
                 foreach (var (button, value) in buttons) button.EnableInClassList(SelectedClass, value == picked);
                 about.text = picked != null && option.DescriptionLocKeys.TryGetValue(picked, out string key) ? _loc.T(key) : "";
-                about.ToggleDisplayStyle(!string.IsNullOrEmpty(about.text));
+                // Only for a game with others, like the column
+                about.ToggleDisplayStyle(!string.IsNullOrEmpty(about.text) && _withOthers);
             }
+            _refreshes.Add(Show);
             foreach (string value in option.Values)
             {
                 var button = (Button)_visualElementLoader.LoadVisualElement(ButtonTemplate);
@@ -259,6 +270,10 @@ namespace BeaverBuddies.Matchmaking
                 {
                     MatchOptions.Pick(option.Id, value);
                     Show();
+                    // The summary under the columns names the pick too
+                    _panel?.UpdateSummary();
+                    // The game settings shown depend on the mode
+                    SingletonManager.GetSingleton<NewGame.GameSettingsSection>()?.Refresh();
                 });
                 list.Add(button);
                 buttons.Add((button, value));
@@ -268,7 +283,46 @@ namespace BeaverBuddies.Matchmaking
         }
 
         // Only for a game with others
-        public static void Show(NewGameModePanel panel, bool visible) =>
+        public static void Show(NewGameModePanel panel, bool visible)
+        {
             panel._root?.Q(ContainerName)?.ToggleDisplayStyle(visible);
+            var options = SingletonManager.GetSingleton<MatchOptionsPanel>();
+            if (options == null) return;
+            options._withOthers = visible;
+            options.Refresh();
+        }
+
+        private void Refresh()
+        {
+            foreach (Action refresh in _refreshes) refresh();
+        }
+
+        // The summary's "Faction - Map - Difficulty", and the picks for a game with others
+        internal static void AddToSummary(NewGameModePanel panel)
+        {
+            var options = SingletonManager.GetSingleton<MatchOptionsPanel>();
+            if (options == null || panel._summary == null || !panel._visible) return;
+            NewGameIntent intent = MultiplayerMenu.Intent;
+            if (intent != NewGameIntent.Host && intent != NewGameIntent.Match) return;
+            foreach (MatchOption option in MatchOptions.All.Where(o => o.Values.Length > 1))
+            {
+                panel._summary.text += " - " + option.Label(options._loc, MatchOptions.ValueOf(option.Id));
+            }
+            // The capsule behind it is as wide as the game's own summary: it grows to fit
+            VisualElement capsule = panel._summary.parent;
+            if (capsule != null && capsule.style.width.keyword != StyleKeyword.Auto)
+            {
+                capsule.style.minWidth = capsule.resolvedStyle.width > 0 ? capsule.resolvedStyle.width : 285;
+                capsule.style.width = StyleKeyword.Auto;
+                capsule.style.paddingLeft = 16;
+                capsule.style.paddingRight = 16;
+            }
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(NewGameModePanel), nameof(NewGameModePanel.UpdateSummary))]
+    class MatchOptionsSummaryPatcher
+    {
+        static void Postfix(NewGameModePanel __instance) => MatchOptionsPanel.AddToSummary(__instance);
     }
 }

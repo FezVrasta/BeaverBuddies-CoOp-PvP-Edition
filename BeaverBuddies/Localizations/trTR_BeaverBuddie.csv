@@ -9,45 +9,27 @@ BeaverBuddies.Menu.HostGame,"Oyunu kur","Host game"
 BeaverBuddies.Menu.HostFailed,"Yeni oyun kurulamadı.","Couldn't host the new game."
 BeaverBuddies.JoinCoopGame.EnterIp,"Ev sahibinin global IP adresini girin:","Enter the global IP address of the Host:"
 BeaverBuddies.FirstTimer.Message,"Görünüşe göre BeaverBuddies'i ilk kez kullanıyorsunuz. Oynamaya hazır olduğunuzdan emin olmak için kılavuzumuzu hızlıca gözden geçirmenizi öneririz. Şimdi yapmak ister misiniz?","It looks like this is your first time using BeaverBuddies. We recommend taking a quick look through our guide to make sure you are set up to play. Would you like to do that now?"
-BeaverBuddies.Saving.HostCoopGame,"Eşli oyunu barındır","Host co-op game"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessageWithError,"Hata ile katılma başarısız oldu:
 {0}
 Sorun giderme kılavuzunu açmak ister misiniz?","Joining failed with error:
 {0}
 Would you like to open the troubleshooting guide?"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessage,"Ev sahibine bağlanılamadı. Sorun giderme kılavuzunu açmak ister misiniz?","Failed to connect to Host. Would you like to open the troubleshooting guide?"
-BeaverBuddies.ClientDesynced.Message,"Bağlı bir oyuncu senkronizasyonunu kaybetti ve oyuna devam edemiyor - bunun için özür dileriz! Host yeniden başlatmalı ve BUNDAN SONRA, Client yeniden bağlanmalıdır. Sorun devam ederse oyunu yeniden başlatmanız gerekebilir. Yeniden yüklemeden önce, bu sorunu çözmemize yardımcı olmak için bir hata raporu göndermek ister misiniz?","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Before reloading, would you like to file a bug report to help us fix this issue?"
+BeaverBuddies.ClientDesynced.Message,"Bağlı bir oyuncu senkronizasyonunu kaybetti ve oyuna devam edemiyor - bunun için özür dileriz! Host yeniden başlatmalı ve BUNDAN SONRA, Client yeniden bağlanmalıdır. Sorun devam ederse oyunu yeniden başlatmanız gerekebilir. Bunu Discord sunucumuzda bildirmeniz, sorunu çözmemize yardımcı olur.","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Reporting it on our Discord helps us fix it."
 BeaverBuddies.ClientDesynced.FailedToRehostMessage,"Yeniden barındırma başarısız oldu. Manuel olarak kaydedip yeniden barındırın.","Failed to Rehost. Manually save and Host again."
 BeaverBuddies.ClientDesynced.SaveAndRehostButton,"Kaydet ve Yeniden Barındır","Save and Rehost"
 BeaverBuddies.ClientDesynced.WaitForRehostButton,"Yeniden Bağlan (yeniden barındırmayı bekle)","Reconnect (wait for Rehost)"
-BeaverBuddies.ClientDesynced.PostBugReportButton,"Hata Raporu Gönder","Post Bug Report"
 BeaverBuddies.Editor.StartingLocation1,"Başlangıç Konumu - Oyuncu 1",""
 BeaverBuddies.Editor.StartingLocation2,"Başlangıç Konumu - Oyuncu 2",""
 BeaverBuddies.Editor.StartingLocation3,"Başlangıç Konumu - Oyuncu 3",""
 BeaverBuddies.Editor.StartingLocation4,"Başlangıç Konumu - Oyuncu 4",""
 BeaverBuddies.NewGame.MaxStartingLocations,"Maksimum Başlangıç Konumu",""
-BeaverBuddies.ClientDesynced.ReportSuccess,"Başarılı!",""
-BeaverBuddies.ClientDesynced.ReportFailed,"Başarısız :(",""
-BeaverBuddies.ClientDesynced.ConsentAgreement,"Evet, kabul ediyorum",""
+BeaverBuddies.NewGame.MaxStartingLocations.Tooltip,"Birden fazla başlangıç konumu olan bir haritada, oyuncu sırasına göre bunlardan kaçının Bölge Merkezi ve başlangıç kunduzları alacağını belirler. Tek başlangıç konumu olan haritalar bunu yok sayar.",""
 BeaverBuddies.ClientDesynced.TracingEnabled,"Etkin",""
+BeaverBuddies.ClientDesynced.ReportOnDiscord,"Discord'da bildir",""
+BeaverBuddies.ClientDesynced.TraceSaved,"İz kaydı Player.log yanına kaydedildi",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Günlük Kaydını Etkinleştir",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Bu senkronizasyon hatasını bildirmek için, *tüm oyuncuların* aşağıdaki 'Günlük Kaydını Etkinleştir' düğmesine basarak daha ayrıntılı günlük kaydını etkinleştirmesi gerekir. Başka bir senkronizasyon hatası oluşursa, ayrıntılı ve otomatik bir hata raporu gönderebilirsiniz. Günlük modu biraz gecikmeye neden olabilir, ancak yalnızca oyunu yeniden başlatana kadar etkin olacaktır.",""
-BeaverBuddies.ClientDesynced.ConsentMessage,"Kullanım Verilerini Paylaşma Onayı
-
-Verilerinizi paylaşmayı seçerek, bu modun geliştiricilerine oyun oturumunuzdan aşağıdaki bilgileri göndermeyi kabul edersiniz:
-
-- Günlük Verileri: Oyun oturumunuz sırasında otomatik olarak toplanan bilgiler, oyun olayları ve kullanıcı etkileşimleri gibi.
-- Kayıt Dosyası: Mevcut oyun kayıt dosyanız.
-
-Bu verileri büyük ölçüde anonim tutarak gizliliğinizi korumaya çalışıyoruz. Ancak, veriler olduğu gibi toplandığından, sizi tanımlayabilecek ayrıntılar (dosya yolları veya kullanıcı adları gibi) içerebilir. Geliştiriciler bu bilgileri kullanarak kimliğinizi belirlemeye çalışmaz.
-
-Seçenekleriniz:
-- Kabul ederseniz, bu veriler güvenli bir şekilde geliştiricilere gönderilir ve modun iyileştirilmesi için kullanılır.
-- Kabul etmezseniz, hiçbir veri gönderilmez ve oyununuz herhangi bir değişiklik olmadan devam eder.
-
-Devam ederek, yaşadığınız ülkede dijital onay yaşı sınırına ulaştığınızı onaylıyorsunuz.
-
-Bu modun geliştiricileriyle verilerinizi paylaşmayı kabul ediyor musunuz?",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Bu senkronizasyon hatasını bildirmek için, *tüm oyuncuların* aşağıdaki 'Günlük Kaydını Etkinleştir' düğmesine basarak daha ayrıntılı günlük kaydını etkinleştirmesi gerekir. Başka bir senkronizasyon hatası oluşursa, ayrıntılı günlükle birlikte Discord sunucumuzda bildirebilirsiniz. Günlük modu biraz gecikmeye neden olabilir, ancak yalnızca oyunu yeniden başlatana kadar etkin olacaktır.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"İstemci Bağlantı Adresi",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"Bir Sunucu'ya bağlanırken varsayılan olarak kullanılan IP adresi.",""
 BeaverBuddies.Settings.Port,"Port",""
@@ -60,7 +42,6 @@ BeaverBuddies.Settings.AlwaysTrace,"Her Zaman Ayrıntılı Günlük Kullan",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"Etkinleştirilirse, oyun ilk desenkronizasyon anından itibaren ayrıntılı günlük kullanır ve bunu manuel etkinleştirmeye gerek kalmadan raporlamanıza olanak tanır.
 Tüm oyuncular bu ayarı etkinleştirmeli.
 Bu ayar biraz gecikmeye neden olabilir ve çoğu oyuncu için önerilmez.",""
-BeaverBuddies.Settings.ReportingConsent,"Raporlama Onayı",""
 BeaverBuddies.Settings.EnableSteamConnection,"Steam Bağlantısını Etkinleştir",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Oyuncuların Steam’in eşler arası ağı üzerinden oyununuza katılmasına izin verir.
 Oyuncular ayrıca port yönlendirme ile katılabilir.
@@ -93,8 +74,8 @@ BeaverBuddies.Settings.PingPlayerName,"İşaret görünen ad",""
 BeaverBuddies.Settings.PingPlayerName.Tooltip,"Diğer oyunculara işaretlerinizin yanında gösterilen ad.",""
 BeaverBuddies.Settings.PingColor,"İşaret rengi",""
 BeaverBuddies.Settings.PingColor.Tooltip,"İşaretlerinizin her oyuncunun ekranında çizilirken kullanılacak renk.",""
-BeaverBuddies.Settings.AllowDevTools,"Ortak oyunda geliştirici araçlarına izin ver",""
-BeaverBuddies.Settings.AllowDevTools.Tooltip,"Sunucu sen olduğunda tüm oyuncular geliştirici araçlarını kullanabilir. Bu araçlarla yapılan değişiklikler senkronize edilir. Senkronize edilemeyen araçlar ortak oyunda her zaman engellenir.",""
+BeaverBuddies.Settings.AllowDevTools,"Geliştirici araçları",""
+BeaverBuddies.Settings.AllowDevTools.Tooltip,"Tüm oyuncular geliştirici araçlarını kullanabilir. Bu araçlarla yapılan değişiklikler senkronize edilir. Senkronize edilemeyen araçlar ortak oyunda her zaman engellenir.",""
 BeaverBuddies.DevTools.DisabledByHost,"Sunucu bu oyunda geliştirici araçlarını devre dışı bıraktı.",""
 BeaverBuddies.DevTools.NotSynced,"Bu geliştirici aracı senkronize edilemediği için ortak oyunda kullanılamaz.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Oyuncu imleçlerini göster",""
@@ -161,3 +142,13 @@ BeaverBuddies.Match.ListEmptyHint,"Birlikte oynayamayacağın oyuncular gizli. O
 BeaverBuddies.Match.GameMode,"Çok oyunculu mod","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"Ortak","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"Herkes birlikte tek bir yerleşim kurar.","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.On,"Açık",""
+BeaverBuddies.GameSettings.Off,"Kapalı",""
+BeaverBuddies.GameSettings.Defaults,"Oyun ayarları: varsayılanlar",""
+BeaverBuddies.GameSettings.Changed,"Oyun ayarları: {0}",""
+BeaverBuddies.GameSettings.Heading,"Oyun ayarları:",""
+BeaverBuddies.Menu.HostNewGame.Tooltip,"Senin kurduğun yeni bir oyun başlat. Haritayı, çok oyunculu modu ve oyun ayarlarını sen seçersin, arkadaşların da bir Steam davetiyle ya da adresinle katılır.",""
+BeaverBuddies.Menu.HostSavedGame.Tooltip,"Kayıtlı oyunlarından birini kur. Arkadaşların bir Steam davetiyle ya da adresinle katılır ve oyun, oluşturulduğu ayarları korur.",""
+BeaverBuddies.Menu.JoinGame.Tooltip,"Sunucunun adresiyle bir oyuna katıl. Steam'de bir arkadaşının daveti de işe yarar.",""
+BeaverBuddies.Match.FindMatch.Tooltip,"Steam üzerinden, aynı çok oyunculu modu seçen başka bir oyuncuya karşı 1'e 1 maç. Önce aynı harita, zorluk ve oyun ayarlarına sahip oyuncular denenir. Seçimlerinizin farklı olduğu yerde yazı tura karar verir ve haritası seçilen oyuncu oyunu kurar.",""
+BeaverBuddies.Match.OpenMatches.Tooltip,"Şu anda hızlı maç bekleyen oyuncular. Onun haritasında, zorluğunda ve ayarlarıyla oynamak için birine katıl.",""

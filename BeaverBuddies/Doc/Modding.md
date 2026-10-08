@@ -72,7 +72,7 @@ List BeaverBuddies under `RequiredMods` in your manifest (`{ "Id": "beaverbuddie
 | `ShouldPlayPatchedEvents()` | Whether a patched method that sent an event still runs on this machine |
 | `LocalPlayerID()` | This player's ID, the same across restarts and on every machine |
 | `LocalPlayerName()`, `LocalPlayerColor()` | What other players see |
-| `Log`, `LogWarning`, `LogError` | BeaverBuddies' own log, so your lines land next to its event log in error reports |
+| `Log`, `LogWarning`, `LogError` | BeaverBuddies' own log, so your lines land next to its event log in Player.log |
 
 `LocalPlayerID()` is what you store when something belongs to a player: who owns a building, a district, a stockpile of points.
 
@@ -172,6 +172,9 @@ Add these once, when your mod starts. Each one combines with every other mod's: 
 | `GetGameMode()` | The game mode the new game loading on this machine was started with, or null |
 | `AddMatchOption(id, labelLocKey, values, valueLocKeys, defaultValue)` | Adds a choice of your own to hosting and matchmaking, a list of its own (see below) |
 | `GetMatchOption(id)` | Your option's pick for the new game loading on this machine, or null |
+| `AddGameToggle(id, groupLocKey, labelLocKey, tooltipLocKey, defaultOn, modes)` | Adds a checkbox to the game settings on the New Game screens (see below) |
+| `AddGameChoice(id, groupLocKey, labelLocKey, tooltipLocKey, values, valueLocKeys, defaultValue, modes)` | The same for one of a few values |
+| `GetGameSetting(id)` | Your setting's pick for the new game loading on this machine (`on` or `off` for a toggle), or null |
 
 Hooks get your own events as you sent them and BeaverBuddies' events as they are, so a hook can tell them apart by type.
 
@@ -186,6 +189,30 @@ Read the pick with `GetGameMode()` as the new game loads (in a singleton's `Load
 Timber Empires adds PvE (`timberempires.pve`) and PvP (`timberempires.pvp`), and plays BeaverBuddies' Co-op as a shared settlement.
 
 For a choice that isn't a game mode, `AddMatchOption` adds a column of its own next to it, with the same rules: matches pair only players who picked the same, and `GetMatchOption(id)` reads the pick as the game loads.
+
+## Game settings
+
+For a rule that changes how a game plays, use a game setting instead of a Mod Settings entry. It's picked once, when the game is created, and saved with it, so every player plays by the same rules and nobody has to send them around.
+
+`AddGameToggle` and `AddGameChoice` add yours to the end of the New Game screens' Customize list, the one with the game's own starting beavers, droughts and badtides, under a heading of your own (`groupLocKey`, shared by all your settings). A toggle is a checkbox. A choice is its name followed by a checkbox per value, one ticked at a time. The tooltip shows on hover. Each player's picks are remembered between games, and a new game takes them whether the list was opened or not.
+
+`modes` lists the game modes a setting shows for, by id, so a rule that means nothing in Co-op can stay out of it. `bb.alone` is a game started alone, and `bb.others` is any mode of a game with others. Null shows it for every game.
+
+Read the pick with `GetGameSetting(id)` as the game loads (in a singleton's `Load`), and save it yourself. It's only there for a new game started on this machine, and null for a saved one, which should have its own:
+
+```csharp
+public void Load()
+{
+    if (_singletonLoader.TryGetSingleton(Key, out IObjectLoader loader) && loader.Has(EnabledKey)) Enabled = loader.Get(EnabledKey);
+    else Enabled = GetGameSetting("mymod.Floods") != "off";
+}
+```
+
+Players who join load the host's save, so the host's picks are the game's. A game started without your mod's setting (an older save, say) gets null too: pick a default that keeps it playing as it did.
+
+BeaverBuddies shows the picks before a game is played, so players know what they're getting into. It saves them with the game and in the save's metadata, and the Load Game screen shows the game's mode and the settings that aren't their defaults, all of them on hover. In matchmaking they go with the difficulty: each player's picks travel with their search, the search tries players with the same ones first, a coin flip settles them along with the difficulty when they differ, and the open match list shows the host's. Your setting's label and value names are what all of these show, so keep them short.
+
+BeaverBuddies has one of its own, whether dev tools are allowed in a game with others, under a Multiplayer heading. Timber Empires puts its rules under its own.
 
 ## Faction mods
 

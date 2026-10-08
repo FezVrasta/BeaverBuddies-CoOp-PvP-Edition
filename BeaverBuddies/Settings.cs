@@ -35,13 +35,6 @@ namespace BeaverBuddies
                 )
         );
 
-        public ModSetting<bool> ReportingConsent { get; } =
-            new(false,
-            ModSettingDescriptor.CreateLocalized(
-                "BeaverBuddies.Settings.ReportingConsent"
-            ).SetLocalizedTooltip("BeaverBuddies.ClientDesynced.ConsentMessage")
-        );
-
         // ---- Steam Settings ----
 
         public ModSetting<bool> EnableSteamConnection { get; } =
@@ -67,13 +60,6 @@ namespace BeaverBuddies
                 new LimitedStringModSettingValue("2", "BeaverBuddies.Settings.PauseReduction.HighRisk")
             }, ModSettingDescriptor.CreateLocalized("BeaverBuddies.Settings.PauseReduction")
                 .SetLocalizedTooltip("BeaverBuddies.Settings.PauseReduction.Tooltip")
-        );
-
-        public ModSetting<bool> AllowDevToolsInCoop { get; } =
-            new(true,
-                ModSettingDescriptor.CreateLocalized(
-                    "BeaverBuddies.Settings.AllowDevTools"
-                ).SetLocalizedTooltip("BeaverBuddies.Settings.AllowDevTools.Tooltip")
         );
 
         // ---- Developer Settings ----
@@ -137,7 +123,8 @@ namespace BeaverBuddies
         public static bool EnableSteam => instance?.EnableSteamConnection.Value ?? true;
         public static bool LobbyJoinable => instance?.FriendsCanJoinSteamGame.Value ?? true;
         public static bool ShouldShowFirstTimerMessage => instance?.ShowFirstTimerMessage.Value ?? true;
-        public static bool AllowDevTools => instance?.AllowDevToolsInCoop.Value ?? true;
+        // Saved with each game, picked when it's created (see DevTools.DevToolsRule)
+        public static bool AllowDevTools => DevTools.DevToolsRule.Allowed;
 
         public static PauseReductionLevel PauseReductionSetting
         {

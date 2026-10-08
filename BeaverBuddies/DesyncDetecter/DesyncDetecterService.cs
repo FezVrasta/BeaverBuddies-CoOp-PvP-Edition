@@ -1,5 +1,4 @@
 ﻿using BeaverBuddies.Events;
-using BeaverBuddies.Reporting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -136,7 +135,8 @@ namespace BeaverBuddies.DesyncDetecter
 
         public static string GetLastDesyncID()
         {
-            return ReportingService.GetStringHash(lastDesyncTrace);
+            if (lastDesyncTrace == null) return $"{0:X8}";
+            return $"{TimberNet.TimberNetBase.GetHashCode(System.Text.Encoding.UTF8.GetBytes(lastDesyncTrace)):X8}";
         }
 
         public static bool VerifyTraces(int tick, List<Trace> otherTraces)

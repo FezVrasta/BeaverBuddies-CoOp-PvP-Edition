@@ -14,9 +14,9 @@ using Timberborn.TerrainPhysics;
 namespace BeaverBuddies.DevTools
 {
     /**
-     * Decides whether dev tools can be used in a co-op game. The host
-     * controls it with a setting, which is sent to clients when they
-     * join and whenever it changes.
+     * Decides whether dev tools can be used in a co-op game. It's a game
+     * setting, picked when the game is created and saved with it (see
+     * DevToolsRule); the host sends it to clients when they join.
      */
     public static class DevToolsPolicy
     {
@@ -94,7 +94,6 @@ namespace BeaverBuddies.DevTools
     {
         private readonly DevModeManager _devModeManager;
         private readonly QuickNotificationService _quickNotificationService;
-        private readonly Settings _settings;
 
         // Services the dev events need when replaying. They aren't
         // singletons, so ReplayService can't look them up.
@@ -105,14 +104,13 @@ namespace BeaverBuddies.DevTools
         public TerrainDestroyer TerrainDestroyer { get; }
 
         public DevToolsService(DevModeManager devModeManager,
-            QuickNotificationService quickNotificationService, Settings settings,
+            QuickNotificationService quickNotificationService,
             TemplateService templateService, IRandomNumberGenerator randomNumberGenerator,
             DefaultBlockObjectPlacer defaultBlockObjectPlacer, NewbornSpawner newbornSpawner,
             TerrainDestroyer terrainDestroyer)
         {
             _devModeManager = devModeManager;
             _quickNotificationService = quickNotificationService;
-            _settings = settings;
             TemplateService = templateService;
             RandomNumberGenerator = randomNumberGenerator;
             DefaultBlockObjectPlacer = defaultBlockObjectPlacer;
@@ -122,7 +120,6 @@ namespace BeaverBuddies.DevTools
 
         public void PostLoad()
         {
-            _settings.AllowDevToolsInCoop.ValueChanged += OnAllowDevToolsChanged;
             EnforcePolicy();
         }
 
@@ -131,8 +128,8 @@ namespace BeaverBuddies.DevTools
         /**
          * The host tells clients whether dev tools are allowed when they
          * connect, but that happens while it's still loading, before its
-         * mod settings are read, so it can say no when they're on. Once the
-         * game runs, send the real setting.
+         * save is read, so it can say no when they're on. Once the game
+         * runs, send the real setting.
          */
         public void UpdateSingleton()
         {
@@ -154,18 +151,10 @@ namespace BeaverBuddies.DevTools
                 _devModeManager.Disable();
             }
         }
-
-        private void OnAllowDevToolsChanged(object sender, bool allowed)
-        {
-            // Only the host's setting matters
-            if (!DevToolsPolicy.IsHost) return;
-            EnforcePolicy();
-            ReplayEvent.DoPrefix(() => new DevToolsAllowedEvent() { allowed = allowed });
-        }
     }
 
     /**
-     * Sent by the host when it changes whether dev tools are allowed.
+     * Sent by the host once its game runs: whether dev tools are allowed.
      */
     [Serializable]
     public class DevToolsAllowedEvent : ReplayEvent

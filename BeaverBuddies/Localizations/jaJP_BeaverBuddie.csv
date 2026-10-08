@@ -9,45 +9,27 @@ BeaverBuddies.Menu.HostGame,"ゲームをホスト","Host game"
 BeaverBuddies.Menu.HostFailed,"新しいゲームをホストできませんでした。","Couldn't host the new game."
 BeaverBuddies.JoinCoopGame.EnterIp,"ホストのグローバルIPアドレスを入力してください:","Enter the global IP address of the Host:"
 BeaverBuddies.FirstTimer.Message,"BeaverBuddiesを使用するのは初めてのようです。プレイの準備ができていることを確認するために、ガイドを一読することをお勧めします。今すぐ確認しますか？","It looks like this is your first time using BeaverBuddies. We recommend taking a quick look through our guide to make sure you are set up to play. Would you like to do that now?"
-BeaverBuddies.Saving.HostCoopGame,"協力ゲームをホスト","Host co-op game"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessageWithError,"エラーが発生して参加に失敗しました:
 {0}
 トラブルシューティングガイドを開きますか？","Joining failed with error:
 {0}
 Would you like to open the troubleshooting guide?"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessage,"ホストに接続できませんでした。トラブルシューティングガイドを開きますか？","Failed to connect to Host. Would you like to open the troubleshooting guide?"
-BeaverBuddies.ClientDesynced.Message,"接続されているプレイヤーがデシンクし、プレイを続けることができません。申し訳ありません！ホストは再ホストし、その後、クライアントが再接続する必要があります。問題が続く場合は、ゲームを再起動する必要があるかもしれません。リロードする前に、この問題を修正するためにバグレポートを提出しますか？","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Before reloading, would you like to file a bug report to help us fix this issue?"
+BeaverBuddies.ClientDesynced.Message,"接続されているプレイヤーがデシンクし、プレイを続けることができません。申し訳ありません！ホストは再ホストし、その後、クライアントが再接続する必要があります。問題が続く場合は、ゲームを再起動する必要があるかもしれません。Discordで報告していただくと、修正に役立ちます。","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Reporting it on our Discord helps us fix it."
 BeaverBuddies.ClientDesynced.FailedToRehostMessage,"再ホストに失敗しました。手動で保存して再ホストしてください。","Failed to Rehost. Manually save and Host again."
 BeaverBuddies.ClientDesynced.SaveAndRehostButton,"保存して再ホスト","Save and Rehost"
 BeaverBuddies.ClientDesynced.WaitForRehostButton,"再ホストを待って再接続","Reconnect (wait for Rehost)"
-BeaverBuddies.ClientDesynced.PostBugReportButton,"バグ報告を投稿","Post Bug Report"
 BeaverBuddies.Editor.StartingLocation1,"開始地点 - プレイヤー 1",""
 BeaverBuddies.Editor.StartingLocation2,"開始地点 - プレイヤー 2",""
 BeaverBuddies.Editor.StartingLocation3,"開始地点 - プレイヤー 3",""
 BeaverBuddies.Editor.StartingLocation4,"開始地点 - プレイヤー 4",""
 BeaverBuddies.NewGame.MaxStartingLocations,"最大開始地点数",""
-BeaverBuddies.ClientDesynced.ReportSuccess,"成功！",""
-BeaverBuddies.ClientDesynced.ReportFailed,"失敗 :(",""
-BeaverBuddies.ClientDesynced.ConsentAgreement,"はい、同意します",""
+BeaverBuddies.NewGame.MaxStartingLocations.Tooltip,"開始地点が複数あるマップで、プレイヤー順にいくつの開始地点に地区の中心と初期ビーバーを配置するかを決めます。開始地点が1つのマップでは無視されます。",""
 BeaverBuddies.ClientDesynced.TracingEnabled,"有効",""
+BeaverBuddies.ClientDesynced.ReportOnDiscord,"Discordで報告",""
+BeaverBuddies.ClientDesynced.TraceSaved,"トレースをPlayer.logの横に保存しました",""
 BeaverBuddies.ClientDesynced.EnableTracing,"ログ記録を有効にする",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"この同期ズレを報告するには、*全プレイヤー* が下の「ログ記録を有効にする」を押して、詳細なログ記録を有効にする必要があります。別の同期ズレが発生した場合、詳細で自動化されたバグレポートを投稿できます。ログ記録モードは一時的にラグを引き起こす可能性がありますが、ゲームを再起動するまでのみ有効です。",""
-BeaverBuddies.ClientDesynced.ConsentMessage,"使用データ共有の同意
-
-データを共有することを選択することで、プレイセッション中の以下の情報をこのModの開発者に送信することに同意します：
-
-- ログデータ：プレイセッション中に自動的に収集される情報（ゲームイベントやユーザー操作など）。
-- セーブファイル：現在のゲームのセーブファイル。
-
-これらのデータは主に匿名で保持されるよう努めていますが、データはそのまま収集されるため、ファイルパスやユーザー名など、あなたを識別できる情報が含まれる可能性があります。開発者はこの情報を使ってあなたを特定しようとはしません。
-
-選択肢：
-- 同意する場合、これらのデータは安全に開発者に送信され、Modの改善に使用されます。
-- 同意しない場合、データは送信されず、ゲームは変更なく続行されます。
-
-続行することで、居住国でのデジタル同意年齢に達していることを確認します。
-
-このModの開発者とデータを共有することに同意しますか？",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"この同期ズレを報告するには、*全プレイヤー* が下の「ログ記録を有効にする」を押して、詳細なログ記録を有効にする必要があります。別の同期ズレが発生した場合、詳細なログを添えてDiscordで報告できます。ログ記録モードは一時的にラグを引き起こす可能性がありますが、ゲームを再起動するまでのみ有効です。",""
 BeaverBuddies.Settings.ClientConnectionAddress,"クライアント接続アドレス",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"ホストに接続する際に使うデフォルトのIPアドレスです。",""
 BeaverBuddies.Settings.Port,"ポート",""
@@ -60,7 +42,6 @@ BeaverBuddies.Settings.AlwaysTrace,"詳細ログを常に使用",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"有効にすると、ゲームは常に詳細ログを使用し、最初の同期ズレ発生時から手動設定なしで報告が可能になります。
 すべてのプレイヤーがこの設定を有効にしている必要があります。
 この設定はラグを引き起こす可能性があるため、ほとんどのプレイヤーには推奨されません。",""
-BeaverBuddies.Settings.ReportingConsent,"報告への同意",""
 BeaverBuddies.Settings.EnableSteamConnection,"Steamネットワークを有効化",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"SteamのP2Pネットワーク経由で、プレイヤーがあなたのゲームに参加できるようにします。
 プレイヤーはポート転送経由でも参加可能です。
@@ -93,8 +74,8 @@ BeaverBuddies.Settings.PingPlayerName,"ピンの表示名",""
 BeaverBuddies.Settings.PingPlayerName.Tooltip,"他のプレイヤーのピンの横に表示される名前。",""
 BeaverBuddies.Settings.PingColor,"ピンの色",""
 BeaverBuddies.Settings.PingColor.Tooltip,"全プレイヤーの画面に表示されるあなたのピンの色。",""
-BeaverBuddies.Settings.AllowDevTools,"協力プレイで開発ツールを許可",""
-BeaverBuddies.Settings.AllowDevTools.Tooltip,"ホストの場合、すべてのプレイヤーが開発ツールを使えるようになります。開発ツールによる変更は同期されます。同期できない開発ツールは協力プレイでは常にブロックされます。",""
+BeaverBuddies.Settings.AllowDevTools,"開発ツール",""
+BeaverBuddies.Settings.AllowDevTools.Tooltip,"すべてのプレイヤーが開発ツールを使えるようになります。開発ツールによる変更は同期されます。同期できない開発ツールは協力プレイでは常にブロックされます。",""
 BeaverBuddies.DevTools.DisabledByHost,"ホストがこのゲームの開発ツールを無効にしています。",""
 BeaverBuddies.DevTools.NotSynced,"この開発ツールは同期できないため、協力プレイでは使用できません。",""
 BeaverBuddies.Settings.ShowPlayerCursors,"プレイヤーのカーソルを表示",""
@@ -161,3 +142,13 @@ BeaverBuddies.Match.ListEmptyHint,"一緒にプレイできないプレイヤー
 BeaverBuddies.Match.GameMode,"マルチプレイモード","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"協力","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"全員でひとつの開拓地を一緒に築きます。","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.On,"オン",""
+BeaverBuddies.GameSettings.Off,"オフ",""
+BeaverBuddies.GameSettings.Defaults,"ゲーム設定: デフォルト",""
+BeaverBuddies.GameSettings.Changed,"ゲーム設定: {0}",""
+BeaverBuddies.GameSettings.Heading,"ゲーム設定:",""
+BeaverBuddies.Menu.HostNewGame.Tooltip,"あなたがホストする新しいゲームを始めます。マップ、マルチプレイモード、ゲーム設定を選び、フレンドはSteamの招待かあなたのアドレスから参加します。",""
+BeaverBuddies.Menu.HostSavedGame.Tooltip,"セーブしたゲームのひとつをホストします。フレンドはSteamの招待かあなたのアドレスから参加し、ゲームは作成時の設定のまま進みます。",""
+BeaverBuddies.Menu.JoinGame.Tooltip,"ホストのアドレスでゲームに参加します。Steamではフレンドの招待からも参加できます。",""
+BeaverBuddies.Match.FindMatch.Tooltip,"同じマルチプレイモードを選んだ別のプレイヤーとSteamで1対1の対戦をします。マップ、難易度、ゲーム設定が同じプレイヤーが優先されます。選択が異なる項目はコイントスで決まり、マップが選ばれた側がホストになります。",""
+BeaverBuddies.Match.OpenMatches.Tooltip,"今クイックマッチを待っているプレイヤーです。参加すると、相手のマップ、難易度、設定で遊びます。",""

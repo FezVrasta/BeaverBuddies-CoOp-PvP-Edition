@@ -185,6 +185,36 @@ namespace BeaverBuddies.DevTools
                     Plugin.Log($"[Test] Layout {a[1]}:\n{string.Join("\n", lines)}");
                     break;
                 }
+                case "setfield":
+                {
+                    // setfield Name value: a number field of the panel on top, as typing it would set it
+                    var panel = _panelStack._stack.Peek().PanelController.GetPanel();
+                    var field = UnityEngine.UIElements.UQueryExtensions.Q<UnityEngine.UIElements.IntegerField>(panel, a[1]) ?? throw new Exception($"no field {a[1]}");
+                    field.value = int.Parse(a[2]);
+                    break;
+                }
+                case "scrollend":
+                {
+                    // scrollend Name: a scroll view of the panel on top, scrolled to its end
+                    var panel = _panelStack._stack.Peek().PanelController.GetPanel();
+                    var list = UnityEngine.UIElements.UQueryExtensions.Q<UnityEngine.UIElements.ScrollView>(panel, a[1]) ?? throw new Exception($"no {a[1]}");
+                    list.scrollOffset = new Vector2(0, float.MaxValue);
+                    break;
+                }
+                case "gamesetting":
+                {
+                    // gamesetting id value: this player's pick for new games, as the Customize list would set it
+                    NewGame.GameSettings.Pick(a[1], a[2]);
+                    SingletonManager.GetSingleton<NewGame.GameSettingsSection>()?.Refresh();
+                    break;
+                }
+                case "matchoption":
+                {
+                    // matchoption id value: a pick in a column next to the difficulties, like the game mode
+                    Matchmaking.MatchOptions.Pick(a[1], a[2]);
+                    SingletonManager.GetSingleton<NewGame.GameSettingsSection>()?.Refresh();
+                    break;
+                }
                 case "snap":
                     ScreenCapture.CaptureScreenshot(a[1]);
                     break;
@@ -452,6 +482,13 @@ namespace BeaverBuddies.DevTools
                             Plugin.Log($"[Test]   {r.name}: {string.Join(", ", r.sharedMaterials.Where(m => m).Select(m => $"{m.name} gray={(m.HasProperty("_Grayscale") ? m.GetFloat("_Grayscale") : -1)}"))}");
                         }
                     }
+                    break;
+                }
+                case "desync":
+                {
+                    // desync [traced]: this copy desyncs, as a failed check would make it; traced, with logging on
+                    if (a.Length > 1 && a[1] == "traced") Settings.TemporarilyDebug = true;
+                    Get<ReplayService>().HandleDesync();
                     break;
                 }
                 case "rehost":

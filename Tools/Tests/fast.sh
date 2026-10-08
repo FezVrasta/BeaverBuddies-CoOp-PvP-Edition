@@ -1,5 +1,5 @@
 #!/bin/bash
-# The checks that need no game, for BeaverBuddies: it builds (the Steam build, and the one without Steam
+# The checks that need no game, for BeaverBuddies: its translations have English's keys, and it builds (the Steam build, and the one without Steam
 # networking and matchmaking, so code that should compile either way is caught), into a scratch folder
 # so nothing in the Mods folder changes. Seconds. (See README.md.)
 #
@@ -17,6 +17,7 @@ step() { # name command...
 }
 
 echo "BeaverBuddies, fast checks"
+step "translations" python3 "$HERE/translations.py"
 step "builds (Steam)" bash -c "cd '$REPO/BeaverBuddies' && dotnet build -c Release -nologo -v q -p:DocumentsPath='$SCRATCH/' 2>&1 | tee /dev/stderr | grep -q '0 Error(s)'"
 step "builds without Steam networking and matchmaking" bash -c "cd '$REPO/BeaverBuddies' && dotnet build -c Release -nologo -v q -p:Steam=false -p:DocumentsPath='$SCRATCH/' 2>&1 | tee /dev/stderr | grep -q '0 Error(s)'"
 # The Steam build again, so what's left in bin and obj is the one that ships

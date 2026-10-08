@@ -9,45 +9,27 @@ BeaverBuddies.Menu.HostGame,"Host game","Host game"
 BeaverBuddies.Menu.HostFailed,"Couldn't host the new game.","Couldn't host the new game."
 BeaverBuddies.JoinCoopGame.EnterIp,"Enter the global IP address or domain name of the Host:",""
 BeaverBuddies.FirstTimer.Message,"It looks like this is your first time using BeaverBuddies. We recommend taking a quick look through our guide to make sure you are set up to play. Would you like to do that now?","It looks like this is your first time using BeaverBuddies. We recommend taking a quick look through our guide to make sure you are set up to play. Would you like to do that now?"
-BeaverBuddies.Saving.HostCoopGame,"Host co-op game","Host co-op game"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessageWithError,"Joining failed with error:
 {0}
 Would you like to open the troubleshooting guide?","Joining failed with error:
 {0}
 Would you like to open the troubleshooting guide?"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessage,"Failed to connect to Host. Would you like to open the troubleshooting guide?","Failed to connect to Host. Would you like to open the troubleshooting guide?"
-BeaverBuddies.ClientDesynced.Message,"A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Before reloading, would you like to file a bug report to help us fix this issue?",""
+BeaverBuddies.ClientDesynced.Message,"A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Reporting it on our Discord helps us fix it.",""
 BeaverBuddies.ClientDesynced.FailedToRehostMessage,"Failed to Rehost. Manually save and Host again.","Failed to Rehost. Manually save and Host again."
 BeaverBuddies.ClientDesynced.SaveAndRehostButton,"Save and Rehost","Save and Rehost"
 BeaverBuddies.ClientDesynced.WaitForRehostButton,"Reconnect (wait for Rehost)","Reconnect (wait for Rehost)"
-BeaverBuddies.ClientDesynced.PostBugReportButton,"Post Bug Report","Post Bug Report"
 BeaverBuddies.Editor.StartingLocation1,"Starting Location - Player 1",""
 BeaverBuddies.Editor.StartingLocation2,"Starting Location - Player 2",""
 BeaverBuddies.Editor.StartingLocation3,"Starting Location - Player 3",""
 BeaverBuddies.Editor.StartingLocation4,"Starting Location - Player 4",""
 BeaverBuddies.NewGame.MaxStartingLocations,"Max Starting Locations",""
-BeaverBuddies.ClientDesynced.ReportSuccess,"Success!",""
-BeaverBuddies.ClientDesynced.ReportFailed,"Failed :(",""
-BeaverBuddies.ClientDesynced.ConsentAgreement,"Yes, I agree",""
+BeaverBuddies.NewGame.MaxStartingLocations.Tooltip,"On a map with several starting locations, how many of them get a District Center and starting beavers, in player order. A map with one start ignores it.",""
 BeaverBuddies.ClientDesynced.TracingEnabled,"Enabled",""
+BeaverBuddies.ClientDesynced.ReportOnDiscord,"Report on Discord",""
+BeaverBuddies.ClientDesynced.TraceSaved,"Trace saved next to Player.log",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Enable Logging",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"In order to report this desync, *all players* must first enable more detailed logging by pressing Enable Logging, below. If another desync occurs, you will then be able to post a detailed, automated bug report. Logging mode may cause some lag, but it will only be active until you restart the game.",""
-BeaverBuddies.ClientDesynced.ConsentMessage,"Consent to Share Usage Data
-
-By choosing to share your data, you agree to send the following information from your gameplay session to the developers of this mod:
-
-- Log Data: Information automatically collected during your gameplay session, such as game events and user interactions.
-- Save File: Your current game save file.
-
-We strive to maintain your privacy by keeping this data largely anonymous. However, because the data is collected as-is, it may inadvertently include details that could identify you (such as file paths or usernames). The developers will not attempt to identify you using this information.
-
-Your Choices:
-- If you agree, this data will be sent securely to the developers and used to improve the mod.
-- If you do not agree, no data will be sent, and your gameplay will continue without any changes.
-
-By proceeding, you confirm that you are at least the legal age of digital consent in your country of residence.
-
-Do you agree to share your data with the developers of this mod?",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"To report this desync, *all players* must first enable more detailed logging by pressing Enable Logging, below. If another desync occurs, you can then report it on our Discord with the detailed log. Logging mode may cause some lag, but it will only be active until you restart the game.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"Client Connection Address",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"Default IP address used when connecting to a Host.",""
 BeaverBuddies.Settings.Port,"Port",""
@@ -60,7 +42,6 @@ BeaverBuddies.Settings.AlwaysTrace,"Always Use Detailed Logging",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"When enabled, the game will always use detailed logging, which enables you to submit desync reports on the first occurrence without manually enabling detailed logging.
 Note that all players must have the setting enabled.
 This setting will cause some lag and is not recommended for most players.",""
-BeaverBuddies.Settings.ReportingConsent,"Consent to Reporting",""
 BeaverBuddies.Settings.EnableSteamConnection,"Enable Steam Networking",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Allows players to join your games via Steam's peer-to-peer networking.
 Players will still be able to join via port forwarding.
@@ -93,8 +74,8 @@ BeaverBuddies.Settings.PingPlayerName,"Ping Display Name",""
 BeaverBuddies.Settings.PingPlayerName.Tooltip,"The name shown to other players next to your pings.",""
 BeaverBuddies.Settings.PingColor,"Ping Color",""
 BeaverBuddies.Settings.PingColor.Tooltip,"The color used to draw your pings on every player's screen.",""
-BeaverBuddies.Settings.AllowDevTools,"Allow Dev Tools in Co-op",""
-BeaverBuddies.Settings.AllowDevTools.Tooltip,"When you host, lets every player use the dev tools. Changes made with them are synced. Dev tools that can't be synced are always blocked in co-op.",""
+BeaverBuddies.Settings.AllowDevTools,"Dev tools",""
+BeaverBuddies.Settings.AllowDevTools.Tooltip,"Lets every player use the dev tools. Changes made with them are synced. Dev tools that can't be synced are always blocked in co-op.",""
 BeaverBuddies.DevTools.DisabledByHost,"The host has disabled dev tools for this game.",""
 BeaverBuddies.DevTools.NotSynced,"This dev tool can't be used in co-op because it can't be synced.",""
 BeaverBuddies.Settings.ShowPlayerCursors,"Show Player Cursors",""
@@ -161,3 +142,13 @@ BeaverBuddies.Match.ListEmptyHint,"Players you can't play with are hidden. Tick 
 BeaverBuddies.Match.GameMode,"Multiplayer mode","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"Co-op","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"Everyone builds one settlement together.","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.On,"On",""
+BeaverBuddies.GameSettings.Off,"Off",""
+BeaverBuddies.GameSettings.Defaults,"Game settings: the defaults",""
+BeaverBuddies.GameSettings.Changed,"Game settings: {0}",""
+BeaverBuddies.GameSettings.Heading,"Game settings:",""
+BeaverBuddies.Menu.HostNewGame.Tooltip,"Start a new game you host. You pick the map, multiplayer mode and game settings, and friends join from a Steam invite or your address.",""
+BeaverBuddies.Menu.HostSavedGame.Tooltip,"Host one of your saves. Friends join from a Steam invite or your address, and the game keeps the settings it was created with.",""
+BeaverBuddies.Menu.JoinGame.Tooltip,"Join a game by its host's address. On Steam, a friend's invite works too.",""
+BeaverBuddies.Match.FindMatch.Tooltip,"A 1v1 against another player over Steam who picked the same multiplayer mode. Players with the same map, difficulty and game settings are tried first. Where your picks differ, a coin flip decides, and whoever's map it is hosts.",""
+BeaverBuddies.Match.OpenMatches.Tooltip,"Players waiting for a quick match right now. Join one to play on their map, difficulty and settings.",""

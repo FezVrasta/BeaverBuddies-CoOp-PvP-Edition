@@ -9,45 +9,27 @@ BeaverBuddies.Menu.HostGame,"主持遊戲","Host game"
 BeaverBuddies.Menu.HostFailed,"無法主持新遊戲。","Couldn't host the new game."
 BeaverBuddies.JoinCoopGame.EnterIp,"輸入主機的全域IP地址:","Enter the global IP address of the Host:"
 BeaverBuddies.FirstTimer.Message,"看起來這是您第一次使用BeaverBuddies。我們建議快速瀏覽一下我們的指南，以確保您已準備好進行遊戲。您現在要這樣做嗎？","It looks like this is your first time using BeaverBuddies. We recommend taking a quick look through our guide to make sure you are set up to play. Would you like to do that now?"
-BeaverBuddies.Saving.HostCoopGame,"主持合作遊戲","Host co-op game"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessageWithError,"連接失敗，錯誤：
 {0}
 您要打開故障排除指南嗎？","Joining failed with error:
 {0}
 Would you like to open the troubleshooting guide?"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessage,"無法連接到主機。您要打開故障排除指南嗎？","Failed to connect to Host. Would you like to open the troubleshooting guide?"
-BeaverBuddies.ClientDesynced.Message,"連接的玩家失去同步，無法繼續遊戲 - 抱歉！主機應重新托管遊戲，之後客戶端應重新連接。如果問題持續存在，可能需要重新啟動遊戲。在重新加載之前，您是否希望提交錯誤報告來幫助我們修復此問題？","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Before reloading, would you like to file a bug report to help us fix this issue?"
+BeaverBuddies.ClientDesynced.Message,"連接的玩家失去同步，無法繼續遊戲 - 抱歉！主機應重新托管遊戲，之後客戶端應重新連接。如果問題持續存在，可能需要重新啟動遊戲。在我們的 Discord 上回報此問題能幫助我們修復它。","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Reporting it on our Discord helps us fix it."
 BeaverBuddies.ClientDesynced.FailedToRehostMessage,"重新託管失敗。請手動保存並再次託管。","Failed to Rehost. Manually save and Host again."
 BeaverBuddies.ClientDesynced.SaveAndRehostButton,"保存並重新託管","Save and Rehost"
 BeaverBuddies.ClientDesynced.WaitForRehostButton,"重新連接（等待重新託管）","Reconnect (wait for Rehost)"
-BeaverBuddies.ClientDesynced.PostBugReportButton,"提交錯誤報告","Post Bug Report"
 BeaverBuddies.Editor.StartingLocation1,"起始位置 - 玩家 1",""
 BeaverBuddies.Editor.StartingLocation2,"起始位置 - 玩家 2",""
 BeaverBuddies.Editor.StartingLocation3,"起始位置 - 玩家 3",""
 BeaverBuddies.Editor.StartingLocation4,"起始位置 - 玩家 4",""
 BeaverBuddies.NewGame.MaxStartingLocations,"最大起始位置",""
-BeaverBuddies.ClientDesynced.ReportSuccess,"成功！",""
-BeaverBuddies.ClientDesynced.ReportFailed,"失敗 :(",""
-BeaverBuddies.ClientDesynced.ConsentAgreement,"是的，我同意",""
+BeaverBuddies.NewGame.MaxStartingLocations.Tooltip,"在有多個起始位置的地圖上，依玩家順序決定其中多少個起始位置獲得地區中心和初始河狸。只有一個起始位置的地圖會忽略此設定。",""
 BeaverBuddies.ClientDesynced.TracingEnabled,"已啟用",""
+BeaverBuddies.ClientDesynced.ReportOnDiscord,"在 Discord 上回報",""
+BeaverBuddies.ClientDesynced.TraceSaved,"追蹤已儲存至 Player.log 旁",""
 BeaverBuddies.ClientDesynced.EnableTracing,"啟用日誌記錄",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"若要回報此不同步，*所有玩家* 必須先按下下方的「啟用日誌記錄」，以啟用更詳細的日誌記錄。如果再次發生不同步，您將能提交詳細的自動化錯誤報告。日誌模式可能會造成一些延遲，但僅在您重新啟動遊戲之前有效。",""
-BeaverBuddies.ClientDesynced.ConsentMessage,"同意分享使用資料
-
-選擇分享您的資料即表示您同意將以下來自您的遊戲會話的資訊傳送給此模組的開發者：
-
-- 日誌數據：在您的遊戲會話期間自動收集的資訊，例如遊戲事件和使用者互動。
-- 存檔檔案：您目前的遊戲存檔檔案。
-
-我們致力於保護您的隱私，盡量保持這些數據的匿名性。然而，因為數據是按原樣收集的，它可能會無意中包含能識別您的詳細資訊（如檔案路徑或使用者名稱）。開發者不會嘗試使用這些資訊識別您。
-
-您的選擇：
-- 如果您同意，這些資料將安全地發送給開發者並用於改進模組。
-- 如果您不同意，不會傳送任何資料，您的遊戲將繼續不受影響。
-
-繼續表示您確認已達到您所在國家/地區的數位同意法定年齡。
-
-您是否同意將您的資料分享給此模組的開發者？",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"若要回報此不同步，*所有玩家* 必須先按下下方的「啟用日誌記錄」，以啟用更詳細的日誌記錄。如果再次發生不同步，您將能附上詳細日誌在我們的 Discord 上回報。日誌模式可能會造成一些延遲，但僅在您重新啟動遊戲之前有效。",""
 BeaverBuddies.Settings.ClientConnectionAddress,"客戶端連接位址",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"連接主機時使用的預設 IP 位址。",""
 BeaverBuddies.Settings.Port,"連接埠",""
@@ -60,7 +42,6 @@ BeaverBuddies.Settings.AlwaysTrace,"始終使用詳細日誌",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"開啟後，遊戲將始終使用詳細日誌，使你在首次 desync 時即可提交報告，無需手動切換。
 請注意，所有玩家都需啟用此設置。
 此設置可能導致延遲，不建議大多數玩家使用。",""
-BeaverBuddies.Settings.ReportingConsent,"報告同意",""
 BeaverBuddies.Settings.EnableSteamConnection,"啟用 Steam 網路連接",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"允許玩家通過 Steam 的 P2P 網絡加入你的遊戲。
 玩家仍可通過連接埠轉發加入。
@@ -93,8 +74,8 @@ BeaverBuddies.Settings.PingPlayerName,"標記顯示名稱",""
 BeaverBuddies.Settings.PingPlayerName.Tooltip,"在其他玩家螢幕上顯示在你的標記旁邊的名稱。",""
 BeaverBuddies.Settings.PingColor,"標記顏色",""
 BeaverBuddies.Settings.PingColor.Tooltip,"在每位玩家螢幕上繪製你的標記時使用的顏色。",""
-BeaverBuddies.Settings.AllowDevTools,"在合作模式中允許開發者工具",""
-BeaverBuddies.Settings.AllowDevTools.Tooltip,"當你作為主機時，所有玩家都可以使用開發者工具。用它們做出的變更會同步。無法同步的開發者工具在合作模式中一律停用。",""
+BeaverBuddies.Settings.AllowDevTools,"開發者工具",""
+BeaverBuddies.Settings.AllowDevTools.Tooltip,"所有玩家都可以使用開發者工具。用它們做出的變更會同步。無法同步的開發者工具在合作模式中一律停用。",""
 BeaverBuddies.DevTools.DisabledByHost,"主機已在本局遊戲中停用開發者工具。",""
 BeaverBuddies.DevTools.NotSynced,"此開發者工具無法同步，因此不能在合作模式中使用。",""
 BeaverBuddies.Settings.ShowPlayerCursors,"顯示玩家游標",""
@@ -161,3 +142,13 @@ BeaverBuddies.Match.ListEmptyHint,"無法一起遊玩的玩家已隱藏。勾選
 BeaverBuddies.Match.GameMode,"多人模式","Multiplayer mode"
 BeaverBuddies.Match.GameMode.CoOp,"合作","Co-op"
 BeaverBuddies.Match.GameMode.CoOp.Description,"所有人一起建設同一個定居地。","Everyone builds one settlement together."
+BeaverBuddies.GameSettings.On,"開啟",""
+BeaverBuddies.GameSettings.Off,"關閉",""
+BeaverBuddies.GameSettings.Defaults,"遊戲設定：預設",""
+BeaverBuddies.GameSettings.Changed,"遊戲設定：{0}",""
+BeaverBuddies.GameSettings.Heading,"遊戲設定：",""
+BeaverBuddies.Menu.HostNewGame.Tooltip,"開始一局由你主持的新遊戲。你來選擇地圖、多人模式和遊戲設定，好友透過 Steam 邀請或你的位址加入。",""
+BeaverBuddies.Menu.HostSavedGame.Tooltip,"主持你已儲存的一局遊戲。好友透過 Steam 邀請或你的位址加入，遊戲保留建立時的設定。",""
+BeaverBuddies.Menu.JoinGame.Tooltip,"透過主機的位址加入遊戲。在 Steam 上，好友的邀請也可以。",""
+BeaverBuddies.Match.FindMatch.Tooltip,"透過 Steam 與另一位選擇了相同多人模式的玩家進行 1 對 1 對局。優先配對地圖、難度和遊戲設定都相同的玩家。雙方選擇不同之處由擲硬幣決定，地圖被選中的一方擔任主機。",""
+BeaverBuddies.Match.OpenMatches.Tooltip,"正在等待快速對局的玩家。加入其中一位，即可使用對方的地圖、難度和設定進行遊戲。",""
