@@ -1,3 +1,13 @@
+v1.1.0-1.3.0
+* New: mods' game rules are picked when you create a game, under Customize, and saved with it. Your picks are remembered for the next game.
+* Customize opens in a dialog of its own, and nothing on the page changes until you press OK.
+* The Load Game screen shows a save's multiplayer mode and the game settings that aren't their defaults.
+* Quick match settles game settings along with the difficulty, and open matches list the host's.
+* Allow Dev Tools in Co-op is a game setting now, picked when the game is created.
+* The desync dialog saves the trace next to Player.log for a report on our Discord. The automatic report upload, which never worked in this edition, is gone.
+* Load Game from the main menu no longer offers to host, the Multiplayer menu's buttons have tooltips, and the New Game summary names the multiplayer mode.
+* Fixed the Customize list's fields being cut off when hosting or finding a match.
+
 v1.1.0-1.2.0
 * New: find a match with anyone through Steam, from Find a match in the main menu.
 * New: a list of open matches to join, and inviting friends without the Steam overlay.
