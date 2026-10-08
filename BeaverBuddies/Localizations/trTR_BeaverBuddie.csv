@@ -152,3 +152,4 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"Kayıtlı oyunlarından birini kur. Ar
 BeaverBuddies.Menu.JoinGame.Tooltip,"Sunucunun adresiyle bir oyuna katıl. Steam'de bir arkadaşının daveti de işe yarar.",""
 BeaverBuddies.Match.FindMatch.Tooltip,"Steam üzerinden, aynı çok oyunculu modu seçen başka bir oyuncuya karşı 1'e 1 maç. Önce aynı harita, zorluk ve oyun ayarlarına sahip oyuncular denenir. Seçimlerinizin farklı olduğu yerde yazı tura karar verir ve haritası seçilen oyuncu oyunu kurar.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Şu anda hızlı maç bekleyen oyuncular. Onun haritasında, zorluğunda ve ayarlarıyla oynamak için birine katıl.",""
+BeaverBuddies.ClientDesynced.WaitForInvite,"Ev sahibi henüz yeniden barındırmadı. Barındırdığında davetini kabul et.",""

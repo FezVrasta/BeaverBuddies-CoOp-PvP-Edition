@@ -152,3 +152,4 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"Hébergez une de vos sauvegardes. Vos 
 BeaverBuddies.Menu.JoinGame.Tooltip,"Rejoignez une partie avec l'adresse de son hôte. Sur Steam, l'invitation d'un ami fonctionne aussi.",""
 BeaverBuddies.Match.FindMatch.Tooltip,"Un 1 contre 1 sur Steam face à un autre joueur ayant choisi le même mode multijoueur. Les joueurs avec la même carte, la même difficulté et les mêmes paramètres de partie sont essayés en premier. Là où vos choix diffèrent, un pile ou face tranche, et celui dont la carte est retenue héberge.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Joueurs qui attendent une partie rapide en ce moment. Rejoignez-en un pour jouer sur sa carte, avec sa difficulté et ses paramètres.",""
+BeaverBuddies.ClientDesynced.WaitForInvite,"L'hôte n'a pas encore réhébergé. Accepte son invitation dès qu'il l'aura fait.",""

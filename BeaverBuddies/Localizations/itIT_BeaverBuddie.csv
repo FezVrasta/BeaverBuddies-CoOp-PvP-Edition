@@ -152,3 +152,4 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"Ospita uno dei tuoi salvataggi. Gli am
 BeaverBuddies.Menu.JoinGame.Tooltip,"Entra in una partita con l'indirizzo di chi la ospita. Su Steam funziona anche l'invito di un amico.",""
 BeaverBuddies.Match.FindMatch.Tooltip,"Un 1 contro 1 su Steam contro un altro giocatore che ha scelto la stessa modalità multigiocatore. Prima si cercano giocatori con la stessa mappa, difficoltà e impostazioni di gioco. Dove le scelte sono diverse decide il lancio di una moneta, e ospita chi ha la mappa scelta.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Giocatori che stanno cercando una partita rapida in questo momento. Unisciti a uno per giocare con la sua mappa, difficoltà e impostazioni.",""
+BeaverBuddies.ClientDesynced.WaitForInvite,"L'host non ha ancora riospitato. Accetta il suo invito quando l'avrà fatto.",""

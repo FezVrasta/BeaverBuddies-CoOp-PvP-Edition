@@ -152,3 +152,4 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"Hostuj jedną ze swoich zapisanych gie
 BeaverBuddies.Menu.JoinGame.Tooltip,"Dołącz do gry przez adres jej hosta. Na Steam działa też zaproszenie od znajomego.",""
 BeaverBuddies.Match.FindMatch.Tooltip,"Mecz 1 na 1 przez Steam z innym graczem, który wybrał ten sam tryb wieloosobowy. Najpierw szukamy graczy z tą samą mapą, poziomem trudności i ustawieniami gry. Gdzie wasze wybory się różnią, decyduje rzut monetą, a hostuje ten, czyja mapa wypadła.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Gracze, którzy właśnie czekają na szybki mecz. Dołącz do jednego z nich, żeby grać na jego mapie, z jego poziomem trudności i ustawieniami.",""
+BeaverBuddies.ClientDesynced.WaitForInvite,"Host jeszcze nie hostuje ponownie. Przyjmij jego zaproszenie, gdy to zrobi.",""

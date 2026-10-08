@@ -152,3 +152,4 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"セーブしたゲームのひとつ�
 BeaverBuddies.Menu.JoinGame.Tooltip,"ホストのアドレスでゲームに参加します。Steamではフレンドの招待からも参加できます。",""
 BeaverBuddies.Match.FindMatch.Tooltip,"同じマルチプレイモードを選んだ別のプレイヤーとSteamで1対1の対戦をします。マップ、難易度、ゲーム設定が同じプレイヤーが優先されます。選択が異なる項目はコイントスで決まり、マップが選ばれた側がホストになります。",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"今クイックマッチを待っているプレイヤーです。参加すると、相手のマップ、難易度、設定で遊びます。",""
+BeaverBuddies.ClientDesynced.WaitForInvite,"ホストはまだ再ホストしていません。再ホストされたら招待を承諾してください。",""

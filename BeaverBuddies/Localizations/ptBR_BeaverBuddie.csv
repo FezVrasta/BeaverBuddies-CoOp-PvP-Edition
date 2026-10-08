@@ -152,3 +152,4 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"Hospede um dos seus jogos salvos. Os a
 BeaverBuddies.Menu.JoinGame.Tooltip,"Entre em um jogo pelo endereço do anfitrião. Na Steam, o convite de um amigo também funciona.",""
 BeaverBuddies.Match.FindMatch.Tooltip,"Um 1 contra 1 pela Steam contra outro jogador que escolheu o mesmo modo multijogador. Jogadores com o mesmo mapa, dificuldade e configurações do jogo são tentados primeiro. Onde as escolhas diferem, decide-se no cara ou coroa, e hospeda quem tiver o mapa escolhido.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Jogadores esperando uma partida rápida agora. Entre com um deles para jogar no mapa, na dificuldade e nas configurações dele.",""
+BeaverBuddies.ClientDesynced.WaitForInvite,"O anfitrião ainda não reanfitriou. Aceite o convite dele quando o fizer.",""

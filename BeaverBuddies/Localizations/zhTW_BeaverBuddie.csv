@@ -152,3 +152,4 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"主持你已儲存的一局遊戲。�
 BeaverBuddies.Menu.JoinGame.Tooltip,"透過主機的位址加入遊戲。在 Steam 上，好友的邀請也可以。",""
 BeaverBuddies.Match.FindMatch.Tooltip,"透過 Steam 與另一位選擇了相同多人模式的玩家進行 1 對 1 對局。優先配對地圖、難度和遊戲設定都相同的玩家。雙方選擇不同之處由擲硬幣決定，地圖被選中的一方擔任主機。",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"正在等待快速對局的玩家。加入其中一位，即可使用對方的地圖、難度和設定進行遊戲。",""
+BeaverBuddies.ClientDesynced.WaitForInvite,"主機尚未重新託管。主機重新託管後，請接受其邀請。",""

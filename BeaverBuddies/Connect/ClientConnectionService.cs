@@ -42,13 +42,19 @@ namespace BeaverBuddies.Connect
             _settings = settings;
         }
 
+        // The host of the last game joined through Steam, to find again
+        // after a rehost: they're in a new lobby, not at an address
+        private static CSteamID? _steamHost;
+
         public bool TryToConnect(CSteamID friendID)
         {
+            _steamHost = friendID;
             return TryToConnect(new SteamSocket(friendID));
         }
 
         public bool TryToConnect(string address)
         {
+            _steamHost = null;
             int port = _settings.DefaultPort.Value;
             Plugin.Log("Try to resolve address: " + address);
             // Parse address and port
@@ -109,8 +115,36 @@ namespace BeaverBuddies.Connect
 
         public void ConnectOrShowFailureMessage()
         {
+#if IS_STEAM
+            if (_steamHost.HasValue)
+            {
+                RejoinThroughSteam(_steamHost.Value);
+                return;
+            }
+#endif
             ConnectOrShowFailureMessage(_settings.ClientConnectionAddress.Value);
         }
+
+#if IS_STEAM
+        /**
+         * Joins the lobby the host is in now, which connects as joining
+         * from an invite does. Before they've rehosted there's none, and
+         * their invite will bring the player in.
+         */
+        private void RejoinThroughSteam(CSteamID host)
+        {
+            if (SteamFriends.GetFriendGamePlayed(host, out FriendGameInfo_t game) && game.m_steamIDLobby.IsValid())
+            {
+                Plugin.Log($"Rejoining {SteamFriends.GetFriendPersonaName(host)} in lobby {game.m_steamIDLobby}");
+                SteamMatchmaking.JoinLobby(game.m_steamIDLobby);
+                return;
+            }
+            Plugin.Log("The host isn't in a lobby: waiting for their invite");
+            _dialogBoxShower.Create()
+                .SetLocalizedMessage("BeaverBuddies.ClientDesynced.WaitForInvite")
+                .Show();
+        }
+#endif
 
         public void ConnectOrShowFailureMessage(string address)
         {
