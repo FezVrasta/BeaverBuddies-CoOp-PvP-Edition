@@ -63,10 +63,24 @@ namespace BeaverBuddies.Steam
             return Task.CompletedTask;
         }
 
+        /**
+         * Done with this player: what's still queued for them is dropped,
+         * so it can't turn up in the next connection with them, and a
+         * read waiting on this one ends.
+         */
         public void Close()
         {
             Connected = false;
             packetListener?.UnregisterSocket(this);
+            try
+            {
+                SteamNetworking.CloseP2PSessionWithUser(friendID);
+            }
+            catch (Exception e)
+            {
+                Plugin.LogWarning($"Couldn't close the Steam session with {Name}: {e.Message}");
+            }
+            readBuffer.Enqueue(new byte[0]);
         }
 
         public int Read(byte[] buffer, int offset, int count)
@@ -74,6 +88,8 @@ namespace BeaverBuddies.Steam
             // Block until we've read something
             byte[] result;
             while (!readBuffer.WaitAndTryDequeue(out result)) { }
+            // Closed
+            if (result.Length == 0) return 0;
             int bytesToCopy = Math.Min(count, result.Length - readOffset);
             Array.Copy(result, readOffset, buffer, offset, bytesToCopy);
             if (result.Length > bytesToCopy)
@@ -92,6 +108,7 @@ namespace BeaverBuddies.Steam
 
         public void Write(byte[] buffer, int offset, int count)
         {
+            if (!Connected) return;
             if (count > MaxChunkSize)
             {
                 throw new IOException($"Attempted to write {buffer.Length} bytes, which exceeds the max chunk size of {MaxChunkSize} bytes.");

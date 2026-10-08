@@ -18,7 +18,11 @@ namespace BeaverBuddies.Steam
 
         public void UnregisterSocket(SteamSocket socket)
         {
-            sockets.Remove(socket.friendID);
+            // Not a newer connection with the same player
+            if (sockets.TryGetValue(socket.friendID, out SteamSocket registered) && registered == socket)
+            {
+                sockets.Remove(socket.friendID);
+            }
         }
 
         public void Update()

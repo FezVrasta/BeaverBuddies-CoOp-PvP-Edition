@@ -191,6 +191,8 @@ namespace TimberNet
                 {
                     Thread.Sleep(sleepMS);
                 }
+                // Gone halfway through: the rest of a map would only take time
+                if (!stream.Connected) return;
                 int length = Math.Min(chunkSize, data.Length - i);
                 stream.Write(data, i, length);
             }

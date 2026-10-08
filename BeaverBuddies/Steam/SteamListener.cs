@@ -14,6 +14,8 @@ namespace BeaverBuddies.Steam
 
         private List<IDisposable> callbacks = new List<IDisposable>();
         private ConcurrentQueueWithWait<SteamSocket> joiningUsers = new ConcurrentQueueWithWait<SteamSocket>();
+        // Each player's connection, until they leave the lobby or enter it again
+        private Dictionary<CSteamID, SteamSocket> players = new Dictionary<CSteamID, SteamSocket>();
         private SteamPacketListener steamPacketListener;
         private volatile bool stopped;
 
@@ -68,18 +70,32 @@ namespace BeaverBuddies.Steam
         private void OnLobbyChatUpdate(LobbyChatUpdate_t callback)
         {
             Plugin.Log("Lobby chat update: " + callback.m_ulSteamIDLobby);
-            if ((callback.m_rgfChatMemberStateChange & (uint)EChatMemberStateChange.k_EChatMemberStateChangeEntered) != 0)
+            CSteamID user = new CSteamID(callback.m_ulSteamIDUserChanged);
+            uint change = callback.m_rgfChatMemberStateChange;
+            const uint gone = (uint)(EChatMemberStateChange.k_EChatMemberStateChangeLeft | EChatMemberStateChange.k_EChatMemberStateChangeDisconnected
+                | EChatMemberStateChange.k_EChatMemberStateChangeKicked | EChatMemberStateChange.k_EChatMemberStateChangeBanned);
+            // Entering again (gave up waiting for the map and rejoined, say)
+            // ends the connection from before, or what's still on its way
+            // on it lands in the new one
+            if ((change & (gone | (uint)EChatMemberStateChange.k_EChatMemberStateChangeEntered)) != 0)
             {
-                CSteamID userJoined = new CSteamID(callback.m_ulSteamIDUserChanged);
-                
-                // Don't include in release
-                //string name = SteamFriends.GetFriendPersonaName(userJoined);
-                //Plugin.Log("User " + name + " has joined the lobby.");
-
-                var socket = new SteamSocket(userJoined, true);
-                steamPacketListener.RegisterSocket(socket);
+                Drop(user);
+            }
+            if ((change & (uint)EChatMemberStateChange.k_EChatMemberStateChangeEntered) != 0)
+            {
+                var socket = new SteamSocket(user, true);
+                socket.RegisterSteamPacketListener(steamPacketListener);
+                players[user] = socket;
                 joiningUsers.Enqueue(socket);
             }
+        }
+
+        private void Drop(CSteamID user)
+        {
+            if (!players.TryGetValue(user, out SteamSocket socket)) return;
+            players.Remove(user);
+            Plugin.Log($"Closing the connection with {socket.Name}");
+            socket.Close();
         }
 
         /**
@@ -90,7 +106,8 @@ namespace BeaverBuddies.Steam
         {
             Plugin.Log("Waiting to accept a client...");
             SteamSocket socket = null;
-            while (!stopped && (!joiningUsers.WaitAndTryDequeue(out socket) || socket == null)) { }
+            // (Not one who left again before their turn)
+            while (!stopped && (!joiningUsers.WaitAndTryDequeue(out socket) || socket == null || !socket.Connected)) { }
             if (stopped) return null;
             Plugin.Log("New client accepted!");
             return socket;
