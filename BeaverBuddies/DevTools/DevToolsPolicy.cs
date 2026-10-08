@@ -26,7 +26,7 @@ namespace BeaverBuddies.DevTools
         // What the host allows, as last received by this client
         public static bool HostAllowsDevTools { get; set; } = true;
 
-        public static bool IsHost => EventIO.Get() is ServerEventIO;
+        public static bool IsHost => EventIO.Get() is ServerEventIO or LocalEventIO;
 
         public static bool IsAllowed => IsHost ? Settings.AllowDevTools : HostAllowsDevTools;
 

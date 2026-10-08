@@ -4,6 +4,7 @@ using System.Linq;
 using BeaverBuddies.Connect;
 using BeaverBuddies.Matchmaking;
 using Timberborn.CoreUI;
+using Timberborn.GameSaveRepositorySystem;
 using Timberborn.GameSceneLoading;
 using Timberborn.Localization;
 using Timberborn.MainMenuPanels;
@@ -154,28 +155,45 @@ namespace BeaverBuddies.NewGame
         }
     }
 
+    // As each game starts loading: its settings, and whether it's hosted alone (see AloneHosting)
     [HarmonyLib.HarmonyPatch(typeof(GameSceneLoader), nameof(GameSceneLoader.StartNewGame))]
     class GameSettingsNewGamePatcher
     {
-        static void Prefix() => GameSettings.Starting(newGame: true);
+        static void Prefix()
+        {
+            GameSettings.Starting(newGame: true);
+            AloneHosting.Starting(GameSettings.ForGame);
+        }
     }
 
     [HarmonyLib.HarmonyPatch(typeof(GameSceneLoader), nameof(GameSceneLoader.StartNewGameInstantly))]
     class GameSettingsNewGameInstantlyPatcher
     {
-        static void Prefix() => GameSettings.Starting(newGame: true);
+        static void Prefix()
+        {
+            GameSettings.Starting(newGame: true);
+            AloneHosting.Starting(GameSettings.ForGame);
+        }
     }
 
     [HarmonyLib.HarmonyPatch(typeof(GameSceneLoader), nameof(GameSceneLoader.StartSaveGame))]
     class GameSettingsSaveGamePatcher
     {
-        static void Prefix() => GameSettings.Starting(newGame: false);
+        static void Prefix(GameSceneLoader __instance, SaveReference saveReference)
+        {
+            GameSettings.Starting(newGame: false);
+            AloneHosting.Starting(AloneHosting.ReadRecord(__instance._gameSaveRepository, saveReference));
+        }
     }
 
     [HarmonyLib.HarmonyPatch(typeof(GameSceneLoader), nameof(GameSceneLoader.StartSaveGameInstantly))]
     class GameSettingsSaveGameInstantlyPatcher
     {
-        static void Prefix() => GameSettings.Starting(newGame: false);
+        static void Prefix(GameSceneLoader __instance, SaveReference saveReference)
+        {
+            GameSettings.Starting(newGame: false);
+            AloneHosting.Starting(AloneHosting.ReadRecord(__instance._gameSaveRepository, saveReference));
+        }
     }
 
     /**

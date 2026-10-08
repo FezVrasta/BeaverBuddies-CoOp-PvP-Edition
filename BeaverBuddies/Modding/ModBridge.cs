@@ -30,7 +30,7 @@ namespace BeaverBuddies.Modding
         // ---- The game ----
 
         public static bool IsMultiplayer() => !EventIO.IsNull;
-        public static bool IsHost() => EventIO.Get() is ServerEventIO;
+        public static bool IsHost() => EventIO.Get() is ServerEventIO or LocalEventIO;
         public static bool IsLoaded() => ReplayService.IsLoaded;
         public static bool IsReplayingEvents() => ReplayService.IsReplayingEvents;
         public static bool IsTicking() => DeterminismService.IsTicking;
@@ -76,6 +76,25 @@ namespace BeaverBuddies.Modding
          */
         public static IDisposable Unrecorded() => ReplayEvent.Unrecorded();
 
+        /**
+         * Sends what's recorded inside, BeaverBuddies' events and mods'
+         * alike, as another player's: for players the host runs, like AI
+         * opponents. Only the host may act for others.
+         */
+        public static IDisposable ActAs(string playerID) => ReplayEvent.ActAs(playerID);
+
+        // The player events are sent as now: the one ActAs names, or the local one
+        public static string ActingPlayerID() => ReplayEvent.ActingPlayerID ?? PlayerIdentity.LocalID;
+
+        /**
+         * Whether a game played alone is still hosted, nobody joining, so
+         * everything goes through events: for a game against players this
+         * machine runs. Asked as each game starts loading, with what it was
+         * created with (its game settings and mode, by id), from the new
+         * game's picks or a save's record; any true hosts it.
+         */
+        public static void AddHostsAlone(Func<IReadOnlyDictionary<string, string>, bool> hook) => NewGame.AloneHosting.Hooks.Add(hook);
+
         internal static void Play(ModEvent modEvent, IReplayContext context)
         {
             if (modEvent.payload == null || modEvent.mod == null || !Players.TryGetValue(modEvent.mod, out var play))
@@ -99,6 +118,9 @@ namespace BeaverBuddies.Modding
 
         // Whether the local player may send an event; any false keeps it from going out
         public static void AddCanSend(Func<object, bool> hook) => ReplayHooks.CanSend.Add(e => hook(Unwrap(e)));
+
+        // The same, given the player sending it too: the local one, or the one ActAs names
+        public static void AddCanSendAs(Func<object, string, bool> hook) => ReplayHooks.CanSend.Add(e => hook(Unwrap(e), e.playerID));
 
         // Whether every machine plays an event sent by a player; any false drops it.
         // The hook may also trim the event's fields
@@ -153,6 +175,11 @@ namespace BeaverBuddies.Modding
         // starts the match's game with no starting building, for the mod
         // to found each player's settlement where they place it
         public static void AddPlayersPlaceStart(Func<bool> hook) => MatchHooks.PlayersPlaceStart.Add(hook);
+
+        // Whether the new game loading starts with every player placing their
+        // own start, outside a match too (a game against a mod's AI
+        // opponents): any true starts it with no starting building
+        public static void AddNewGamePlacesStart(Func<bool> hook) => MatchHooks.NewGamePlacesStart.Add(hook);
 
         // A choice for new multiplayer games, like a game mode: a column of buttons
         // when hosting a new game or finding a match, by loc keys, which a

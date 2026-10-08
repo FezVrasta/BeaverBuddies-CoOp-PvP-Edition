@@ -20,8 +20,14 @@ namespace BeaverBuddies.Matchmaking
         // and whether this machine hosts it
         public static event Action<string, bool, bool> Starting;
 
+        // Whether the new game loading starts with every player placing
+        // their own start even though it isn't a match: a game against
+        // players a mod runs, say
+        public static readonly List<Func<bool>> NewGamePlacesStart = new();
+
         public static bool FactionsMix => CanMixFactions.Any(hook => hook());
         public static bool PlaceStart => PlayersPlaceStart.Any(hook => hook());
+        public static bool NewGamePlaces => NewGamePlacesStart.Any(hook => hook());
 
         public static void RaiseStarting(string faction, bool mixed, bool host)
         {

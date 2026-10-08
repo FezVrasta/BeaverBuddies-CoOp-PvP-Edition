@@ -133,6 +133,32 @@ namespace BeaverBuddies.Events
             return new UnrecordedScope();
         }
 
+        // The player events recorded now are sent as, when it isn't the
+        // local one (see ActAs)
+        public static string ActingPlayerID { get; private set; }
+
+        private class ActingScope : IDisposable
+        {
+            private readonly string _previous;
+
+            public ActingScope(string previous) => _previous = previous;
+
+            public void Dispose() => ActingPlayerID = _previous;
+        }
+
+        /**
+         * Sends the events recorded inside as another player's, as if they
+         * had done it from their own machine: for players the host runs,
+         * like a mod's AI opponents. Every machine checks and plays them as
+         * that player's.
+         */
+        public static IDisposable ActAs(string playerID)
+        {
+            ActingScope scope = new(ActingPlayerID);
+            ActingPlayerID = playerID;
+            return scope;
+        }
+
         public static ReplayService GetReplayServiceIfReady()
         {
             // If we haven't loaded yet, we're not ready

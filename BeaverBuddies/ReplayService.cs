@@ -273,7 +273,7 @@ namespace BeaverBuddies
             // successful.
             if (IsReplayingEvents) return;
             if (!IsLoaded) return;
-            replayEvent.playerID ??= Players.PlayerIdentity.LocalID;
+            replayEvent.playerID ??= ReplayEvent.ActingPlayerID ?? Players.PlayerIdentity.LocalID;
             if (!ReplayHooks.AllowSend(replayEvent)) return;
             Performance.ActionLatency.Stamp(replayEvent);
 

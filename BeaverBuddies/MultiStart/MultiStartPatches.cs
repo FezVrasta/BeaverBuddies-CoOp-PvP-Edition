@@ -45,10 +45,10 @@ namespace BeaverBuddies.MultiStart
 
             var startingLocations = GetAllStartingLocations(__instance._startingLocationService);
 
-#if IS_STEAM
-            // A match where each player places their own start: no starting
-            // building, the camera on where the map would have put it
-            if ((Matchmaking.MatchmakingSession.HostsNewGame || DevTools.TestHarness.HostsMatch) && Matchmaking.MatchHooks.PlaceStart)
+            // A match where each player places their own start, or a new
+            // game a mod starts that way: no starting building, the camera
+            // on where the map would have put it
+            if (PlayersPlaceStart)
             {
                 Plugin.Log("[Match] Each player places their own start");
                 if (startingLocations.Count > 0)
@@ -59,7 +59,6 @@ namespace BeaverBuddies.MultiStart
                 __instance._startingLocationService.DeleteStartingLocations();
                 return false;
             }
-#endif
 
 			Plugin.Log($"Found {startingLocations.Count} starting locations");
 
@@ -97,6 +96,19 @@ namespace BeaverBuddies.MultiStart
 			__instance._startingLocationService.DeleteStartingLocations();
 
 			return false;
+		}
+
+		private static bool PlayersPlaceStart
+		{
+			get
+			{
+				if (Matchmaking.MatchHooks.NewGamePlaces) return true;
+#if IS_STEAM
+				return (Matchmaking.MatchmakingSession.HostsNewGame || DevTools.TestHarness.HostsMatch) && Matchmaking.MatchHooks.PlaceStart;
+#else
+				return false;
+#endif
+			}
 		}
 
 		public static List<StartingLocation> GetAllStartingLocations(StartingLocationService sls)
