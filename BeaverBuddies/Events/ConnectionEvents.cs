@@ -3,6 +3,7 @@ using BeaverBuddies.DevTools;
 using BeaverBuddies.IO;
 using BeaverBuddies.Util;
 using System;
+using System.Collections.Generic;
 using Timberborn.CoreUI;
 using Timberborn.Localization;
 using Timberborn.Versioning;
@@ -87,6 +88,10 @@ namespace BeaverBuddies.Events
     {
         public string desyncID;
         public string desyncTrace;
+        // The tick the player's traces showed the desync in, and those traces,
+        // for the host to compare with its own; null if found otherwise
+        public int? desyncTick;
+        public List<DesyncDetecter.Trace> desyncTraces;
 
         /**
          * The trace of the desync in a file next to the game's log, and the
@@ -119,6 +124,16 @@ namespace BeaverBuddies.Events
 
         public override void Replay(IReplayContext context)
         {
+            bool isHost = EventIO.Get() is ServerEventIO;
+            if (isHost && desyncTraces != null && desyncTick.HasValue)
+            {
+                // Where the player's game went its own way: the report the
+                // host's players see (and post) instead of the player's half
+                string comparison = DesyncDetecter.DesyncDetecterService.CompareTraces(desyncTick.Value, desyncTraces);
+                if (comparison != null) desyncTrace = comparison;
+                // Not sent on to the other players
+                desyncTraces = null;
+            }
             ReplayService replayService = context.GetSingleton<ReplayService>();
             replayService.SetTargetSpeed(0);
             RehostingService rehostingService = context.GetSingleton<RehostingService>();
@@ -139,7 +154,6 @@ namespace BeaverBuddies.Events
                 if (Settings.Debug) ReportOnDiscord(context, infoCallback);
                 else TurnOnTracing(infoCallback);
             };
-            bool isHost = EventIO.Get() is ServerEventIO;
             Action reconnectAction = () =>
             {
                 if (isHost)

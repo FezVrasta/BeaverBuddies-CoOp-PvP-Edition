@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"เปิดใช้งาน",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"รายงานใน Discord",""
 BeaverBuddies.ClientDesynced.TraceSaved,"บันทึกเทรซไว้ข้าง Player.log แล้ว",""
 BeaverBuddies.ClientDesynced.EnableTracing,"เปิดบันทึกข้อมูล",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"เพื่อรายงานการเกิดการไม่ซิงค์นี้ *ผู้เล่นทุกคน* ต้องเปิดใช้งานการบันทึกข้อมูลที่มีรายละเอียดมากขึ้นโดยกด 'เปิดบันทึกข้อมูล' ด้านล่าง หากเกิดการไม่ซิงค์อีกครั้ง คุณจะสามารถรายงานใน Discord ของเราพร้อมบันทึกข้อมูลแบบละเอียดได้ โหมดบันทึกข้อมูลอาจทำให้เกิดความล่าช้า แต่จะเปิดใช้งานจนกว่าจะรีสตาร์ทเกมอีกครั้งเท่านั้น",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"เพื่อรายงานการเกิดการไม่ซิงค์นี้ *ผู้เล่นทุกคน* ต้องเปิดใช้งานการบันทึกข้อมูลที่มีรายละเอียดมากขึ้นโดยกด 'เปิดบันทึกข้อมูล' ด้านล่าง หากเกิดการไม่ซิงค์อีกครั้ง คุณจะสามารถรายงานใน Discord ของเราพร้อมบันทึกข้อมูลแบบละเอียดได้ การบันทึกข้อมูลจะเปิดอยู่จนกว่าจะรีสตาร์ทเกม หากต้องการเปิดไว้ตลอด ให้เปิด 'ใช้ log รายละเอียดเสมอ' ในการตั้งค่าม็อด",""
 BeaverBuddies.Settings.ClientConnectionAddress,"ที่อยู่เชื่อมต่อไคลเอนต์",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"ที่อยู่ IP เริ่มต้นเมื่อเชื่อมต่อไปยังโฮสต์",""
 BeaverBuddies.Settings.Port,"พอร์ต",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"แสดงข้อความ�
 BeaverBuddies.Settings.AlwaysTrace,"ใช้ log รายละเอียดเสมอ",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"หากเปิดใช้งาน เกมจะใช้ log แบบละเอียดเสมอ ทำให้สามารถส่งรายงานการ desync ได้ตั้งแต่ครั้งแรกโดยไม่ต้องเปิดใช้งานเอง
 ผู้เล่นทุกคนต้องเปิดใช้งาน
-การตั้งค่านี้อาจทำให้เกมหน่วงและไม่แนะนำสำหรับผู้เล่นส่วนใหญ่",""
+แทบไม่มีผลต่อประสิทธิภาพ จึงเปิดไว้ตลอดได้",""
+BeaverBuddies.Settings.TraceStackTraces,"บันทึกที่มาของแต่ละรายการ log",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"เมื่อเปิด log แบบละเอียด รายงาน desync จะแสดงด้วยว่าแต่ละรายการถูกบันทึกจากส่วนใดของโค้ด การตั้งค่านี้ทำให้เกมช้าลงมาก จึงมีไว้สำหรับนักพัฒนา",""
 BeaverBuddies.Settings.EnableSteamConnection,"เปิดใช้งานเครือข่าย Steam",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"อนุญาตให้ผู้เล่นเข้าร่วมเกมของคุณผ่านเครือข่าย P2P ของ Steam
 ผู้เล่นยังสามารถเข้าร่วมผ่านการส่งต่อพอร์ต

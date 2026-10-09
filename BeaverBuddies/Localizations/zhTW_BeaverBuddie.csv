@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"已啟用",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"在 Discord 上回報",""
 BeaverBuddies.ClientDesynced.TraceSaved,"追蹤已儲存至 Player.log 旁",""
 BeaverBuddies.ClientDesynced.EnableTracing,"啟用日誌記錄",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"若要回報此不同步，*所有玩家* 必須先按下下方的「啟用日誌記錄」，以啟用更詳細的日誌記錄。如果再次發生不同步，您將能附上詳細日誌在我們的 Discord 上回報。日誌模式可能會造成一些延遲，但僅在您重新啟動遊戲之前有效。",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"若要回報此不同步，*所有玩家* 必須先按下下方的「啟用日誌記錄」，以啟用更詳細的日誌記錄。如果再次發生不同步，您將能附上詳細日誌在我們的 Discord 上回報。日誌記錄會維持到您重新啟動遊戲。若要一直開啟，請在模組設定中打開「始終使用詳細日誌」。",""
 BeaverBuddies.Settings.ClientConnectionAddress,"客戶端連接位址",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"連接主機時使用的預設 IP 位址。",""
 BeaverBuddies.Settings.Port,"連接埠",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"顯示新手訊息",""
 BeaverBuddies.Settings.AlwaysTrace,"始終使用詳細日誌",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"開啟後，遊戲將始終使用詳細日誌，使你在首次 desync 時即可提交報告，無需手動切換。
 請注意，所有玩家都需啟用此設置。
-此設置可能導致延遲，不建議大多數玩家使用。",""
+它幾乎不影響效能，可以一直開啟。",""
+BeaverBuddies.Settings.TraceStackTraces,"記錄每條日誌的來源",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"開啟詳細日誌時，不同步報告還會顯示每條記錄來自程式碼中的哪個位置。這會讓遊戲明顯變慢，僅供開發者使用。",""
 BeaverBuddies.Settings.EnableSteamConnection,"啟用 Steam 網路連接",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"允許玩家通過 Steam 的 P2P 網絡加入你的遊戲。
 玩家仍可通過連接埠轉發加入。

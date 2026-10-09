@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"Abilitato",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"Segnala su Discord",""
 BeaverBuddies.ClientDesynced.TraceSaved,"Traccia salvata accanto a Player.log",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Abilita registrazione",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Per segnalare questa desincronizzazione, *tutti i giocatori* devono prima abilitare una registrazione più dettagliata premendo 'Abilita registrazione' qui sotto. Se si verifica un'altra desincronizzazione, potrai quindi segnalarla sul nostro Discord con il registro dettagliato. La modalità di registrazione può causare un po' di ritardo, ma sarà attiva solo fino al riavvio del gioco.",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Per segnalare questa desincronizzazione, *tutti i giocatori* devono prima abilitare una registrazione più dettagliata premendo 'Abilita registrazione' qui sotto. Se si verifica un'altra desincronizzazione, potrai quindi segnalarla sul nostro Discord con il registro dettagliato. La registrazione resta attiva fino al riavvio del gioco. Per mantenerla, attiva «Usa sempre log dettagliati» nelle impostazioni della mod.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"Indirizzo di connessione client",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"Indirizzo IP predefinito usato per connettersi a un host.",""
 BeaverBuddies.Settings.Port,"Porta",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"Mostra messaggio nuovo giocatore",
 BeaverBuddies.Settings.AlwaysTrace,"Usa sempre log dettagliati",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"Se abilitato, il gioco utilizzerà sempre log dettagliati, permettendoti di inviare report di desync al primo evento senza abilitare manualmente il logging.
 Tutti i giocatori devono avere questa impostazione attiva.
-Questa opzione può causare qualche lag e non è consigliata per la maggior parte dei giocatori.",""
+Incide appena sulle prestazioni, quindi puoi lasciarla attiva.",""
+BeaverBuddies.Settings.TraceStackTraces,"Registra da dove proviene ogni voce",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"Con i log dettagliati attivi, i report di desync mostrano anche in quale punto del codice è stata registrata ogni voce. Rallenta molto il gioco, quindi è pensata per gli sviluppatori.",""
 BeaverBuddies.Settings.EnableSteamConnection,"Abilita connessione Steam",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Permette ai giocatori di unirsi al tuo gioco tramite il peer‑to‑peer di Steam.
 I giocatori potranno comunque unirsi tramite inoltro porte.

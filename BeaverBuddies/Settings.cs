@@ -71,6 +71,13 @@ namespace BeaverBuddies
             ).SetLocalizedTooltip("BeaverBuddies.Settings.AlwaysTrace.Tooltip")
         );
 
+        public ModSetting<bool> TraceStackTraces { get; } =
+            new(false,
+            ModSettingDescriptor.CreateLocalized(
+                "BeaverBuddies.Settings.TraceStackTraces"
+            ).SetLocalizedTooltip("BeaverBuddies.Settings.TraceStackTraces.Tooltip")
+        );
+
         public ModSetting<bool> SilenceLogging { get; } =
             new(false,
                 ModSettingDescriptor.CreateLocalized(
@@ -118,6 +125,8 @@ namespace BeaverBuddies
 
         public static bool Debug => TemporarilyDebug || (instance?.AlwaysTrace.Value ?? false);
 
+        // Where each trace came from, in desync reports: slow, so only for developers
+        public static bool TraceStacks => Debug && (instance?.TraceStackTraces.Value ?? false);
         public static bool VerboseLogging => !(instance?.SilenceLogging.Value == true);
         public static int Port => instance?.DefaultPort.Value ?? 25565;
         public static bool EnableSteam => instance?.EnableSteamConnection.Value ?? true;

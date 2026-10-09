@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"Activé",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"Signaler sur Discord",""
 BeaverBuddies.ClientDesynced.TraceSaved,"Trace enregistrée à côté de Player.log",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Activer la journalisation",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Pour signaler cette désynchronisation, *tous les joueurs* doivent d'abord activer une journalisation plus détaillée en appuyant sur 'Activer la journalisation' ci-dessous. Si une autre désynchronisation se produit, vous pourrez alors la signaler sur notre Discord avec le journal détaillé. Le mode de journalisation peut provoquer un certain décalage, mais il ne sera actif que jusqu'au redémarrage du jeu.",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Pour signaler cette désynchronisation, *tous les joueurs* doivent d'abord activer une journalisation plus détaillée en appuyant sur 'Activer la journalisation' ci-dessous. Si une autre désynchronisation se produit, vous pourrez alors la signaler sur notre Discord avec le journal détaillé. La journalisation reste active jusqu'au redémarrage du jeu. Pour la garder, active « Journal détaillé systématique » dans les paramètres du mod.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"Adresse de connexion client",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"Adresse IP par défaut lors de la connexion à un hôte.",""
 BeaverBuddies.Settings.Port,"Port",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"Afficher le message pour nouveaux 
 BeaverBuddies.Settings.AlwaysTrace,"Journal détaillé systématique",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"Si activé, le jeu utilise toujours un journal détaillé, permettant d’envoyer des rapports de désynchronisation dès la première occurrence sans l’activer manuellement.
 Tous les joueurs doivent activer cette option.
-Cela peut provoquer un peu de lag et n’est pas recommandé pour la plupart des joueurs.",""
+Il n’affecte presque pas les performances, tu peux donc le laisser activé.",""
+BeaverBuddies.Settings.TraceStackTraces,"Enregistrer l’origine de chaque entrée",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"Avec le journal détaillé activé, les rapports de désynchronisation indiquent aussi à quel endroit du code chaque entrée a été enregistrée. Cela ralentit fortement le jeu : c’est destiné aux développeurs.",""
 BeaverBuddies.Settings.EnableSteamConnection,"Activer connexion Steam",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Permet aux joueurs de rejoindre ta partie via le réseau peer‑to‑peer de Steam.
 Les joueurs pourront toujours rejoindre via redirection de port.

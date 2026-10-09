@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"有効",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"Discordで報告",""
 BeaverBuddies.ClientDesynced.TraceSaved,"トレースをPlayer.logの横に保存しました",""
 BeaverBuddies.ClientDesynced.EnableTracing,"ログ記録を有効にする",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"この同期ズレを報告するには、*全プレイヤー* が下の「ログ記録を有効にする」を押して、詳細なログ記録を有効にする必要があります。別の同期ズレが発生した場合、詳細なログを添えてDiscordで報告できます。ログ記録モードは一時的にラグを引き起こす可能性がありますが、ゲームを再起動するまでのみ有効です。",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"この同期ズレを報告するには、*全プレイヤー* が下の「ログ記録を有効にする」を押して、詳細なログ記録を有効にする必要があります。別の同期ズレが発生した場合、詳細なログを添えてDiscordで報告できます。ログ記録はゲームを再起動するまで有効です。常に有効にするには、MOD設定で「詳細ログを常に使用」をオンにしてください。",""
 BeaverBuddies.Settings.ClientConnectionAddress,"クライアント接続アドレス",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"ホストに接続する際に使うデフォルトのIPアドレスです。",""
 BeaverBuddies.Settings.Port,"ポート",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"初参加メッセージを表示"
 BeaverBuddies.Settings.AlwaysTrace,"詳細ログを常に使用",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"有効にすると、ゲームは常に詳細ログを使用し、最初の同期ズレ発生時から手動設定なしで報告が可能になります。
 すべてのプレイヤーがこの設定を有効にしている必要があります。
-この設定はラグを引き起こす可能性があるため、ほとんどのプレイヤーには推奨されません。",""
+パフォーマンスへの影響はほとんどないため、常に有効にしておいても問題ありません。",""
+BeaverBuddies.Settings.TraceStackTraces,"各ログの記録元を記録",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"詳細ログが有効なとき、同期ズレレポートに各ログがコードのどこで記録されたかも含めます。ゲームが大幅に遅くなるため、開発者向けの設定です。",""
 BeaverBuddies.Settings.EnableSteamConnection,"Steamネットワークを有効化",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"SteamのP2Pネットワーク経由で、プレイヤーがあなたのゲームに参加できるようにします。
 プレイヤーはポート転送経由でも参加可能です。

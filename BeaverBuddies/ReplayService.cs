@@ -422,6 +422,13 @@ namespace BeaverBuddies
                 desyncTrace = DesyncDetecterService.GetLastDesyncTrace(),
                 playerID = Players.PlayerIdentity.LocalID,
             };
+            // Found by the traces: the host compares them with its own
+            int? desyncTick = DesyncDetecterService.LastDesyncTick;
+            if (desyncTick.HasValue)
+            {
+                e.desyncTick = desyncTick.Value;
+                e.desyncTraces = DesyncDetecterService.GetTraces(desyncTick.Value);
+            }
             // Set IsDesynced to true so event play instead of sending
             // to the host, allowing the Client to continue play.
             IsDesynced = true;
@@ -638,10 +645,10 @@ namespace BeaverBuddies
             if (Settings.Debug && io.ShouldSendHeartbeat)
             {
                 // Before incrementing the tick (which creates a new blank trace),
-                // capture any unsent traces and send them.
+                // send the checksums of the traces not yet sent.
                 // Note: this will capture traces for prior ticks, but be sent with
                 // an event at the start of the *upcoming* tick.
-                foreach (var e in DesyncDetecterService.CreateReplayEventsAndClear())
+                foreach (var e in DesyncDetecterService.CreateHashEvents())
                 {
                     EnqueueEventForSending(e);
                 }

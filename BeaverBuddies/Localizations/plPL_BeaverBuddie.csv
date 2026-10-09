@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"Włączone",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"Zgłoś na Discordzie",""
 BeaverBuddies.ClientDesynced.TraceSaved,"Ślad zapisany obok Player.log",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Włącz rejestrowanie",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Aby zgłosić to rozłączenie, *wszyscy gracze* muszą najpierw włączyć bardziej szczegółowe rejestrowanie, klikając poniżej 'Włącz rejestrowanie'. Jeśli wystąpi kolejne rozłączenie, będziesz mógł zgłosić je na naszym Discordzie wraz ze szczegółowym dziennikiem. Tryb rejestrowania może powodować pewne opóźnienia, ale będzie aktywny tylko do ponownego uruchomienia gry.",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Aby zgłosić to rozłączenie, *wszyscy gracze* muszą najpierw włączyć bardziej szczegółowe rejestrowanie, klikając poniżej 'Włącz rejestrowanie'. Jeśli wystąpi kolejne rozłączenie, będziesz mógł zgłosić je na naszym Discordzie wraz ze szczegółowym dziennikiem. Rejestrowanie pozostanie aktywne do ponownego uruchomienia gry. Aby było stale włączone, włącz „Zawsze używaj szczegółowego logowania” w ustawieniach moda.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"Adres połączenia klienta",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"Domyślny adres IP używany przy łączeniu z hostem.",""
 BeaverBuddies.Settings.Port,"Port",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"Pokaż wiadomość dla nowicjusza"
 BeaverBuddies.Settings.AlwaysTrace,"Zawsze używaj szczegółowego logowania",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"Po włączeniu gra zawsze używa szczegółowego logowania, co pozwala wysyłać raporty o desynchronizacji już przy pierwszym wystąpieniu bez ręcznego włączania.
 Wszyscy gracze muszą mieć tę opcję aktywną.
-To ustawienie może powodować niewielkie lagi i nie jest zalecane dla większości graczy.",""
+Prawie nie wpływa na wydajność, więc można je zostawić włączone.",""
+BeaverBuddies.Settings.TraceStackTraces,"Zapisuj, skąd pochodzi każdy wpis",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"Przy włączonym szczegółowym logowaniu raporty o desynchronizacji pokazują też, w którym miejscu kodu zapisano każdy wpis. Bardzo spowalnia to grę, więc jest przeznaczone dla programistów.",""
 BeaverBuddies.Settings.EnableSteamConnection,"Włącz połączenie Steam",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Pozwala graczom dołączać do twojej gry za pomocą sieci peer‑to‑peer Steam.
 Gracze mogą również dołączyć przez przekierowanie portu.

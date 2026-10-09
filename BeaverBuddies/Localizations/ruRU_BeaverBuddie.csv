@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"Включено",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"Сообщить в Discord",""
 BeaverBuddies.ClientDesynced.TraceSaved,"Трассировка сохранена рядом с Player.log",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Включить ведение журнала",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Для того чтобы сообщить об этой десинхронизации, *все игроки* должны сначала включить более подробное ведение журнала, нажав 'Включить ведение журнала' ниже. Если произойдет другая десинхронизация, вы сможете сообщить о ней в нашем Discord, приложив подробный журнал. Режим ведения журнала может вызвать небольшую задержку, но будет активен только до перезапуска игры.",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Для того чтобы сообщить об этой десинхронизации, *все игроки* должны сначала включить более подробное ведение журнала, нажав 'Включить ведение журнала' ниже. Если произойдет другая десинхронизация, вы сможете сообщить о ней в нашем Discord, приложив подробный журнал. Ведение журнала останется включённым до перезапуска игры. Чтобы оно было включено всегда, включите «Всегда подробное логирование» в настройках мода.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"Адрес подключения клиента",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"IP‑адрес по умолчанию при подключении к хосту.",""
 BeaverBuddies.Settings.Port,"Порт",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"Показать сообщени�
 BeaverBuddies.Settings.AlwaysTrace,"Всегда подробное логирование",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"Если включено, игра всегда будет вести подробный лог, что позволит отправлять отчёты о десинхронизации при первом событии без ручной активации.
 Все игроки должны включить эту настройку.
-Это может вызвать небольшие задержки и не рекомендуется для большинства игроков.",""
+Почти не влияет на производительность, поэтому её можно не выключать.",""
+BeaverBuddies.Settings.TraceStackTraces,"Записывать, откуда каждая запись лога",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"При включённом подробном логе отчёты о десинхронизации также показывают, в каком месте кода сделана каждая запись. Это сильно замедляет игру, поэтому предназначено для разработчиков.",""
 BeaverBuddies.Settings.EnableSteamConnection,"Включить подключение через Steam",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Позволяет игрокам присоединяться к вашей игре через peer‑to‑peer сеть Steam.
 Игроки всё ещё смогут подключаться через проброс портов.

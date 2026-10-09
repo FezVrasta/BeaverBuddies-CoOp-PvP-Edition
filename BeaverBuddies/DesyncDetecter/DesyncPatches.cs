@@ -255,17 +255,44 @@ namespace BeaverBuddies.DesyncDetecter
         {
             if (!Settings.Debug) return;
 
+            // One pass over the columns, for their checksum and the squares'
+            // and bands' (see TraceAreas), with nothing allocated each tick
             var columns = __instance._threadSafeWaterColumns;
+            var counts = __instance._threadSafeColumnCounts;
+            int stride = __instance._mapIndexService.Stride;
+            int maxIndex = __instance._mapIndexService.MaxIndex;
+            Prepare(stride, maxIndex);
+            Array.Clear(structureTouched, 0, structureTouched.Length);
+            Array.Clear(waterTouched, 0, waterTouched.Length);
+
             int hash = 13;
-            foreach (var level in columns)
+            for (int i = 0; i < columns.Length; i++)
             {
-                hash = (hash * 7) + GetHashCode(level);
+                var column = columns[i];
+                hash = (hash * 7) + GetHashCode(column);
+                if (maxIndex == 0) continue;
+                int index = i % maxIndex;
+                if (i / maxIndex >= counts[index]) continue;
+
+                int area = areaOf[index];
+                int s = structureTouched[area] ? structure[area] : 13;
+                s = (s * 7) + BitConverter.SingleToInt32Bits(column.Floor);
+                s = (s * 7) + BitConverter.SingleToInt32Bits(column.Ceiling);
+                structure[area] = s;
+                structureTouched[area] = true;
+
+                int band = bandOf[index];
+                int w = waterTouched[band] ? water[band] : 13;
+                w = (w * 7) + BitConverter.SingleToInt32Bits(column.WaterDepth);
+                w = (w * 7) + BitConverter.SingleToInt32Bits(column.Contamination);
+                w = (w * 7) + BitConverter.SingleToInt32Bits(column.Overflow);
+                water[band] = w;
+                waterTouched[band] = true;
             }
             DesyncDetecterService.Trace($"Updating water map columns with hash {hash:X8}");
-            TraceAreas(__instance);
-            
+            TraceAreas();
+
             hash = 13;
-            var counts = __instance._threadSafeColumnCounts;
             foreach (byte count in counts)
             {
                 hash = (hash * 7) + count;
@@ -276,11 +303,45 @@ namespace BeaverBuddies.DesyncDetecter
         // The map in squares of this many tiles, and in bands of rows for the water
         private const int Area = 16;
         private const int Band = 32;
-        private static readonly System.Collections.Generic.Dictionary<(int, int), int> lastStructure = new();
+
+        // For the map's size: each tile's square and band, and their
+        // checksums this tick (and the squares' last traced)
+        private static int preparedStride = -1, preparedMaxIndex = -1, areasAcross;
+        private static int[] areaOf, bandOf, structure, water, lastStructure;
+        private static bool[] structureTouched, waterTouched, lastStructureKnown;
 
         // Each game starts its squares over, so a machine that played
         // another game before doesn't skip the ones the other traces
-        public static void Reset() => lastStructure.Clear();
+        public static void Reset()
+        {
+            if (lastStructureKnown != null) Array.Clear(lastStructureKnown, 0, lastStructureKnown.Length);
+        }
+
+        private static void Prepare(int stride, int maxIndex)
+        {
+            if (stride == preparedStride && maxIndex == preparedMaxIndex) return;
+            preparedStride = stride;
+            preparedMaxIndex = maxIndex;
+            int width = Math.Max(stride, 1);
+            int rows = (maxIndex + width - 1) / width;
+            areasAcross = (width + Area - 1) / Area;
+            int areas = areasAcross * ((rows + Area - 1) / Area);
+            int bands = (rows + Band - 1) / Band;
+            areaOf = new int[maxIndex];
+            bandOf = new int[maxIndex];
+            for (int index = 0; index < maxIndex; index++)
+            {
+                int x = index % width, y = index / width;
+                areaOf[index] = (y / Area) * areasAcross + x / Area;
+                bandOf[index] = y / Band;
+            }
+            structure = new int[areas];
+            structureTouched = new bool[areas];
+            lastStructure = new int[areas];
+            lastStructureKnown = new bool[areas];
+            water = new int[bands];
+            waterTouched = new bool[bands];
+        }
 
         /**
          * Where the water map differs, not just that it does: what blocks
@@ -289,44 +350,22 @@ namespace BeaverBuddies.DesyncDetecter
          * rarely; and the water itself (depth, contamination, overflow) for
          * each band of rows, every tick, since it flows all the time.
          */
-        private static void TraceAreas(ThreadSafeWaterMap map)
+        private static void TraceAreas()
         {
-            var columns = map._threadSafeWaterColumns;
-            var counts = map._threadSafeColumnCounts;
-            int stride = map._mapIndexService.Stride;
-            int maxIndex = map._mapIndexService.MaxIndex;
-            var structure = new System.Collections.Generic.Dictionary<(int, int), int>();
-            var water = new System.Collections.Generic.SortedDictionary<int, int>();
-            for (int index = 0; index < maxIndex; index++)
+            for (int area = 0; area < structure.Length; area++)
             {
-                int x = index % stride, y = index / stride;
-                var area = (x / Area, y / Area);
-                int band = y / Band;
-                for (int z = 0; z < counts[index]; z++)
-                {
-                    int i = index + z * maxIndex;
-                    if (i >= columns.Length) break;
-                    var column = columns[i];
-                    int s = structure.TryGetValue(area, out int sh) ? sh : 13;
-                    s = (s * 7) + BitConverter.SingleToInt32Bits(column.Floor);
-                    s = (s * 7) + BitConverter.SingleToInt32Bits(column.Ceiling);
-                    structure[area] = s;
-                    int w = water.TryGetValue(band, out int wh) ? wh : 13;
-                    w = (w * 7) + BitConverter.SingleToInt32Bits(column.WaterDepth);
-                    w = (w * 7) + BitConverter.SingleToInt32Bits(column.Contamination);
-                    w = (w * 7) + BitConverter.SingleToInt32Bits(column.Overflow);
-                    water[band] = w;
-                }
+                if (!structureTouched[area]) continue;
+                int value = structure[area];
+                if (lastStructureKnown[area] && lastStructure[area] == value) continue;
+                lastStructure[area] = value;
+                lastStructureKnown[area] = true;
+                int x = (area % areasAcross) * Area, y = (area / areasAcross) * Area;
+                DesyncDetecterService.Trace($"Water structure changed in tiles {x},{y} to {x + Area - 1},{y + Area - 1}: {value:X8}", true, true);
             }
-            foreach (var pair in structure)
+            for (int band = 0; band < water.Length; band++)
             {
-                if (lastStructure.TryGetValue(pair.Key, out int last) && last == pair.Value) continue;
-                lastStructure[pair.Key] = pair.Value;
-                DesyncDetecterService.Trace($"Water structure changed in tiles {pair.Key.Item1 * Area},{pair.Key.Item2 * Area} to {pair.Key.Item1 * Area + Area - 1},{pair.Key.Item2 * Area + Area - 1}: {pair.Value:X8}", true, true);
-            }
-            foreach (var pair in water)
-            {
-                DesyncDetecterService.Trace($"Water in rows {pair.Key * Band}-{pair.Key * Band + Band - 1}: {pair.Value:X8}", true, true);
+                if (!waterTouched[band]) continue;
+                DesyncDetecterService.Trace($"Water in rows {band * Band}-{band * Band + Band - 1}: {water[band]:X8}", true, true);
             }
         }
 

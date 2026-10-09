@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"Enabled",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"Report on Discord",""
 BeaverBuddies.ClientDesynced.TraceSaved,"Trace saved next to Player.log",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Enable Logging",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"To report this desync, *all players* must first enable more detailed logging by pressing Enable Logging, below. If another desync occurs, you can then report it on our Discord with the detailed log. Logging mode may cause some lag, but it will only be active until you restart the game.",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"To report this desync, *all players* must first enable more detailed logging by pressing Enable Logging, below. If another desync occurs, you can then report it on our Discord with the detailed log. Logging stays on until you restart the game. To keep it on, turn on Always Use Detailed Logging in the mod's settings.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"Client Connection Address",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"Default IP address used when connecting to a Host.",""
 BeaverBuddies.Settings.Port,"Port",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"Show First Timer Message",""
 BeaverBuddies.Settings.AlwaysTrace,"Always Use Detailed Logging",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"When enabled, the game will always use detailed logging, which enables you to submit desync reports on the first occurrence without manually enabling detailed logging.
 Note that all players must have the setting enabled.
-This setting will cause some lag and is not recommended for most players.",""
+It barely affects performance, so it's fine to leave on.",""
+BeaverBuddies.Settings.TraceStackTraces,"Record Where Each Log Entry Comes From",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"With detailed logging on, desync reports also show where in the code each entry was logged. This slows the game down a lot, so it is meant for developers.",""
 BeaverBuddies.Settings.EnableSteamConnection,"Enable Steam Networking",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Allows players to join your games via Steam's peer-to-peer networking.
 Players will still be able to join via port forwarding.

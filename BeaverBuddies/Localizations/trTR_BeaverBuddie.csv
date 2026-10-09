@@ -29,7 +29,7 @@ BeaverBuddies.ClientDesynced.TracingEnabled,"Etkin",""
 BeaverBuddies.ClientDesynced.ReportOnDiscord,"Discord'da bildir",""
 BeaverBuddies.ClientDesynced.TraceSaved,"İz kaydı Player.log yanına kaydedildi",""
 BeaverBuddies.ClientDesynced.EnableTracing,"Günlük Kaydını Etkinleştir",""
-BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Bu senkronizasyon hatasını bildirmek için, *tüm oyuncuların* aşağıdaki 'Günlük Kaydını Etkinleştir' düğmesine basarak daha ayrıntılı günlük kaydını etkinleştirmesi gerekir. Başka bir senkronizasyon hatası oluşursa, ayrıntılı günlükle birlikte Discord sunucumuzda bildirebilirsiniz. Günlük modu biraz gecikmeye neden olabilir, ancak yalnızca oyunu yeniden başlatana kadar etkin olacaktır.",""
+BeaverBuddies.ClientDesynced.NeedToEnableTracing,"Bu senkronizasyon hatasını bildirmek için, *tüm oyuncuların* aşağıdaki 'Günlük Kaydını Etkinleştir' düğmesine basarak daha ayrıntılı günlük kaydını etkinleştirmesi gerekir. Başka bir senkronizasyon hatası oluşursa, ayrıntılı günlükle birlikte Discord sunucumuzda bildirebilirsiniz. Günlük kaydı oyunu yeniden başlatana kadar açık kalır. Sürekli açık kalması için mod ayarlarında 'Her Zaman Ayrıntılı Günlük Kullan' seçeneğini aç.",""
 BeaverBuddies.Settings.ClientConnectionAddress,"İstemci Bağlantı Adresi",""
 BeaverBuddies.Settings.ClientConnectionAddress.Tooltip,"Bir Sunucu'ya bağlanırken varsayılan olarak kullanılan IP adresi.",""
 BeaverBuddies.Settings.Port,"Port",""
@@ -41,7 +41,9 @@ BeaverBuddies.Settings.ShowFirstTimerMessage,"İlk Zamanlayıcı Mesajını Gös
 BeaverBuddies.Settings.AlwaysTrace,"Her Zaman Ayrıntılı Günlük Kullan",""
 BeaverBuddies.Settings.AlwaysTrace.Tooltip,"Etkinleştirilirse, oyun ilk desenkronizasyon anından itibaren ayrıntılı günlük kullanır ve bunu manuel etkinleştirmeye gerek kalmadan raporlamanıza olanak tanır.
 Tüm oyuncular bu ayarı etkinleştirmeli.
-Bu ayar biraz gecikmeye neden olabilir ve çoğu oyuncu için önerilmez.",""
+Performansı neredeyse hiç etkilemez, bu yüzden açık bırakabilirsin.",""
+BeaverBuddies.Settings.TraceStackTraces,"Her günlük girdisinin kaynağını kaydet",""
+BeaverBuddies.Settings.TraceStackTraces.Tooltip,"Ayrıntılı günlük açıkken, desenkronizasyon raporları her girdinin kodun neresinde kaydedildiğini de gösterir. Oyunu çok yavaşlatır, bu yüzden geliştiriciler içindir.",""
 BeaverBuddies.Settings.EnableSteamConnection,"Steam Bağlantısını Etkinleştir",""
 BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Oyuncuların Steam’in eşler arası ağı üzerinden oyununuza katılmasına izin verir.
 Oyuncular ayrıca port yönlendirme ile katılabilir.
