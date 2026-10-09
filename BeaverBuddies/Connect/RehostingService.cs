@@ -105,19 +105,29 @@ namespace BeaverBuddies.Connect
          * the players already in are sent the save to load too, and so are
          * those waiting to join (see ServerEventIO.Reload).
          */
-        public bool ReloadForJoin(ServerEventIO io)
+        public void ReloadForJoin(ServerEventIO io, Action onFailed)
         {
-            return SaveRehostFile(saveReference =>
+            bool saving = SaveRehostFile(saveReference =>
             {
                 // Stopped hosting in the meantime
                 if (EventIO.Get() != io) return;
-                var sceneLoader = _validatingGameLoader._gameSceneLoader;
-                byte[] data = ServerHostingUtils.GetMapBtyes(_gameSaveRepository, saveReference);
+                byte[] data;
+                try
+                {
+                    data = ServerHostingUtils.GetMapBtyes(_gameSaveRepository, saveReference);
+                }
+                catch (Exception e)
+                {
+                    Plugin.LogError($"Couldn't read the save to reload: {e}");
+                    onFailed();
+                    return;
+                }
                 io.Reload(data);
                 // As when hosting it (see ServerHostingUtils.LoadAndHost)
                 DeterminismService.InitGameStartState(data);
-                sceneLoader.StartSaveGame(saveReference);
+                _validatingGameLoader._gameSceneLoader.StartSaveGame(saveReference);
             }, true);
+            if (!saving) onFailed();
         }
 
         public void LoadGame(SaveReference saveReference)

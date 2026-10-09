@@ -520,6 +520,8 @@ namespace BeaverBuddies
                 return;
             }
             io.Update();
+            // The host's map came in, and another game is loading
+            if (!CanAct) return;
             // Only replay events on Update if we're paused by the user.
             // Also only send events if paused, so the client doesn't play
             // then before the end of the tick.
@@ -551,12 +553,18 @@ namespace BeaverBuddies
             {
                 SetTargetSpeed(0);
                 SpeedChangePatcher.SetSpeedSilentlyNow(_speedManager, 0);
-                if (GetSingleton<RehostingService>().ReloadForJoin(server)) return;
-                server.TurnAwayJoins();
-                isReloadingForJoin = false;
-                GetSingleton<DialogBoxShower>().Create()
-                    .SetLocalizedMessage("BeaverBuddies.JoinInProgress.FailedToReload")
-                    .Show();
+                // What's been done since the tick began, here or by the
+                // others, goes in the save
+                io.Update();
+                DoTickIO();
+                GetSingleton<RehostingService>().ReloadForJoin(server, () =>
+                {
+                    server.TurnAwayJoins();
+                    isReloadingForJoin = false;
+                    GetSingleton<DialogBoxShower>().Create()
+                        .SetLocalizedMessage("BeaverBuddies.JoinInProgress.FailedToReload")
+                        .Show();
+                });
             });
         }
 

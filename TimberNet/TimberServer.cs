@@ -32,9 +32,6 @@ namespace TimberNet
 
         public int ClientCount => clients.Count;
 
-        private string? errorMessage = null;
-        public bool IsAcceptingClients => errorMessage == null;
-
         public List<string?> GetConnectedClients()
         {
             // Clients join from the listening thread
@@ -99,13 +96,6 @@ namespace TimberNet
                     }
                     Task.Run(async () =>
                     {
-                        if (!IsAcceptingClients)
-                        {
-                            SendErrorMessage(client);
-                            client.Close();
-                            return;
-                        }
-
                         try
                         {
                             await SendMap(client);
@@ -133,11 +123,6 @@ namespace TimberNet
                     });
                 }
             });
-        }
-
-        public void StopAcceptingClients(string errorMessage)
-        {
-            this.errorMessage = errorMessage;
         }
 
         private void StartQueuing (ISocketStream client, byte[] mapBytes)
@@ -211,6 +196,32 @@ namespace TimberNet
             SendLength(client, RELOAD_MAP_LENGTH);
             SendDataWithLength(client, mapBytes);
             SendState(client);
+            // The one they were sent on joining is dropped with the old game's events
+            if (initEventProvider != null)
+            {
+                SendEvent(client, initEventProvider());
+            }
+        }
+
+        /** The game reloaded has started: whoever joins now gets the map it's saved to then. */
+        public void ForgetReloadedMap()
+        {
+            lock (queuedMessages)
+            {
+                reloadedMap = null;
+            }
+        }
+
+        // Under the lock: forgets the clients that have gone
+        private void PruneClients()
+        {
+            foreach (ISocketStream client in clients.Where(c => c == null || !c.Connected))
+            {
+                if (client == null) continue;
+                queuedMessages.TryRemove(client, out _);
+                reloads.Remove(client);
+            }
+            clients.RemoveAll(c => c == null || !c.Connected);
         }
 
         private void DropClient(ISocketStream client)
@@ -237,7 +248,7 @@ namespace TimberNet
             lock (queuedMessages)
             {
                 reloadedMap = mapBytes;
-                clients.RemoveAll(c => c == null || !c.Connected);
+                PruneClients();
                 foreach (ISocketStream client in clients)
                 {
                     // What's queued for them is from the game left behind
@@ -253,14 +264,6 @@ namespace TimberNet
             {
                 Task.Run(() => SendQueued(client));
             }
-        }
-
-        private void SendErrorMessage(ISocketStream client)
-        {
-            SendLength(client, 0);
-            byte[] bytes = MessageToBuffer(errorMessage!);
-            // TODO: Not sure this makes sense for Steam
-            SendDataWithLength(client, bytes);
         }
 
         private async Task SendMap(ISocketStream client)
@@ -314,7 +317,7 @@ namespace TimberNet
         {
             lock (queuedMessages)
             {
-                clients.RemoveAll(c => c == null || !c.Connected);
+                PruneClients();
             }
             // Make sure we're not running this while a client is being
             // setup to start or stop queueing

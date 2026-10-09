@@ -154,6 +154,4 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"ホストのアドレスでゲームに参�
 BeaverBuddies.Match.FindMatch.Tooltip,"同じマルチプレイモードを選んだ別のプレイヤーとSteamで1対1の対戦をします。マップ、難易度、ゲーム設定が同じプレイヤーが優先されます。選択が異なる項目はコイントスで決まり、マップが選ばれた側がホストになります。",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"今クイックマッチを待っているプレイヤーです。参加すると、相手のマップ、難易度、設定で遊びます。",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"ホストはまだ再ホストしていません。再ホストされたら招待を承諾してください。",""
-BeaverBuddies.Settings.JoinGamesInProgress,"進行中のゲームへの参加を許可",""
-BeaverBuddies.Settings.JoinGamesInProgress.Tooltip,"有効にすると、ゲーム開始後でもプレイヤーが参加できます。ゲームは保存され、全員のもとで再読み込みされます（少し時間がかかります）。無効にすると、プレイヤーは一時停止を解除する前に参加する必要があります。",""
 BeaverBuddies.JoinInProgress.FailedToReload,"参加するプレイヤーのためにゲームを保存できなかったため、参加できませんでした。もう一度試すか、保存してから再度ホストしてください。",""

@@ -154,6 +154,4 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"Entre em um jogo pelo endereço do anfitri�
 BeaverBuddies.Match.FindMatch.Tooltip,"Um 1 contra 1 pela Steam contra outro jogador que escolheu o mesmo modo multijogador. Jogadores com o mesmo mapa, dificuldade e configurações do jogo são tentados primeiro. Onde as escolhas diferem, decide-se no cara ou coroa, e hospeda quem tiver o mapa escolhido.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Jogadores esperando uma partida rápida agora. Entre com um deles para jogar no mapa, na dificuldade e nas configurações dele.",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"O anfitrião ainda não reanfitriou. Aceite o convite dele quando o fizer.",""
-BeaverBuddies.Settings.JoinGamesInProgress,"Permitir entrar em partidas em andamento",""
-BeaverBuddies.Settings.JoinGamesInProgress.Tooltip,"Quando ativado, um jogador pode entrar na sua partida depois que ela começou: a partida é salva e recarregada para todos, o que leva um momento. Quando desativado, os jogadores precisam entrar antes de você despausar.",""
 BeaverBuddies.JoinInProgress.FailedToReload,"Não foi possível salvar a partida para o jogador que estava entrando, então ele não foi admitido. Tente de novo, ou salve e hospede novamente.",""

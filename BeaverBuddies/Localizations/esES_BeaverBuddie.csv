@@ -154,6 +154,4 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"Únete a una partida con la dirección de s
 BeaverBuddies.Match.FindMatch.Tooltip,"Un 1 contra 1 por Steam contra otro jugador que eligió el mismo modo multijugador. Primero se prueba con jugadores con el mismo mapa, dificultad y ajustes de la partida. Donde las elecciones no coinciden, se decide a cara o cruz, y aloja quien tenga el mapa elegido.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Jugadores que esperan una partida rápida ahora mismo. Únete a uno para jugar en su mapa, con su dificultad y sus ajustes.",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"El anfitrión aún no ha vuelto a hospedar. Acepta su invitación cuando lo haga.",""
-BeaverBuddies.Settings.JoinGamesInProgress,"Permitir unirse a partidas en curso",""
-BeaverBuddies.Settings.JoinGamesInProgress.Tooltip,"Si está activado, un jugador puede unirse a tu partida después de que haya empezado: la partida se guarda y se vuelve a cargar para todos, lo que tarda un momento. Si está desactivado, los jugadores deben unirse antes de que quites la pausa.",""
 BeaverBuddies.JoinInProgress.FailedToReload,"No se pudo guardar la partida para el jugador que se unía, así que no se le dejó entrar. Inténtalo de nuevo, o guarda y vuelve a hospedar.",""

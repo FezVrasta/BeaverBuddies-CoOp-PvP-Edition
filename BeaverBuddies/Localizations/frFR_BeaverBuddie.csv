@@ -154,6 +154,4 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"Rejoignez une partie avec l'adresse de son 
 BeaverBuddies.Match.FindMatch.Tooltip,"Un 1 contre 1 sur Steam face à un autre joueur ayant choisi le même mode multijoueur. Les joueurs avec la même carte, la même difficulté et les mêmes paramètres de partie sont essayés en premier. Là où vos choix diffèrent, un pile ou face tranche, et celui dont la carte est retenue héberge.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Joueurs qui attendent une partie rapide en ce moment. Rejoignez-en un pour jouer sur sa carte, avec sa difficulté et ses paramètres.",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"L'hôte n'a pas encore réhébergé. Accepte son invitation dès qu'il l'aura fait.",""
-BeaverBuddies.Settings.JoinGamesInProgress,"Permettre de rejoindre une partie en cours",""
-BeaverBuddies.Settings.JoinGamesInProgress.Tooltip,"Si activé, un joueur peut rejoindre ta partie après son lancement : la partie est sauvegardée et rechargée pour tout le monde, ce qui prend un moment. Si désactivé, les joueurs doivent rejoindre avant que tu ne retires la pause.",""
 BeaverBuddies.JoinInProgress.FailedToReload,"La partie n'a pas pu être sauvegardée pour le joueur qui la rejoignait, il n'a donc pas été admis. Réessaie, ou sauvegarde et héberge à nouveau.",""
