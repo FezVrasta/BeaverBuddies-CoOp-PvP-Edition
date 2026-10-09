@@ -11,15 +11,16 @@ using System.Collections.Generic;
 
 namespace BeaverBuddies.IO
 {
-    // With TimberBorn's current architecture, we cannot feasibly
-    // support joining after the game has started. This is because a number
+    // With TimberBorn's current architecture, a player can't simply be sent
+    // a save of the game being played. This is because a number
     // of variables are randomly initialized during load (e.g. tree lifespans)
     // rather than serialized, since they aren't that important. As a result, the
     // save won't create the same gamestate as a currently loaded game. The only
     // way to ensure that the gamestate is the same is to have all clients join
     // at load time.
-    // Barring a complete overhaul of how loading works, I should probably disable
-    // joining after the play button is first pressed.
+    // So a player joining a game in progress has it saved and reloaded from
+    // that save by everyone: the Host, the players already in (who are sent
+    // it over their connection) and them (see Reload).
     public class ServerEventIO : NetIOBase<TimberServer>
     {
         // Anything that happens on the server should be recorded and
@@ -36,9 +37,23 @@ namespace BeaverBuddies.IO
 
         public ISocketListener SocketListener { get; private set; }
 
-        // We only support a static map; see note above
+        private readonly object mapLock = new object();
+        // The map anyone joining is sent, until the game starts
+        private byte[] mapBytes;
+        // Once it has, the map they wait for: the game's, saved for them
+        private TaskCompletionSource<byte[]> nextMap;
+        private volatile bool joinWaiting;
+
+        /**
+         * True once someone joined the game in progress: it's to be saved
+         * and reloaded for them (see Reload).
+         */
+        public bool JoinWaiting => joinWaiting;
+
+        // See note above
         public void Start(byte[] mapBytes)
         {
+            this.mapBytes = mapBytes;
             try
             {
                 List<ISocketListener> listeners = [
@@ -62,13 +77,7 @@ namespace BeaverBuddies.IO
                 }
                 NetBase = new TimberServer(
                     SocketListener,
-                    () =>
-                    {
-                        // TODO: Probably don't need to hold it in memory after the first tick...
-                        Task<byte[]> task = new Task<byte[]>(() => mapBytes);
-                        task.Start();
-                        return task;
-                    },
+                    ProvideMap,
                     CreateInitEvent()
                 );
             }
@@ -100,13 +109,71 @@ namespace BeaverBuddies.IO
             };
         }
 
-        public void StopAcceptingClients()
+        // Called from the threads clients join on
+        private Task<byte[]> ProvideMap()
         {
-            Plugin.Log("Game started: no longer accepting clients");
-            string message = $"The Host has already started the game, and the game can no longer be joined. " +
-                $"Ask the Host to rehost and join before they unpause.";
-            NetBase.StopAcceptingClients(message);
-            // TODO: remove map from memory
+            lock (mapLock)
+            {
+                if (nextMap == null) return Task.FromResult(mapBytes);
+                joinWaiting = true;
+                return nextMap.Task;
+            }
+        }
+
+        public void OnGameStarted()
+        {
+            if (!Settings.JoinInProgress)
+            {
+                Plugin.Log("Game started: no longer accepting clients");
+                string message = $"The Host has already started the game, and the game can no longer be joined. " +
+                    $"Ask the Host to rehost and join before they unpause.";
+                NetBase.StopAcceptingClients(message);
+            }
+            else
+            {
+                Plugin.Log("Game started: a player joining now has it reloaded for them");
+            }
+            lock (mapLock)
+            {
+                // Not to be sent again: the game has moved on from it
+                mapBytes = null;
+                nextMap ??= new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+        }
+
+        /**
+         * The game was saved for the players waiting to join it, and is
+         * about to be loaded from that save: the players already in are
+         * sent it to load too, and those waiting get it as they would
+         * before the game started, until it starts again.
+         */
+        public void Reload(byte[] mapBytes)
+        {
+            TaskCompletionSource<byte[]> waiting;
+            lock (mapLock)
+            {
+                this.mapBytes = mapBytes;
+                waiting = nextMap;
+                nextMap = null;
+                joinWaiting = false;
+            }
+            Plugin.Log($"Reloading the game for everyone from a map with length {mapBytes.Length}");
+            NetBase.ReloadClients(mapBytes);
+            waiting?.TrySetResult(mapBytes);
+        }
+
+        /** The game couldn't be saved for the players waiting: they're turned away. */
+        public void TurnAwayJoins()
+        {
+            TaskCompletionSource<byte[]> waiting;
+            lock (mapLock)
+            {
+                waiting = nextMap;
+                if (waiting == null) return;
+                nextMap = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+                joinWaiting = false;
+            }
+            waiting.TrySetException(new Exception("The Host couldn't save the game"));
         }
 
         private void NetBase_OnClientConnected(byte[] mapBytes)

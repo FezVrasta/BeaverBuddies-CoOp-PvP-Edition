@@ -19,6 +19,11 @@ namespace TimberNet
         private readonly List<ISocketStream> clients = new List<ISocketStream>();
         private readonly ConcurrentDictionary<ISocketStream, ConcurrentQueue<JObject>> queuedMessages =
             new ConcurrentDictionary<ISocketStream, ConcurrentQueue<JObject>>();
+        // The map each client is still to be sent, the game having been
+        // reloaded since it was sent theirs (see ReloadClients)
+        private readonly Dictionary<ISocketStream, byte[]> reloads = new Dictionary<ISocketStream, byte[]>();
+        // The map the game was last reloaded from
+        private byte[]? reloadedMap = null;
 
         private readonly ISocketListener listener;
 
@@ -101,17 +106,26 @@ namespace TimberNet
                             return;
                         }
 
-                        await SendMap(client);
+                        try
+                        {
+                            await SendMap(client);
+                        }
+                        catch (Exception e)
+                        {
+                            // No map for them (the game couldn't be saved for them to join, say)
+                            Log($"Couldn't send the map: {e.Message}");
+                            DropClient(client);
+                            return;
+                        }
                         SendState(client);
                         if (initEventProvider != null)
                         {
                             JObject initEvent = initEventProvider();
                             // Send the event before finishing queueing
                             // so it is guaranteed to arrive first.
-                            // (This also sends it to other clients.)
-                            DoUserInitiatedEvent(initEvent, true);
+                            SendInitEvent(client, initEvent);
                         }
-                        FinishQueuing(client);
+                        SendQueued(client);
 
                         // This must come last - it is an infinite loop
                         // until the client disconnects
@@ -126,20 +140,35 @@ namespace TimberNet
             this.errorMessage = errorMessage;
         }
 
-        private void StartQueuing (ISocketStream client)
+        private void StartQueuing (ISocketStream client, byte[] mapBytes)
         {
             lock (queuedMessages)
             {
                 queuedMessages.TryAdd(client, new ConcurrentQueue<JObject>());
                 clients.Add(client);
+                // Given the map from before a reload: the one after follows it
+                if (reloadedMap != null && reloadedMap != mapBytes)
+                {
+                    reloads[client] = reloadedMap;
+                }
             }
         }
 
-        private void FinishQueuing(ISocketStream client)
+        /**
+         * Sends what was queued for a client, and from then on its events
+         * as they happen. If the game was reloaded while they waited, it
+         * returns the map to send them first instead, still queuing.
+         */
+        private byte[]? FinishQueuing(ISocketStream client)
         {
             // Log("finishing queuing");
             lock(queuedMessages)
             {
+                if (reloads.TryGetValue(client, out byte[] mapBytes))
+                {
+                    reloads.Remove(client);
+                    return mapBytes;
+                }
                 if (queuedMessages.TryGetValue(client, out ConcurrentQueue<JObject> queue))
                 {
                     // Log($"Found {queue.Count} messages");
@@ -154,6 +183,75 @@ namespace TimberNet
                 {
                     Log("Warning! Missing client!");
                 }
+                return null;
+            }
+        }
+
+        private void SendQueued(ISocketStream client)
+        {
+            byte[]? mapBytes;
+            while ((mapBytes = FinishQueuing(client)) != null)
+            {
+                try
+                {
+                    SendReload(client, mapBytes);
+                }
+                catch (Exception e)
+                {
+                    Log($"Couldn't send the reloaded map: {e.Message}");
+                    DropClient(client);
+                    return;
+                }
+            }
+        }
+
+        private void SendReload(ISocketStream client, byte[] mapBytes)
+        {
+            Log($"Sending the reloaded map with length {mapBytes.Length}");
+            SendLength(client, RELOAD_MAP_LENGTH);
+            SendDataWithLength(client, mapBytes);
+            SendState(client);
+        }
+
+        private void DropClient(ISocketStream client)
+        {
+            lock (queuedMessages)
+            {
+                clients.Remove(client);
+                queuedMessages.TryRemove(client, out _);
+                reloads.Remove(client);
+            }
+            client.Close();
+        }
+
+        /**
+         * The game was saved and is reloaded from that save, here and by
+         * every client, which is sent it in place of the game they're
+         * playing: the events from then on are the new game's, from its
+         * first tick. A client still getting the map they joined with is
+         * sent this one after it.
+         */
+        public void ReloadClients(byte[] mapBytes)
+        {
+            List<ISocketStream> toSend = new List<ISocketStream>();
+            lock (queuedMessages)
+            {
+                reloadedMap = mapBytes;
+                clients.RemoveAll(c => c == null || !c.Connected);
+                foreach (ISocketStream client in clients)
+                {
+                    // What's queued for them is from the game left behind
+                    bool waiting = queuedMessages.ContainsKey(client);
+                    queuedMessages[client] = new ConcurrentQueue<JObject>();
+                    reloads[client] = mapBytes;
+                    // Who's waiting is sent it once they've got their map
+                    if (!waiting) toSend.Add(client);
+                }
+            }
+            RestartTicks();
+            foreach (ISocketStream client in toSend)
+            {
+                Task.Run(() => SendQueued(client));
             }
         }
 
@@ -176,7 +274,7 @@ namespace TimberNet
             // them on the client side.
             // Start recording messages as soon as the map is saved,
             // while the map is sending
-            StartQueuing(client);
+            StartQueuing(client, mapBytes);
 
             Log($"Sending map with length {mapBytes.Length}");
             SendDataWithLength(client, mapBytes);
@@ -194,18 +292,25 @@ namespace TimberNet
             SendEvent(client, message);
         }
 
-        void DoUserInitiatedEvent(JObject message, bool sendNow)
+        /**
+         * Sends the event to the client joining now, and on to the other
+         * clients as any other: not straight to one still getting a map,
+         * which it would land in the middle of.
+         */
+        private void SendInitEvent(ISocketStream joining, JObject message)
         {
             base.DoUserInitiatedEvent(message);
-            SendEventToClients(message, sendNow);
+            SendEvent(joining, message);
+            SendEventToClients(message, joining);
         }
 
         public override void DoUserInitiatedEvent(JObject message)
         {
-            DoUserInitiatedEvent(message, false);
+            base.DoUserInitiatedEvent(message);
+            SendEventToClients(message, null);
         }
 
-        private void SendEventToClients(JObject message, bool sendNow)
+        private void SendEventToClients(JObject message, ISocketStream? except)
         {
             lock (queuedMessages)
             {
@@ -217,14 +322,8 @@ namespace TimberNet
             {
                 clients.ForEach(client =>
                 {
-                    if (sendNow)
-                    {
-                        SendEvent(client, message);
-                    }
-                    else
-                    {
-                        QueueOrSentToClient(client, message);
-                    }
+                    if (client == except) return;
+                    QueueOrSentToClient(client, message);
                 });
             }
         }

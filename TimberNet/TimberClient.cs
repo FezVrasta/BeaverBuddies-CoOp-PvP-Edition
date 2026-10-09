@@ -18,7 +18,7 @@ namespace TimberNet
 
         private readonly ISocketStream client;
 
-        public override bool ShouldTick => base.ShouldTick && receivedEvents.Count > 0;
+        public override bool ShouldTick => base.ShouldTick && receivedEvents.Count > 0 && !AwaitingReload;
 
         public TimberClient(ISocketStream client) : base()
         {
