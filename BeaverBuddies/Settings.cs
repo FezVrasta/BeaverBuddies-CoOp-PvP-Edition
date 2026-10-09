@@ -53,8 +53,10 @@ namespace BeaverBuddies
 
         // ---- Quality of Life Settings ----
 
+        // Menu only by default: pausing everyone whenever someone opens a
+        // building's deletion or a research dialog interrupts too much
         public LimitedStringModSetting PauseReduction { get; } =
-            new(0, new[] {
+            new(1, new[] {
                 new LimitedStringModSettingValue("0", "BeaverBuddies.Settings.PauseReduction.Off"),
                 new LimitedStringModSettingValue("1", "BeaverBuddies.Settings.PauseReduction.LowRisk"),
                 new LimitedStringModSettingValue("2", "BeaverBuddies.Settings.PauseReduction.HighRisk")

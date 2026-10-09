@@ -167,6 +167,12 @@ namespace BeaverBuddies.Connect
             byte[] data = GetMapBtyes(repository, saveReference);
             Plugin.Log($"Reading map with length {data.Length}");
 
+            // The game the save was made from stays loaded until the host
+            // starts: frozen, so it plays no ticks that a player joining
+            // meanwhile would be sent, then find missing from the save. The
+            // hosting box's own pause doesn't hold with fewer forced pauses
+            SingletonManager.GetSingleton<ReplayService>()?.FreezeForHosting();
+
             ServerEventIO io = new ServerEventIO();
             EventIO.Set(io);
             io.Start(data);

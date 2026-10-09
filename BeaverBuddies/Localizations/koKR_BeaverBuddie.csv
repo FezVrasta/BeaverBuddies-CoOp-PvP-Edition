@@ -63,6 +63,7 @@ BeaverBuddies.Host.ConnectedClients,"클라이언트 연결 대기 중…
 BeaverBuddies.Host.DirectConnectClient,"다이렉트 연결 클라이언트",""
 BeaverBuddies.Host.StartGame,"게임 시작",""
 BeaverBuddies.Host.InviteFriends,"친구 초대",""
+BeaverBuddies.Host.StartWarning,"게임이 시작되면 더 이상 아무도 참가할 수 없습니다. 지금 시작할까요?",""
 BeaverBuddies.JoinCoopGame.Success,"참가했습니다! 맵을 받고 있습니다…",""
 BeaverBuddies.JoinCoopGame.Error.InvalidFormat,"잘못된 주소 형식입니다. 포트를 분석할 수 없습니다.",""
 BeaverBuddies.JoinCoopGame.Error.InvalidAddress,"주소가 올바른 IP 주소가 아닙니다.

@@ -584,6 +584,22 @@ namespace BeaverBuddies.DevTools
                     Plugin.Log($"[Test] te {string.Join(" ", a.Skip(1))}: {probe.GetMethod("Run").Invoke(null, new object[] { a.Skip(1).ToArray() })}");
                     break;
                 }
+                case "play":
+                    // The speed buttons, as a player presses them (the speed command sends the event itself)
+                    Get<Timberborn.TimeSystem.SpeedManager>().ChangeSpeed(float.Parse(a[1], CultureInfo.InvariantCulture));
+                    break;
+                case "speedkey":
+                    // What the speed keys do (0 pauses or resumes, like the pause key)
+                    SpeedPanel().SetSpeed(float.Parse(a[1], CultureInfo.InvariantCulture));
+                    break;
+                case "tickonce":
+                    // What the tick once key does
+                    SpeedPanel().PauseOrTickOnce();
+                    break;
+                case "menu":
+                    // The game menu, as Escape opens it
+                    Get<Timberborn.Options.IOptionsBox>().Show();
+                    break;
                 case "dismiss":
                     // Presses OK on every dialog showing, as a player would
                     for (int i = 0; i < 5 && _panelStack._stack.Count > 0 && _panelStack._stack.Peek().PanelController is DialogBox box; i++)
@@ -600,6 +616,11 @@ namespace BeaverBuddies.DevTools
         }
 
         // A game singleton, in a multiplayer game or alone
+        // Bound only as a dev module, so found among the input's listeners
+        private Timberborn.TimeSystemUI.SpeedControlPanel SpeedPanel() =>
+            Get<Timberborn.InputSystem.InputService>()._inputProcessors.OfType<Timberborn.TimeSystemUI.SpeedControlPanel>().FirstOrDefault()
+            ?? throw new Exception("no speed panel");
+
         private T Get<T>() where T : class =>
             _container.GetInstance<T>() ?? throw new Exception($"no {typeof(T).Name}");
 

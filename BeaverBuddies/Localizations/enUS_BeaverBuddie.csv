@@ -63,6 +63,7 @@ Currently connected clients:",""
 BeaverBuddies.Host.DirectConnectClient,"Direct Connect Client",""
 BeaverBuddies.Host.StartGame,"Start Game",""
 BeaverBuddies.Host.InviteFriends,"Invite Friends",""
+BeaverBuddies.Host.StartWarning,"Once the game is running, nobody else can join. Start it now?",""
 BeaverBuddies.JoinCoopGame.Success,"Joined! Receiving map...",""
 BeaverBuddies.JoinCoopGame.Error.InvalidFormat,"Invalid address format. Could not parse port.",""
 BeaverBuddies.JoinCoopGame.Error.InvalidAddress,"Address was not a valid IP address.

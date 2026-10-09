@@ -33,6 +33,8 @@ namespace BeaverBuddies
             // playing co-op right now).
             containerDefinition.Bind<ClientConnectionService>().AsSingleton();
             containerDefinition.Bind<ClientConnectionUI>().AsSingleton();
+            containerDefinition.Bind<Steam.PauseMenuInvite>().AsSingleton();
+            containerDefinition.Bind<StartConfirmation>().AsSingleton();
             containerDefinition.Bind<SteamOverlayConnectionService>().AsSingleton();
             containerDefinition.Bind<RegisteredLocalizationService>().AsSingleton();
             containerDefinition.Bind<Settings>().AsSingleton();

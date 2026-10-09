@@ -63,6 +63,7 @@ Clients actuellement connectés :",""
 BeaverBuddies.Host.DirectConnectClient,"Client de connexion directe",""
 BeaverBuddies.Host.StartGame,"Démarrer la partie",""
 BeaverBuddies.Host.InviteFriends,"Inviter des amis",""
+BeaverBuddies.Host.StartWarning,"Une fois la partie lancée, plus personne ne pourra la rejoindre. La démarrer maintenant ?",""
 BeaverBuddies.JoinCoopGame.Success,"Rejoint ! Réception de la carte…",""
 BeaverBuddies.JoinCoopGame.Error.InvalidFormat,"Format d’adresse invalide. Impossible d’analyser le port.",""
 BeaverBuddies.JoinCoopGame.Error.InvalidAddress,"L’adresse n’était pas une adresse IP valide.

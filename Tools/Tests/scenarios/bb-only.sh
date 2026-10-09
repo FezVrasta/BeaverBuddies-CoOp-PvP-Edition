@@ -14,7 +14,7 @@ bb_close
 start_match Folktails Folktails || { fail "a match starts" "the copies never got into the game"; return; }
 pass "a match starts"
 expect_log "the game starts as Co-op" host "Starting a game with options: bb.gamemode=bb.coop"
-send host "speed 3"; sleep 25
+send host "speed $BB_SPEED"; sleep 10
 expect_in_sync "both copies in sync"
 if mod_installed TimberEmpires; then fail "Timber Empires is off" "its folder is still in Mods"; else pass "Timber Empires is off"; fi
 expect_no_log "nothing of Timber Empires loaded" host "\[TimberEmpires\]"

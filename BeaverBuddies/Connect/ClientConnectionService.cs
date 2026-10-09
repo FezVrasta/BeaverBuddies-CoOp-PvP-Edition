@@ -52,9 +52,14 @@ namespace BeaverBuddies.Connect
             return TryToConnect(new SteamSocket(friendID));
         }
 
+        // The address of the last game joined directly, to reconnect to after
+        // a rehost: not always the one in the settings (a match, a test copy)
+        private static string _lastAddress;
+
         public bool TryToConnect(string address)
         {
             _steamHost = null;
+            _lastAddress = address;
             int port = _settings.DefaultPort.Value;
             Plugin.Log("Try to resolve address: " + address);
             // Parse address and port
@@ -122,7 +127,7 @@ namespace BeaverBuddies.Connect
                 return;
             }
 #endif
-            ConnectOrShowFailureMessage(_settings.ClientConnectionAddress.Value);
+            ConnectOrShowFailureMessage(_lastAddress ?? _settings.ClientConnectionAddress.Value);
         }
 
 #if IS_STEAM

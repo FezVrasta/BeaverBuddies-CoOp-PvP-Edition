@@ -12,6 +12,8 @@ BB_PREFS_SAVED="$BB_TEST_DIR/prefs.saved"
 BB_PREFS_DOMAIN=com.mechanistry.timberborn
 # The harness reads <this>-<instance> twice a second
 BB_CMD_PREFIX="$HOME/Library/Caches/BeaverBuddies-test"
+# How fast the copies play while a scenario waits on the game: 30x, as fast as two copies keep up on one Mac
+BB_SPEED=${BB_SPEED:-30}
 mkdir -p "$BB_TEST_DIR/shots"
 
 # The game's display settings: windowed for the run, then the player's own back

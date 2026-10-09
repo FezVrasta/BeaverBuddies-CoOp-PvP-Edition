@@ -14,12 +14,13 @@ using UnityEngine.UIElements;
 
 namespace BeaverBuddies.Connect
 {
+    // Joining another game from inside one is done from the Multiplayer menu
     [HarmonyPatch(typeof(GameOptionsBox), "GetPanel")]
     public class GameOptionsBoxGetPanelPatcher
     {
         public static void Postfix(IPanelController __instance, ref VisualElement __result)
         {
-            SingletonManager.GetSingleton<ClientConnectionUI>().AddJoinButton(__result);
+            SingletonManager.GetSingleton<Steam.PauseMenuInvite>()?.AddButton(__result);
         }
     }
 
@@ -41,15 +42,6 @@ namespace BeaverBuddies.Connect
             _clientConnectionService = clientConnectionService;
             _loc = loc;
             _settings = settings;
-        }
-
-        public void AddJoinButton(VisualElement __result)
-        {
-            Button button = ButtonInserter.DuplicateOrGetButton(__result, "LoadGameButton", "JoinButton", button =>
-            {
-                button.text = _loc.T("BeaverBuddies.Menu.JoinCoopGame");
-                button.clicked += () => ShowBox();
-            });
         }
 
         public void ShowBox()

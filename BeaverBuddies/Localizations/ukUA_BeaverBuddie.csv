@@ -63,6 +63,7 @@ BeaverBuddies.Host.ConnectedClients,"Очікування клієнтів…
 BeaverBuddies.Host.DirectConnectClient,"Клієнт прямого підключення",""
 BeaverBuddies.Host.StartGame,"Почати гру",""
 BeaverBuddies.Host.InviteFriends,"Запросити друзів",""
+BeaverBuddies.Host.StartWarning,"Коли гра почнеться, більше ніхто не зможе приєднатися. Почати зараз?",""
 BeaverBuddies.JoinCoopGame.Success,"Підключено! Отримання карти…",""
 BeaverBuddies.JoinCoopGame.Error.InvalidFormat,"Неправильний формат адреси. Неможливо розпізнати порт.",""
 BeaverBuddies.JoinCoopGame.Error.InvalidAddress,"Адреса не є дійсною IP-адресою.

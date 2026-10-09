@@ -63,6 +63,7 @@ BeaverBuddies.Host.ConnectedClients,"กำลังรอลูกค้าเ�
 BeaverBuddies.Host.DirectConnectClient,"ไคลเอนต์เชื่อมต่อโดยตรง",""
 BeaverBuddies.Host.StartGame,"เริ่มเกม",""
 BeaverBuddies.Host.InviteFriends,"เชิญเพื่อน",""
+BeaverBuddies.Host.StartWarning,"เมื่อเกมเริ่มแล้ว จะไม่มีใครเข้าร่วมได้อีก เริ่มเลยไหม",""
 BeaverBuddies.JoinCoopGame.Success,"เข้าร่วมแล้ว! กำลังรับแผนที่…",""
 BeaverBuddies.JoinCoopGame.Error.InvalidFormat,"รูปแบบที่อยู่ไม่ถูกต้อง ไม่สามารถแยกพอร์ตได้",""
 BeaverBuddies.JoinCoopGame.Error.InvalidAddress,"ที่อยู่นั้นไม่ใช่ที่อยู่ IP ที่ถูกต้อง

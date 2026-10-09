@@ -162,6 +162,30 @@ namespace BeaverBuddies.Modding
         // Sets a player's working hours some other way; true when it did
         public static void AddSetWorkingHoursInstead(Func<string, int, bool> hook) => WorkingHoursChangedEvent.SetHoursInstead.Add(hook);
 
+        // Whether this machine hosts a game friends can still be invited to:
+        // a Steam lobby, before the game first runs
+        public static bool CanInvite() => Steam.PauseMenuInvite.CanInvite;
+
+        // Opens the friends to invite, as the game menu's Invite Friends does
+        public static void Invite() => SingletonManager.GetSingleton<Steam.PauseMenuInvite>()?.Invite();
+
+        // Whether this new game is only setting up before it's saved and hosted
+        // (Host new game, a match): what it does now isn't the game played yet
+        public static bool AboutToHost()
+        {
+            // Hosted now: the game is the one played
+            if (EventIO.Get() is ServerEventIO) return false;
+            if (Connect.NewGameHosting.Pending || DevTools.TestHarness.HostsMatch) return true;
+#if IS_STEAM
+            if (MatchmakingSession.HostsNewGame) return true;
+#endif
+            return false;
+        }
+
+        // A line for the box the host gets before the game first runs, after
+        // which nobody can join: a warning, or null for none
+        public static void AddStartWarning(Func<string> hook) => Connect.StartConfirmation.Warnings.Add(hook);
+
         // ---- Matches (see Matchmaking) ----
 
         // Whether a game can have players of different factions; any true

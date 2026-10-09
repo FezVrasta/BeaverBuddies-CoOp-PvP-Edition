@@ -242,6 +242,9 @@ namespace BeaverBuddies
 
         public void PostLoad()
         {
+            // The tick hashes are for this game: the one loaded before may have ticked
+            // (a new game before it's hosted), and a running total from it never matches the others'
+            TEBPatcher.SetHashes(0, 0);
             Plugin.Log("PostLoad");
             Performance.ActionLatency.Hook();
             _determinismService.UnityThread = Thread.CurrentThread;
@@ -481,6 +484,7 @@ namespace BeaverBuddies
          */
         private void DoTickIO()
         {
+            if (_frozenForHosting) return;
             ReplayEvents();
             SendEvents();
         }
@@ -499,7 +503,7 @@ namespace BeaverBuddies
 
         public void UpdateSingleton()
         {
-            if (!CanAct) return;
+            if (!CanAct || _frozenForHosting) return;
             if (waitUpdates > 0)
             {
                 waitUpdates--;
@@ -528,6 +532,22 @@ namespace BeaverBuddies
                 SendEvents();
             }
             UpdateSpeed();
+        }
+
+        // Set once this game is saved and hosted again: the new server is the saved game's
+        private bool _frozenForHosting;
+
+        /**
+         * Stops the game for good: it's being saved and hosted again (see
+         * ServerHostingUtils). It stays loaded until the host starts the
+         * saved game, and mustn't tell the new server its ticks meanwhile:
+         * a player joining then would be told the game is that far on.
+         */
+        public void FreezeForHosting()
+        {
+            _frozenForHosting = true;
+            TargetSpeed = 0;
+            SpeedChangePatcher.SetSpeedSilentlyNow(_speedManager, 0);
         }
 
         public void SetTargetSpeed(float speed)
