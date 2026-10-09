@@ -119,9 +119,27 @@ namespace BeaverBuddies.Events
 
         public override void Replay(IReplayContext context)
         {
-            ReplayService replayService = context.GetSingleton<ReplayService>();
-            replayService.SetTargetSpeed(0);
-            RehostingService rehostingService = context.GetSingleton<RehostingService>();
+            context.GetSingleton<ReplayService>().SetTargetSpeed(0);
+            ResyncService resyncService = context.GetSingleton<ResyncService>();
+            // The host reloads everyone's game from its save, and the report
+            // is offered once it's back (see ShowResynced)
+            if (EventIO.Get() is ServerEventIO)
+            {
+                resyncService.StartAsHost(this);
+                return;
+            }
+            resyncService.WaitForHost(this);
+            context.GetSingleton<DialogBoxShower>().Create()
+                .SetLocalizedMessage("BeaverBuddies.ClientDesynced.Resyncing")
+                .Show();
+        }
+
+        /**
+         * Once the resync's save has loaded: the game's back in sync, and
+         * the desync can be reported.
+         */
+        public void ShowResynced(IReplayContext context)
+        {
             var shower = context.GetSingleton<DialogBoxShower>();
             ILoc _loc = shower._loc;
             Button infoButton = null;
@@ -139,28 +157,8 @@ namespace BeaverBuddies.Events
                 if (Settings.Debug) ReportOnDiscord(context, infoCallback);
                 else TurnOnTracing(infoCallback);
             };
-            bool isHost = EventIO.Get() is ServerEventIO;
-            Action reconnectAction = () =>
-            {
-                if (isHost)
-                {
-                    if (!rehostingService.RehostGame())
-                    {
-                        shower.Create()
-                            .SetLocalizedMessage("BeaverBuddies.ClientDesynced.FailedToRehostMessage")
-                            .Show();
-                    }
-                }
-                else
-                {
-                    context.GetSingleton<ClientConnectionService>()
-                    ?.ConnectOrShowFailureMessage();
-                }
-            };
 
-
-            string reconnectText = isHost ? _loc.T("BeaverBuddies.ClientDesynced.SaveAndRehostButton") : _loc.T("BeaverBuddies.ClientDesynced.WaitForRehostButton");
-            string reconnectMessage = _loc.T("BeaverBuddies.ClientDesynced.Message");
+            string message = _loc.T("BeaverBuddies.ClientDesynced.Resynced");
             string bugReportMessageKey;
             if (Settings.Debug)
             {
@@ -168,16 +166,12 @@ namespace BeaverBuddies.Events
             }
             else
             {
-                reconnectMessage += "\n\n" + _loc.T("BeaverBuddies.ClientDesynced.NeedToEnableTracing");
+                message += "\n\n" + _loc.T("BeaverBuddies.ClientDesynced.NeedToEnableTracing");
                 bugReportMessageKey = "BeaverBuddies.ClientDesynced.EnableTracing";
             }
 
-
-
-            DialogBox box = shower.Create().SetMessage(reconnectMessage)
+            DialogBox box = shower.Create().SetMessage(message)
                 .SetInfoButton(bugReportAction, _loc.T(bugReportMessageKey))
-                .SetConfirmButton(reconnectAction, reconnectText)
-                .SetDefaultCancelButton()
                 .Show();
             infoButton = box.GetPanel().Q<Button>("InfoButton");
         }

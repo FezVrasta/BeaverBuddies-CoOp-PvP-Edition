@@ -56,6 +56,15 @@ namespace TimberNet
 
         protected override void ReceiveEvent(JObject message)
         {
+            int epoch = message[EPOCH_KEY]?.ToObject<int>() ?? 0;
+            message.Remove(EPOCH_KEY);
+            // Sent before the client had the last reload's save: it's for
+            // the game that replaced
+            if (epoch != Epoch)
+            {
+                Log($"Dropping {GetType(message)} from before the reload (epoch {epoch}, now {Epoch})");
+                return;
+            }
             message[TICKS_KEY] = TickCount;
             base.ReceiveEvent(message);
         }
@@ -193,7 +202,7 @@ namespace TimberNet
         private void SendReload(ISocketStream client, byte[] mapBytes)
         {
             Log($"Sending the reloaded map with length {mapBytes.Length}");
-            SendLength(client, RELOAD_MAP_LENGTH);
+            SendLength(client, RELOAD_MARKER);
             SendDataWithLength(client, mapBytes);
             SendState(client);
             // The one they were sent on joining is dropped with the old game's events
@@ -259,7 +268,7 @@ namespace TimberNet
                     if (!waiting) toSend.Add(client);
                 }
             }
-            RestartTicks();
+            ResetForReload(mapBytes);
             foreach (ISocketStream client in toSend)
             {
                 Task.Run(() => SendQueued(client));
@@ -291,6 +300,7 @@ namespace TimberNet
             message[TICKS_KEY] = 0;
             message[TYPE_KEY] = SET_STATE_EVENT;
             message["hash"] = Hash;
+            message[EPOCH_KEY] = Epoch;
             // Send directly - don't queue
             SendEvent(client, message);
         }

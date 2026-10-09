@@ -21,6 +21,8 @@ client.OnLog += m => { if (!m.StartsWith("Received event")) Console.WriteLine(m)
 bool failed = false;
 client.OnError += m => { Console.Error.WriteLine("Error: " + m); failed = true; };
 client.OnMapReceived += bytes => Console.WriteLine($"Map received ({bytes.Length / 1024} KB)");
+// Nothing to load: the host's reload save only starts the game again from tick 0
+client.OnReload += bytes => { Console.WriteLine($"Reload save received ({bytes.Length / 1024} KB)"); client.EndReload(); };
 
 Console.WriteLine($"Connecting to {host}:{port} as {name} ({playerID})...");
 client.Start();

@@ -31,6 +31,7 @@ namespace BeaverBuddies.IO
 
             NetBase = new TimberClient(socket);
             NetBase.OnMapReceived += mapReceivedCallback;
+            NetBase.OnReload += Connect.ResyncService.ReceiveSave;
             NetBase.OnLog += Plugin.Log;
             NetBase.OnTransientMessage += EventIO.RaiseTransientMessageReceived;
             NetBase.OnError += (error) =>
@@ -57,27 +58,10 @@ namespace BeaverBuddies.IO
         {
             if (NetBase == null) return;
             NetBase.OnMapReceived -= mapReceivedCallback;
+            NetBase.OnReload -= Connect.ResyncService.ReceiveSave;
             NetBase.OnLog -= Plugin.Log;
             NetBase.OnTransientMessage -= EventIO.RaiseTransientMessageReceived;
             NetBase = null;
-        }
-
-        /**
-         * Hands the maps the host sends from now on (it reloads the game
-         * for a player joining it) to this callback, from the scene the
-         * player is in now.
-         */
-        public void SetMapReceivedCallback(MapReceived callback)
-        {
-            if (NetBase == null) return;
-            NetBase.OnMapReceived -= mapReceivedCallback;
-            mapReceivedCallback = callback;
-            NetBase.OnMapReceived += callback;
-        }
-
-        public void ReleaseReloadedEvents()
-        {
-            NetBase?.ReleaseReloadedEvents();
         }
 
         public static ClientEventIO Create(ISocketStream socket, MapReceived mapReceivedCallback, Action<string> onError)

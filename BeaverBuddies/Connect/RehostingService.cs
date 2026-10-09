@@ -1,5 +1,4 @@
 ﻿using BeaverBuddies.Util;
-using BeaverBuddies.IO;
 using HarmonyLib;
 using System;
 using System.Collections;
@@ -98,36 +97,6 @@ namespace BeaverBuddies.Connect
         public bool RehostGame()
         {
             return SaveRehostFile(LoadGame, true);
-        }
-
-        /**
-         * Saves the game and loads it from that save, still hosting it:
-         * the players already in are sent the save to load too, and so are
-         * those waiting to join (see ServerEventIO.Reload).
-         */
-        public void ReloadForJoin(ServerEventIO io, Action onFailed)
-        {
-            bool saving = SaveRehostFile(saveReference =>
-            {
-                // Stopped hosting in the meantime
-                if (EventIO.Get() != io) return;
-                byte[] data;
-                try
-                {
-                    data = ServerHostingUtils.GetMapBtyes(_gameSaveRepository, saveReference);
-                }
-                catch (Exception e)
-                {
-                    Plugin.LogError($"Couldn't read the save to reload: {e}");
-                    onFailed();
-                    return;
-                }
-                io.Reload(data);
-                // As when hosting it (see ServerHostingUtils.LoadAndHost)
-                DeterminismService.InitGameStartState(data);
-                _validatingGameLoader._gameSceneLoader.StartSaveGame(saveReference);
-            }, true);
-            if (!saving) onFailed();
         }
 
         public void LoadGame(SaveReference saveReference)

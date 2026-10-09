@@ -84,6 +84,7 @@ namespace BeaverBuddies
         private readonly ISingletonRepository _singletonRepository;
         private readonly TickingService _tickingService;
         private readonly DeterminismService _determinismService;
+        private readonly ResyncService _resyncService;
 
         private readonly GameSaveHelper gameSaveHelper;
 
@@ -143,11 +144,9 @@ namespace BeaverBuddies
         public static bool IsLoaded { get; private set; } = false;
         private bool isReset = false;
 
-        // Saving the game for a player joining it, to reload it from that
-        // save: nothing more is played, as it wouldn't be in the save
-        private bool isReloadingForJoin = false;
-
-        private bool CanAct => io != null && !isReset && !IsDesynced && !isReloadingForJoin;
+        // Nothing more plays in a game a reload is replacing: it wouldn't
+        // be in the save
+        private bool CanAct => io != null && !isReset && !IsDesynced && !_resyncService.IsReloading;
 
         public static bool IsReplayingEvents { get; private set; } = false;
 
@@ -185,6 +184,7 @@ namespace BeaverBuddies
             DialogBoxShower dialogBoxShower,
             UrlOpener urlOpener,
             RehostingService rehostingService,
+            ResyncService resyncService,
             GameSaveRepository gameSaveRepository,
             MapNameService mapNameService,
             Autosaver autosaver,
@@ -196,6 +196,10 @@ namespace BeaverBuddies
         )
         {
             DesyncDetecter.ThreadSafeWaterMapUpdateDataPatcher.Reset();
+            // The game's clock starts again with each load: one left at the
+            // last game's time differs between machines that played it for
+            // different lengths, as a desynced one and the host after a resync
+            TimeTimePatcher.SetTicksSinceLoaded(0);
             //_tickWathcerService = AddSingleton(tickWathcerService);
             _eventBus = AddSingleton(eventBus);
             _speedManager = AddSingleton(speedManager);
@@ -220,6 +224,7 @@ namespace BeaverBuddies
             AddSingleton(dialogBoxShower);
             AddSingleton(urlOpener);
             AddSingleton(rehostingService);
+            _resyncService = AddSingleton(resyncService);
             AddSingleton(gameSaveRepository);
             AddSingleton(mapNameService);
             AddSingleton(autosaver);
@@ -422,21 +427,17 @@ namespace BeaverBuddies
                 desyncTrace = DesyncDetecterService.GetLastDesyncTrace(),
                 playerID = Players.PlayerIdentity.LocalID,
             };
-            // Set IsDesynced to true so event play instead of sending
-            // to the host, allowing the Client to continue play.
+            // Nothing more plays here: the host resyncs everyone, sending its
+            // save over this same connection
             IsDesynced = true;
             // Don't use EnqueueEventForSending because it shouldn't
             // have a random state set.
             eventsToSend.Enqueue(e);
             e.Replay(this);
-            // Send events immediately to get this event out before resetting
-            // the EventIO
-            // TODO: This only works because sending events is currently a synchronous
-            // operation, and it really shouldn't be, so this is a short-term fix!
+            // Send it now: nothing sends from here until the resync
             SendEvents();
             // Pause
             SpeedChangePatcher.SetSpeedSilentlyNow(_speedManager, 0);
-            EventIO.Reset();
         }
 
         /**
@@ -503,7 +504,13 @@ namespace BeaverBuddies
 
         public void UpdateSingleton()
         {
-            if (!CanAct) return;
+            if (!CanAct)
+            {
+                // Still listening while desynced, or waiting for a reload,
+                // for the host's save
+                if (!isReset) io?.Update();
+                return;
+            }
             if (waitUpdates > 0)
             {
                 waitUpdates--;
@@ -514,13 +521,13 @@ namespace BeaverBuddies
                 Initialize();
                 waitUpdates = -1;
             }
-            if (io is ServerEventIO server && server.JoinWaiting)
+            if (io is ServerEventIO server && (server.JoinWaiting || _resyncService.HostPending))
             {
-                ReloadForJoin(server);
+                ReloadForEveryone(server);
                 return;
             }
             io.Update();
-            // The host's map came in, and another game is loading
+            // The host's save came in, and another game is loading
             if (!CanAct) return;
             // Only replay events on Update if we're paused by the user.
             // Also only send events if paused, so the client doesn't play
@@ -542,13 +549,14 @@ namespace BeaverBuddies
         }
 
         /**
-         * Someone joined the game in progress: at the end of this tick it's
-         * saved, and loaded from that save here and by every player.
+         * Someone joined the game in progress, or a player desynced: at the
+         * end of this tick it's saved, and loaded from that save here and
+         * by every player.
          */
-        private void ReloadForJoin(ServerEventIO server)
+        private void ReloadForEveryone(ServerEventIO server)
         {
-            Plugin.Log("A player is joining the game in progress: reloading it for everyone");
-            isReloadingForJoin = true;
+            Plugin.Log("Reloading the game for everyone");
+            _resyncService.BeginHostReload();
             FinishFullTickIfNeededAndThen(() =>
             {
                 SetTargetSpeed(0);
@@ -557,14 +565,7 @@ namespace BeaverBuddies
                 // others, goes in the save
                 io.Update();
                 DoTickIO();
-                GetSingleton<RehostingService>().ReloadForJoin(server, () =>
-                {
-                    server.TurnAwayJoins();
-                    isReloadingForJoin = false;
-                    GetSingleton<DialogBoxShower>().Create()
-                        .SetLocalizedMessage("BeaverBuddies.JoinInProgress.FailedToReload")
-                        .Show();
-                });
+                _resyncService.SaveAndReload(server);
             });
         }
 

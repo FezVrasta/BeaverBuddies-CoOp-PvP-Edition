@@ -40,30 +40,15 @@ namespace BeaverBuddies.Connect
             _dialogBoxShower = dialogBoxShower;
             _urlOpener = urlOpener;
             _settings = settings;
-
-            // In the game joined, the next map the host sends (reloading the
-            // game for a player joining it) loads from this scene, and the
-            // events of the one it reloaded, if it did, can be played now
-            if (EventIO.Get() is ClientEventIO joined)
-            {
-                joined.SetMapReceivedCallback(LoadMap);
-                joined.ReleaseReloadedEvents();
-            }
         }
-
-        // The host of the last game joined through Steam, to find again
-        // after a rehost: they're in a new lobby, not at an address
-        private static CSteamID? _steamHost;
 
         public bool TryToConnect(CSteamID friendID)
         {
-            _steamHost = friendID;
             return TryToConnect(new SteamSocket(friendID));
         }
 
         public bool TryToConnect(string address)
         {
-            _steamHost = null;
             int port = _settings.DefaultPort.Value;
             Plugin.Log("Try to resolve address: " + address);
             // Parse address and port
@@ -121,39 +106,6 @@ namespace BeaverBuddies.Connect
             EventIO.Set(client);
             return true;
         }
-
-        public void ConnectOrShowFailureMessage()
-        {
-#if IS_STEAM
-            if (_steamHost.HasValue)
-            {
-                RejoinThroughSteam(_steamHost.Value);
-                return;
-            }
-#endif
-            ConnectOrShowFailureMessage(_settings.ClientConnectionAddress.Value);
-        }
-
-#if IS_STEAM
-        /**
-         * Joins the lobby the host is in now, which connects as joining
-         * from an invite does. Before they've rehosted there's none, and
-         * their invite will bring the player in.
-         */
-        private void RejoinThroughSteam(CSteamID host)
-        {
-            if (SteamFriends.GetFriendGamePlayed(host, out FriendGameInfo_t game) && game.m_steamIDLobby.IsValid())
-            {
-                Plugin.Log($"Rejoining {SteamFriends.GetFriendPersonaName(host)} in lobby {game.m_steamIDLobby}");
-                SteamMatchmaking.JoinLobby(game.m_steamIDLobby);
-                return;
-            }
-            Plugin.Log("The host isn't in a lobby: waiting for their invite");
-            _dialogBoxShower.Create()
-                .SetLocalizedMessage("BeaverBuddies.ClientDesynced.WaitForInvite")
-                .Show();
-        }
-#endif
 
         public void ConnectOrShowFailureMessage(string address)
         {
@@ -258,6 +210,21 @@ namespace BeaverBuddies.Connect
                 return;
             }
 
+            LoadReceivedMap(_gameSaveRepository, _gameSceneLoader, mapBytes);
+        }
+
+        /**
+         * Loads a map the host sent, when joining or when it resyncs
+         * everyone, with the random seed the host loads it with.
+         */
+        public static bool LoadReceivedMap(GameSaveRepository gameSaveRepository, GameSceneLoader gameSceneLoader, byte[] mapBytes)
+        {
+            if (!IsValidMap(mapBytes))
+            {
+                Plugin.LogError($"Received invalid map data ({mapBytes?.Length ?? 0} bytes)");
+                return false;
+            }
+
             // Clean up our current co-op state before loading,
             // so we don't, for example, end up ticking the client before
             // it's actually loaded.
@@ -266,15 +233,16 @@ namespace BeaverBuddies.Connect
             Plugin.Log("Loading map");
             //string saveName = Guid.NewGuid().ToString();
             string saveName = TimberNetBase.GetHashCode(mapBytes).ToString("X8");
-            SaveReference saveRef = new SaveReference("Online Games", new SettlementReference(saveName, _gameSaveRepository.DefaultSaveDirectory));
-            Stream stream = _gameSaveRepository.CreateSaveSkippingNameValidation(saveRef);
+            SaveReference saveRef = new SaveReference("Online Games", new SettlementReference(saveName, gameSaveRepository.DefaultSaveDirectory));
+            Stream stream = gameSaveRepository.CreateSaveSkippingNameValidation(saveRef);
             stream.Write(mapBytes);
             stream.Close();
 
             // Set the RNG seed before loading the map
             // The server does the same
             DeterminismService.InitGameStartState(mapBytes);
-            _gameSceneLoader.StartSaveGame(saveRef);
+            gameSceneLoader.StartSaveGame(saveRef);
+            return true;
         }
 
         public void UpdateSingleton()
