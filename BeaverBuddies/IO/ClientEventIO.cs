@@ -38,6 +38,9 @@ namespace BeaverBuddies.IO
                 Plugin.LogError(error);
                 CleanUp();
                 FailedToConnect = true;
+                // A dead connection mustn't stay the game's IO, or the next
+                // game started here loads as a client with no host
+                if (EventIO.Get() == this) EventIO.Reset();
                 onError(error);
             };
             try
@@ -59,6 +62,9 @@ namespace BeaverBuddies.IO
             NetBase.OnMapReceived -= mapReceivedCallback;
             NetBase.OnLog -= Plugin.Log;
             NetBase.OnTransientMessage -= EventIO.RaiseTransientMessageReceived;
+            // Let go of the socket (and a Steam P2P session) too
+            try { NetBase.Close(); }
+            catch (Exception e) { Plugin.LogWarning($"Couldn't close the connection: {e.Message}"); }
             NetBase = null;
         }
 

@@ -60,7 +60,8 @@ git rev-parse -q --verify "refs/tags/v$new" >/dev/null && die "v$new is already 
 # What went in since the last release
 last=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
 range="${last:+$last..}HEAD"
-notes=$(mktemp -t "$name-release")
+# A template both BSD and GNU mktemp take (GNU refuses -t without X's)
+notes=$(mktemp "${TMPDIR:-/tmp}/$name-release.XXXXXX")
 trap 'rm -f "$notes"' EXIT
 {
     git log --reverse --no-merges --format='* %s.' "$range" | grep -vE '^\* Release ' || true
@@ -86,8 +87,9 @@ undo() {
 }
 trap 'rm -f "$notes"; [ "${done:-0}" = 1 ] || undo' EXIT
 
-sed -i '' -E "s/(\"Version\": *\")$old\"/\1$new\"/" "$manifest"
-sed -i '' "s|<Version>$old</Version>|<Version>$new</Version>|" "$csproj"
+# -i with a suffix works on BSD and GNU sed alike ('' alone is BSD-only)
+sed -i.bak -E "s/(\"Version\": *\")$old\"/\1$new\"/" "$manifest" && rm -f "$manifest.bak"
+sed -i.bak "s|<Version>$old</Version>|<Version>$new</Version>|" "$csproj" && rm -f "$csproj.bak"
 { printf 'v%s\n%s\n\n' "$new" "$entry"; cat "$changelog" 2>/dev/null || true; } > "$changelog.new"
 mv "$changelog.new" "$changelog"
 grep -q "\"Version\": *\"$new\"" "$manifest" || die "couldn't set the version in $manifest"

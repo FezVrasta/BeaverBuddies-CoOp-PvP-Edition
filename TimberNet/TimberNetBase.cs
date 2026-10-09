@@ -38,6 +38,8 @@ namespace TimberNet
         private readonly ConcurrentQueue<(ISocketStream source, string message)> receivedEventQueue =
             new ConcurrentQueue<(ISocketStream, string)>();
         private readonly ConcurrentQueue<string> logQueue = new ConcurrentQueue<string>();
+        // Errors arrive on the listening thread; OnError is raised from Update()
+        private readonly ConcurrentQueue<string> errorQueue = new ConcurrentQueue<string>();
         private byte[]? mapBytes = null;
 
         public bool IsStopped { get; private set; } = false;
@@ -292,10 +294,8 @@ namespace TimberNet
             {
                 byte[] bytes = stream.ReadUntilComplete(length);
                 string message = BufferToStringMessage(bytes);
-                if (OnError != null)
-                {
-                    OnError(message);
-                }
+                // Handed to OnError on the Update() thread, which can show it
+                errorQueue.Enqueue(message);
             }
         }
 
@@ -410,6 +410,14 @@ namespace TimberNet
             }
         }
 
+        private void ProcessErrors()
+        {
+            while (errorQueue.TryDequeue(out string? error))
+            {
+                OnError?.Invoke(error);
+            }
+        }
+
         private void ProcessReceivedMap()
         {
             if (mapBytes == null) return;
@@ -423,6 +431,7 @@ namespace TimberNet
         public void Update()
         {
             ProcessLogs();
+            ProcessErrors();
             if (!Started) return;
             ProcessReceivedMap();
             ProcessReceivedEventsQueue();

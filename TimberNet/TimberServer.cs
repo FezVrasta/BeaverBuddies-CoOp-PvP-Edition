@@ -25,7 +25,18 @@ namespace TimberNet
         private Func<Task<byte[]>> mapProvider;
         private Func<JObject>? initEventProvider;
 
-        public int ClientCount => clients.Count;
+        // Only those still connected: one who left stays in the list until
+        // the next event goes out
+        public int ClientCount
+        {
+            get
+            {
+                lock (queuedMessages)
+                {
+                    return clients.Count(c => c != null && c.Connected);
+                }
+            }
+        }
 
         private string? errorMessage = null;
         public bool IsAcceptingClients => errorMessage == null;
@@ -35,7 +46,7 @@ namespace TimberNet
             // Clients join from the listening thread
             lock (queuedMessages)
             {
-                return clients.Where(c => c != null).Select(c => c.Name).ToList();
+                return clients.Where(c => c != null && c.Connected).Select(c => c.Name).ToList();
             }
         }
 

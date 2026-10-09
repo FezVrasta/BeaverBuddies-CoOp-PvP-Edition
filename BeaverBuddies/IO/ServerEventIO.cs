@@ -36,8 +36,9 @@ namespace BeaverBuddies.IO
 
         public ISocketListener SocketListener { get; private set; }
 
-        // We only support a static map; see note above
-        public void Start(byte[] mapBytes)
+        // We only support a static map; see note above.
+        // False if it couldn't start (e.g. the port is taken): nothing is left listening
+        public bool Start(byte[] mapBytes)
         {
             try
             {
@@ -71,18 +72,23 @@ namespace BeaverBuddies.IO
                     },
                     CreateInitEvent()
                 );
+                //netBase = new TimberServer(port, mapProvider, null);
+                NetBase.OnLog += Plugin.Log;
+                NetBase.OnTransientMessage += EventIO.RaiseTransientMessageReceived;
+                NetBase.OnMapReceived += NetBase_OnClientConnected;
+                // Starts listening, which throws if the port is taken
+                NetBase.Start();
+                return true;
             }
             catch (Exception e)
             {
-                Plugin.Log("Failed to start server");
-                Plugin.Log(e.ToString());
-                return;
+                Plugin.LogError("Failed to start server");
+                Plugin.LogError(e.ToString());
+                try { NetBase?.Close(); }
+                catch (Exception closeError) { Plugin.LogWarning($"Couldn't stop the server: {closeError.Message}"); }
+                NetBase = null;
+                return false;
             }
-            //netBase = new TimberServer(port, mapProvider, null);
-            NetBase.OnLog += Plugin.Log;
-            NetBase.OnTransientMessage += EventIO.RaiseTransientMessageReceived;
-            NetBase.OnMapReceived += NetBase_OnClientConnected;
-            NetBase.Start();
         }
 
         private Func<JObject> CreateInitEvent()
@@ -105,7 +111,7 @@ namespace BeaverBuddies.IO
             Plugin.Log("Game started: no longer accepting clients");
             string message = $"The Host has already started the game, and the game can no longer be joined. " +
                 $"Ask the Host to rehost and join before they unpause.";
-            NetBase.StopAcceptingClients(message);
+            NetBase?.StopAcceptingClients(message);
             // TODO: remove map from memory
         }
 

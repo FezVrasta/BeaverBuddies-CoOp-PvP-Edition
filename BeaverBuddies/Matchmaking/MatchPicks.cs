@@ -74,7 +74,9 @@ namespace BeaverBuddies.Matchmaking
                 modeLocKey = modeLocKey,
                 mode = Settings(configuration.GameMode),
                 options = MatchOptions.Current(),
-                settings = NewGame.GameSettings.Current(),
+                // Only the ones the match's mode shows: hidden ones (alone-only
+                // settings, say) mustn't keep two players apart or reach the game
+                settings = NewGame.GameSettings.Current(MatchOptions.ValueOf(MatchOptions.GameModeId)),
             };
         }
 
