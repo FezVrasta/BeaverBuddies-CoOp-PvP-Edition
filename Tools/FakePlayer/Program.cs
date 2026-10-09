@@ -21,6 +21,8 @@ client.OnLog += m => { if (!m.StartsWith("Received event")) Console.WriteLine(m)
 bool failed = false;
 client.OnError += m => { Console.Error.WriteLine("Error: " + m); failed = true; };
 client.OnMapReceived += bytes => Console.WriteLine($"Map received ({bytes.Length / 1024} KB)");
+// Nothing to load: the host's resync save only starts the game again from tick 0
+client.OnResync += bytes => { Console.WriteLine($"Resync save received ({bytes.Length / 1024} KB)"); client.EndResync(); };
 
 Console.WriteLine($"Connecting to {host}:{port} as {name} ({playerID})...");
 client.Start();

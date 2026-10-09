@@ -26,6 +26,12 @@ namespace TimberNet
         // the hash: they're handled as soon as they arrive and never replayed.
         public const string TRANSIENT_KEY = "transient";
         public const int MAX_BUFFER_SIZE = 8192 * 4; // 32K
+        // In place of a message's length: the host's save follows, as the
+        // map does on joining, and everyone starts again from it
+        public const int RESYNC_MARKER = -1;
+        // Which game a client's event was sent in: one sent before the
+        // client got the last resync's save is for the game it replaced
+        public const string EPOCH_KEY = "epoch";
 
         public delegate void MessageReceived(string message);
         public delegate void MapReceived(byte[] mapBytes);
@@ -34,9 +40,12 @@ namespace TimberNet
         public event MessageReceived? OnError;
         public event MapReceived? OnMapReceived;
         public event Action<JObject>? OnTransientMessage;
+        // On the Update() thread, when the host's resync save has arrived
+        public event MapReceived? OnResync;
 
-        private readonly ConcurrentQueue<(ISocketStream source, string message)> receivedEventQueue =
-            new ConcurrentQueue<(ISocketStream, string)>();
+        // A received message, or the save a resync starts again from
+        private readonly ConcurrentQueue<(ISocketStream source, string? message, byte[]? resyncMap)> receivedEventQueue =
+            new ConcurrentQueue<(ISocketStream, string?, byte[]?)>();
         private readonly ConcurrentQueue<string> logQueue = new ConcurrentQueue<string>();
         private byte[]? mapBytes = null;
 
@@ -45,6 +54,13 @@ namespace TimberNet
         public int Hash { get; private set; } = 17;
 
         public int TickCount { get; private set; }
+
+        // How many times the game has been resynced
+        public int Epoch { get; private set; }
+
+        // A client got a resync's save and holds what came after it for
+        // the game it loads, until EndResync
+        public bool IsResyncing { get; private set; }
 
         public int TicksBehind
         {
@@ -253,9 +269,19 @@ namespace TimberNet
                     continue;
                 }
 
-                if (messageLength == 0)
+                if (messageLength == RESYNC_MARKER && isClient)
                 {
-                    Log("Received message of length 0; aborting listen");
+                    if (!TryReadLength(client, out int mapLength) || mapLength <= 0) break;
+                    byte[] resyncMap = client.ReadUntilComplete(mapLength);
+                    Log($"Received resync map with length {mapLength}");
+                    receivedEventQueue.Enqueue((client, null, resyncMap));
+                    messageCount++;
+                    continue;
+                }
+
+                if (messageLength <= 0)
+                {
+                    Log($"Received message of length {messageLength}; aborting listen");
                     break;
                 }
 
@@ -265,7 +291,7 @@ namespace TimberNet
 
                 string message = BufferToStringMessage(buffer);
                 //Log($"Queuing message of length {messageLength} bytes");
-                receivedEventQueue.Enqueue((client, message));
+                receivedEventQueue.Enqueue((client, message, null));
                 messageCount++;
             }
         }
@@ -337,13 +363,50 @@ namespace TimberNet
             this.mapBytes = mapBytes;
         }
 
+        /**
+         * Starts again from a resync's save: what's been received is for
+         * the game it replaces.
+         */
+        protected void ResetForResync(byte[] mapBytes)
+        {
+            receivedEvents.Clear();
+            TickCount = 0;
+            Hash = CombineHash(17, GetHashCode(mapBytes));
+            Epoch++;
+            Log($"Resyncing (epoch {Epoch}) from a map with length {mapBytes.Length} and Hash: {GetHashCode(mapBytes).ToString("X8")}");
+        }
+
+        /**
+         * The resync's save has loaded: what came after it can play.
+         */
+        public void EndResync()
+        {
+            IsResyncing = false;
+        }
+
         private void ProcessReceivedEventsQueue()
         {
+            // The rest is for the game being loaded, not the one still showing
+            if (IsResyncing) return;
             while (receivedEventQueue.TryDequeue(out var received))
             {
+                if (received.resyncMap != null)
+                {
+                    ResetForResync(received.resyncMap);
+                    IsResyncing = true;
+                    try
+                    {
+                        OnResync?.Invoke(received.resyncMap);
+                    }
+                    catch (Exception e)
+                    {
+                        Log($"Error resyncing: {e}");
+                    }
+                    return;
+                }
                 try
                 {
-                    JObject message = JObject.Parse(received.message);
+                    JObject message = JObject.Parse(received.message!);
                     if (IsTransient(message))
                     {
                         ReceiveTransientMessage(received.source, message);

@@ -29,6 +29,7 @@ namespace TimberNet
         {
             // Don't actually do the event (i.e. add it to the hash)
             // Wait for the server to confirm w/ adjusted Tick
+            message[EPOCH_KEY] = Epoch;
             SendEvent(client, message);
         }
 

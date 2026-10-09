@@ -54,6 +54,15 @@ namespace TimberNet
 
         protected override void ReceiveEvent(JObject message)
         {
+            int epoch = message[EPOCH_KEY]?.ToObject<int>() ?? 0;
+            message.Remove(EPOCH_KEY);
+            // Sent before the client had the last resync's save: it's for
+            // the game that replaced
+            if (epoch != Epoch)
+            {
+                Log($"Dropping {GetType(message)} from before the resync (epoch {epoch} < {Epoch})");
+                return;
+            }
             message[TICKS_KEY] = TickCount;
             base.ReceiveEvent(message);
         }
@@ -154,6 +163,47 @@ namespace TimberNet
                 {
                     Log("Warning! Missing client!");
                 }
+            }
+        }
+
+        /**
+         * Starts every connected client again from this save, over the
+         * connection it already has, and this server from tick 0. Events
+         * sent from now on queue behind the save, so they reach each client
+         * after it.
+         */
+        public void Resync(byte[] mapBytes)
+        {
+            List<ISocketStream> toResync;
+            lock (queuedMessages)
+            {
+                clients.RemoveAll(c => c == null || !c.Connected);
+                // One still getting the map it joined with has a game the
+                // resync replaces coming, and can't be sent this one too
+                toResync = clients.Where(c => !queuedMessages.ContainsKey(c)).ToList();
+                foreach (ISocketStream client in toResync)
+                {
+                    queuedMessages.TryAdd(client, new ConcurrentQueue<JObject>());
+                }
+            }
+            ResetForResync(mapBytes);
+            foreach (ISocketStream client in toResync)
+            {
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        Log($"Sending resync map with length {mapBytes.Length}");
+                        SendLength(client, RESYNC_MARKER);
+                        SendDataWithLength(client, mapBytes);
+                        Log("Sent resync map");
+                    }
+                    catch (Exception e)
+                    {
+                        Log($"Error sending resync map: {e.Message}");
+                    }
+                    FinishQueuing(client);
+                });
             }
         }
 
