@@ -64,6 +64,7 @@ namespace BeaverBuddies
             containerDefinition.Bind<ReplayService>().AsSingleton();
             containerDefinition.Bind<TickProgressService>().AsSingleton();
             containerDefinition.Bind<TickingService>().AsSingleton();
+            containerDefinition.Bind<ResyncService>().AsSingleton();
             containerDefinition.Bind<DeterminismService>().AsSingleton();
             containerDefinition.Bind<TickReplacerService>().AsSingleton();
             containerDefinition.Bind<LateTickableBuffer>().AsSingleton();

@@ -15,10 +15,9 @@ Sorun giderme kılavuzunu açmak ister misiniz?","Joining failed with error:
 {0}
 Would you like to open the troubleshooting guide?"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessage,"Ev sahibine bağlanılamadı. Sorun giderme kılavuzunu açmak ister misiniz?","Failed to connect to Host. Would you like to open the troubleshooting guide?"
-BeaverBuddies.ClientDesynced.Message,"Bağlı bir oyuncu senkronizasyonunu kaybetti ve oyuna devam edemiyor - bunun için özür dileriz! Host yeniden başlatmalı ve BUNDAN SONRA, Client yeniden bağlanmalıdır. Sorun devam ederse oyunu yeniden başlatmanız gerekebilir. Bunu Discord sunucumuzda bildirmeniz, sorunu çözmemize yardımcı olur.","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Reporting it on our Discord helps us fix it."
-BeaverBuddies.ClientDesynced.FailedToRehostMessage,"Yeniden barındırma başarısız oldu. Manuel olarak kaydedip yeniden barındırın.","Failed to Rehost. Manually save and Host again."
-BeaverBuddies.ClientDesynced.SaveAndRehostButton,"Kaydet ve Yeniden Barındır","Save and Rehost"
-BeaverBuddies.ClientDesynced.WaitForRehostButton,"Yeniden Bağlan (yeniden barındırmayı bekle)","Reconnect (wait for Rehost)"
+BeaverBuddies.ClientDesynced.Resyncing,"Bir oyuncunun senkronizasyonu bozuldu. Ev sahibi oyunu herkes için yeniden yüklüyor; birazdan devam edecek.",""
+BeaverBuddies.ClientDesynced.Resynced,"Bir oyuncunun senkronizasyonu bozulduğu için oyun, ev sahibinin kaydından herkes için yeniden yüklendi. Ev sahibi devam etmek için oynat'a basabilir.",""
+BeaverBuddies.ClientDesynced.ResyncFailed,"Oyunun senkronizasyonu bozuldu ve herkes için yeniden yüklenemedi. Kaydedin, ardından yeniden ev sahipliği yapın.",""
 BeaverBuddies.Editor.StartingLocation1,"Başlangıç Konumu - Oyuncu 1",""
 BeaverBuddies.Editor.StartingLocation2,"Başlangıç Konumu - Oyuncu 2",""
 BeaverBuddies.Editor.StartingLocation3,"Başlangıç Konumu - Oyuncu 3",""
@@ -153,4 +152,3 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"Kayıtlı oyunlarından birini kur. Ar
 BeaverBuddies.Menu.JoinGame.Tooltip,"Sunucunun adresiyle bir oyuna katıl. Steam'de bir arkadaşının daveti de işe yarar.",""
 BeaverBuddies.Match.FindMatch.Tooltip,"Steam üzerinden, aynı çok oyunculu modu seçen başka bir oyuncuya karşı 1'e 1 maç. Önce aynı harita, zorluk ve oyun ayarlarına sahip oyuncular denenir. Seçimlerinizin farklı olduğu yerde yazı tura karar verir ve haritası seçilen oyuncu oyunu kurar.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Şu anda hızlı maç bekleyen oyuncular. Onun haritasında, zorluğunda ve ayarlarıyla oynamak için birine katıl.",""
-BeaverBuddies.ClientDesynced.WaitForInvite,"Ev sahibi henüz yeniden barındırmadı. Barındırdığında davetini kabul et.",""

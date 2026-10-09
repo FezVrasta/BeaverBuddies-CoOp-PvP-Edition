@@ -15,10 +15,9 @@ BeaverBuddies.JoinCoopGame.ConnectionFailedMessageWithError,"오류로 연결 �
 {0}
 Would you like to open the troubleshooting guide?"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessage,"호스트에 연결하지 못했습니다. 문제 해결 가이드를 여시겠습니까?","Failed to connect to Host. Would you like to open the troubleshooting guide?"
-BeaverBuddies.ClientDesynced.Message,"연결된 플레이어가 비동기화되어 게임을 계속할 수 없습니다. 죄송합니다! 호스트가 다시 게임을 열어야 하고, 그 후 클라이언트가 재접속해야 합니다. 문제가 지속되면 게임을 재시작해야 할 수 있습니다. Discord에 보고해 주시면 문제 해결에 도움이 됩니다.","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Reporting it on our Discord helps us fix it."
-BeaverBuddies.ClientDesynced.FailedToRehostMessage,"재호스팅에 실패했습니다. 수동으로 저장하고 다시 호스트하세요.","Failed to Rehost. Manually save and Host again."
-BeaverBuddies.ClientDesynced.SaveAndRehostButton,"저장하고 재호스팅","Save and Rehost"
-BeaverBuddies.ClientDesynced.WaitForRehostButton,"재호스팅 대기 중 재접속","Reconnect (wait for Rehost)"
+BeaverBuddies.ClientDesynced.Resyncing,"플레이어의 동기화가 끊어졌습니다. 호스트가 모두를 위해 게임을 다시 불러오는 중이며, 곧 계속됩니다.",""
+BeaverBuddies.ClientDesynced.Resynced,"플레이어의 동기화가 끊어져 호스트의 저장 파일로 모두의 게임을 다시 불러왔습니다. 호스트가 재생을 누르면 계속됩니다.",""
+BeaverBuddies.ClientDesynced.ResyncFailed,"게임의 동기화가 끊어졌고 모두를 위해 다시 불러올 수 없었습니다. 저장한 뒤 다시 호스트하세요.",""
 BeaverBuddies.Editor.StartingLocation1,"시작 위치 - 플레이어 1",""
 BeaverBuddies.Editor.StartingLocation2,"시작 위치 - 플레이어 2",""
 BeaverBuddies.Editor.StartingLocation3,"시작 위치 - 플레이어 3",""
@@ -153,4 +152,3 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"저장된 게임 중 하나를 호스�
 BeaverBuddies.Menu.JoinGame.Tooltip,"호스트의 주소로 게임에 참가합니다. Steam에서는 친구의 초대로도 참가할 수 있습니다.",""
 BeaverBuddies.Match.FindMatch.Tooltip,"같은 멀티플레이 모드를 고른 다른 플레이어와 Steam으로 1대1 대전을 합니다. 맵, 난이도, 게임 설정이 같은 플레이어를 먼저 찾습니다. 고른 항목이 다르면 동전 던지기로 정하고, 맵이 뽑힌 쪽이 호스트가 됩니다.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"지금 빠른 대전을 기다리는 플레이어입니다. 참가하면 상대의 맵, 난이도, 설정으로 플레이합니다.",""
-BeaverBuddies.ClientDesynced.WaitForInvite,"호스트가 아직 재호스팅하지 않았습니다. 재호스팅하면 초대를 수락하세요.",""

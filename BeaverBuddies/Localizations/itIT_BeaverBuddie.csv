@@ -15,10 +15,9 @@ Vuoi aprire la guida per la risoluzione dei problemi?","Joining failed with erro
 {0}
 Would you like to open the troubleshooting guide?"
 BeaverBuddies.JoinCoopGame.ConnectionFailedMessage,"Connessione all'host non riuscita. Vuoi aprire la guida per la risoluzione dei problemi?","Failed to connect to Host. Would you like to open the troubleshooting guide?"
-BeaverBuddies.ClientDesynced.Message,"Un giocatore connesso si è desincronizzato e non può continuare a giocare - ci dispiace! L'host dovrebbe riavviare la partita e, DOPO, il client dovrebbe riconnettersi. Potrebbe essere necessario riavviare il gioco se i problemi persistono. Segnalarlo sul nostro Discord ci aiuta a risolverlo.","A connected player desynced and cannot continue playing - sorry about that! The Host should hit Rehost and, AFTER that, the Client should Reconnect. You may need to restart the game if problems persist. Reporting it on our Discord helps us fix it."
-BeaverBuddies.ClientDesynced.FailedToRehostMessage,"Impossibile ri-ospitare. Salva manualmente e ospita di nuovo.","Failed to Rehost. Manually save and Host again."
-BeaverBuddies.ClientDesynced.SaveAndRehostButton,"Salva e ri-ospita","Save and Rehost"
-BeaverBuddies.ClientDesynced.WaitForRehostButton,"Riconnettiti (attendi il ri-ospitaggio)","Reconnect (wait for Rehost)"
+BeaverBuddies.ClientDesynced.Resyncing,"Un giocatore ha perso la sincronizzazione. L'host sta ricaricando la partita per tutti; riprenderà tra un momento.",""
+BeaverBuddies.ClientDesynced.Resynced,"Un giocatore ha perso la sincronizzazione, quindi la partita è stata ricaricata per tutti dal salvataggio dell'host. L'host può premere play per continuare.",""
+BeaverBuddies.ClientDesynced.ResyncFailed,"La partita ha perso la sincronizzazione e non è stato possibile ricaricarla per tutti. Salvala, poi ospitala di nuovo.",""
 BeaverBuddies.Editor.StartingLocation1,"Posizione iniziale - Giocatore 1",""
 BeaverBuddies.Editor.StartingLocation2,"Posizione iniziale - Giocatore 2",""
 BeaverBuddies.Editor.StartingLocation3,"Posizione iniziale - Giocatore 3",""
@@ -153,4 +152,3 @@ BeaverBuddies.Menu.HostSavedGame.Tooltip,"Ospita uno dei tuoi salvataggi. Gli am
 BeaverBuddies.Menu.JoinGame.Tooltip,"Entra in una partita con l'indirizzo di chi la ospita. Su Steam funziona anche l'invito di un amico.",""
 BeaverBuddies.Match.FindMatch.Tooltip,"Un 1 contro 1 su Steam contro un altro giocatore che ha scelto la stessa modalità multigiocatore. Prima si cercano giocatori con la stessa mappa, difficoltà e impostazioni di gioco. Dove le scelte sono diverse decide il lancio di una moneta, e ospita chi ha la mappa scelta.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Giocatori che stanno cercando una partita rapida in questo momento. Unisciti a uno per giocare con la sua mappa, difficoltà e impostazioni.",""
-BeaverBuddies.ClientDesynced.WaitForInvite,"L'host non ha ancora riospitato. Accetta il suo invito quando l'avrà fatto.",""
