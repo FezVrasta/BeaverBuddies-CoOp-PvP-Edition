@@ -51,7 +51,8 @@ namespace BeaverBuddies.IO
         public bool JoinWaiting => joinWaiting;
 
         // See note above
-        public void Start(byte[] mapBytes)
+        // False if it couldn't start (e.g. the port is taken): nothing is left listening
+        public bool Start(byte[] mapBytes)
         {
             this.mapBytes = mapBytes;
             try
@@ -80,18 +81,23 @@ namespace BeaverBuddies.IO
                     ProvideMap,
                     CreateInitEvent()
                 );
+                //netBase = new TimberServer(port, mapProvider, null);
+                NetBase.OnLog += Plugin.Log;
+                NetBase.OnTransientMessage += EventIO.RaiseTransientMessageReceived;
+                NetBase.OnMapReceived += NetBase_OnClientConnected;
+                // Starts listening, which throws if the port is taken
+                NetBase.Start();
+                return true;
             }
             catch (Exception e)
             {
-                Plugin.Log("Failed to start server");
-                Plugin.Log(e.ToString());
-                return;
+                Plugin.LogError("Failed to start server");
+                Plugin.LogError(e.ToString());
+                try { NetBase?.Close(); }
+                catch (Exception closeError) { Plugin.LogWarning($"Couldn't stop the server: {closeError.Message}"); }
+                NetBase = null;
+                return false;
             }
-            //netBase = new TimberServer(port, mapProvider, null);
-            NetBase.OnLog += Plugin.Log;
-            NetBase.OnTransientMessage += EventIO.RaiseTransientMessageReceived;
-            NetBase.OnMapReceived += NetBase_OnClientConnected;
-            NetBase.Start();
         }
 
         private Func<JObject> CreateInitEvent()

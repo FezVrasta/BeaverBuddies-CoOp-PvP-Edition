@@ -104,20 +104,31 @@ namespace BeaverBuddies.NewGame
         /** Every setting as this player has it picked. */
         public static Dictionary<string, string> Current() => All.ToDictionary(s => s.Id, s => ValueOf(s.Id));
 
+        /** The settings a game with this mode has (null: alone), as this player has them picked. */
+        public static Dictionary<string, string> Current(string mode) =>
+            All.Where(s => ShownFor(s, mode)).ToDictionary(s => s.Id, s => ValueOf(s.Id));
+
         // Set right before a match's game starts: the picks it was agreed on, not this player's
         private static Dictionary<string, string> _agreed;
 
         public static void StartGameWith(Dictionary<string, string> values) => _agreed = values;
 
-        // A new game takes this player's picks (or a match's); a saved one keeps its own
+        // A new game takes this player's picks (or a match's); a saved one keeps its own.
+        // Only the settings shown for the game's mode: the rest, which the
+        // Customize list hid (an alone-only setting in a hosted game, say),
+        // are at their defaults rather than whatever was last picked for another kind of game
         internal static void Starting(bool newGame)
         {
             _forGame = new Dictionary<string, string>();
             if (newGame)
             {
+                // Read after MatchOptions.Starting (see the patchers' priority): the options
+                // this game was started with, or none for a game alone
+                string mode = GameRecord.ModeOf(MatchOptions.ForGame);
                 foreach (GameSetting setting in All)
                 {
-                    _forGame[setting.Id] = _agreed != null && _agreed.TryGetValue(setting.Id, out string agreed) && setting.Has(agreed)
+                    _forGame[setting.Id] = !ShownFor(setting, mode) ? setting.Default
+                        : _agreed != null && _agreed.TryGetValue(setting.Id, out string agreed) && setting.Has(agreed)
                         ? agreed : _agreed != null ? setting.Default : ValueOf(setting.Id);
                 }
             }
@@ -183,6 +194,8 @@ namespace BeaverBuddies.NewGame
     [HarmonyLib.HarmonyPatch(typeof(GameSceneLoader), nameof(GameSceneLoader.StartNewGame))]
     class GameSettingsNewGamePatcher
     {
+        // After MatchOptions' own prefix, so its picks for this game are settled
+        [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
         static void Prefix()
         {
             GameSettings.Starting(newGame: true);
@@ -193,6 +206,8 @@ namespace BeaverBuddies.NewGame
     [HarmonyLib.HarmonyPatch(typeof(GameSceneLoader), nameof(GameSceneLoader.StartNewGameInstantly))]
     class GameSettingsNewGameInstantlyPatcher
     {
+        // After MatchOptions' own prefix, so its picks for this game are settled
+        [HarmonyLib.HarmonyPriority(HarmonyLib.Priority.Low)]
         static void Prefix()
         {
             GameSettings.Starting(newGame: true);

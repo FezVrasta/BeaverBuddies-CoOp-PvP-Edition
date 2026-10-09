@@ -50,7 +50,12 @@ namespace TimberNet
                         {
                             // A stopped listener ends its wait with an error
                             if (isStopped) return;
-                            throw;
+                            // One failed accept (a connection reset mid-handshake,
+                            // say) mustn't end this listener's loop for good: nobody
+                            // observes this task, so throwing would silently stop
+                            // every later player coming in this way
+                            Thread.Sleep(100);
+                            continue;
                         }
                         if (isStopped) return;
                         if (socket != null) accepted.Enqueue(socket);

@@ -36,6 +36,8 @@ namespace BeaverBuddies.Steam
         //public readonly CSteamID lobbyID;
 
         private readonly ConcurrentQueueWithWait<byte[]> readBuffer = new ConcurrentQueueWithWait<byte[]>();
+        // The packet being read, when a read took only part of it, and how far
+        private byte[] pending;
         private int readOffset = 0;
 
         private SteamPacketListener packetListener;
@@ -85,21 +87,25 @@ namespace BeaverBuddies.Steam
 
         public int Read(byte[] buffer, int offset, int count)
         {
-            // Block until we've read something
-            byte[] result;
-            while (!readBuffer.WaitAndTryDequeue(out result)) { }
-            // Closed
-            if (result.Length == 0) return 0;
-            int bytesToCopy = Math.Min(count, result.Length - readOffset);
-            Array.Copy(result, readOffset, buffer, offset, bytesToCopy);
-            if (result.Length > bytesToCopy)
+            if (pending == null)
             {
-                // This will fail we ever receive multiple messages in a single packet.
-                // I don't think that can happen right now unless Steam merges packets, which
-                // seems not to happen... but we should log a more useful
-                // warning. And right now the "readOffset" should always be 0.
-                Plugin.LogWarning($"SteamSocket read {bytesToCopy} bytes, but {result.Length - bytesToCopy} bytes were left over. This is probably a bug!");
-                readOffset = bytesToCopy;
+                // Block until we've read something
+                byte[] result;
+                while (!readBuffer.WaitAndTryDequeue(out result)) { }
+                // Closed
+                if (result.Length == 0) return 0;
+                pending = result;
+                readOffset = 0;
+            }
+            // A read smaller than the packet leaves the rest for the next one,
+            // rather than dropping it and starting that packet partway in
+            int bytesToCopy = Math.Min(count, pending.Length - readOffset);
+            Array.Copy(pending, readOffset, buffer, offset, bytesToCopy);
+            readOffset += bytesToCopy;
+            if (readOffset >= pending.Length)
+            {
+                pending = null;
+                readOffset = 0;
             }
             //Plugin.Log($"SteamSocket receiving {bytesToCopy} bytes");
 

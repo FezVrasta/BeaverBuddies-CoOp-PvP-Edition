@@ -30,14 +30,25 @@ namespace TimberNet
         private Func<Task<byte[]>> mapProvider;
         private Func<JObject>? initEventProvider;
 
-        public int ClientCount => clients.Count;
+        // Only those still connected: one who left stays in the list until
+        // the next event goes out
+        public int ClientCount
+        {
+            get
+            {
+                lock (queuedMessages)
+                {
+                    return clients.Count(c => c != null && c.Connected);
+                }
+            }
+        }
 
         public List<string?> GetConnectedClients()
         {
             // Clients join from the listening thread
             lock (queuedMessages)
             {
-                return clients.Where(c => c != null).Select(c => c.Name).ToList();
+                return clients.Where(c => c != null && c.Connected).Select(c => c.Name).ToList();
             }
         }
 
@@ -202,8 +213,8 @@ namespace TimberNet
         private void SendReload(ISocketStream client, byte[] mapBytes)
         {
             Log($"Sending the reloaded map with length {mapBytes.Length}");
-            SendLength(client, RELOAD_MARKER);
-            SendDataWithLength(client, mapBytes);
+            QueueLength(client, RELOAD_MARKER);
+            QueueDataWithLength(client, mapBytes);
             SendState(client);
             // The one they were sent on joining is dropped with the old game's events
             if (initEventProvider != null)
@@ -229,6 +240,7 @@ namespace TimberNet
                 if (client == null) continue;
                 queuedMessages.TryRemove(client, out _);
                 reloads.Remove(client);
+                StopSending(client);
             }
             clients.RemoveAll(c => c == null || !c.Connected);
         }
@@ -241,6 +253,7 @@ namespace TimberNet
                 queuedMessages.TryRemove(client, out _);
                 reloads.Remove(client);
             }
+            StopSending(client);
             client.Close();
         }
 
@@ -288,10 +301,10 @@ namespace TimberNet
             // while the map is sending
             StartQueuing(client, mapBytes);
 
-            Log($"Sending map with length {mapBytes.Length}");
-            SendDataWithLength(client, mapBytes);
+            // Queued first, so everything sent to them after goes out after it
+            QueueDataWithLength(client, mapBytes);
 
-            Log($"Sent map with length {mapBytes.Length} and Hash: {GetHashCode(mapBytes).ToString("X8")}");
+            Log($"Sending map with length {mapBytes.Length} and Hash: {GetHashCode(mapBytes).ToString("X8")}");
         }
 
         private void SendState(ISocketStream client)

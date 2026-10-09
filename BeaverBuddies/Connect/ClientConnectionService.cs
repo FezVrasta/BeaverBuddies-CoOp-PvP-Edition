@@ -206,6 +206,8 @@ namespace BeaverBuddies.Connect
             {
                 Plugin.LogError($"Received invalid map data ({mapBytes?.Length ?? 0} bytes); " +
                     "the host likely disconnected. Aborting load instead of crashing.");
+                // Not left as the game's IO for the next game started here
+                if (EventIO.Get() == client) EventIO.Reset();
                 ShowError(null);
                 return;
             }

@@ -175,7 +175,13 @@ namespace BeaverBuddies.Connect
 
             ServerEventIO io = new ServerEventIO();
             EventIO.Set(io);
-            io.Start(data);
+            if (!io.Start(data))
+            {
+                // Not left as the game's IO with nothing behind it
+                EventIO.Reset();
+                shower.Create().SetLocalizedMessage("BeaverBuddies.Menu.HostFailed").Show();
+                return;
+            }
 
             var behavior = GetMonoBehaviour(sceneLoader._sceneLoader);
             Coroutine coroutine = null;
