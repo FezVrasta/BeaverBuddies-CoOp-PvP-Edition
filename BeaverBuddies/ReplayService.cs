@@ -7,6 +7,7 @@ using BeaverBuddies.DevTools;
 using BeaverBuddies.DesyncDetecter;
 using BeaverBuddies.Events;
 using BeaverBuddies.IO;
+using BeaverBuddies.Performance;
 using HarmonyLib;
 using System;
 using System.Collections.Concurrent;
@@ -840,14 +841,19 @@ namespace BeaverBuddies
 
                     // Tick it and stop
                     HasTickedReplayService = true;
+                    long started = HitchWatch.Now;
                     replayService?.DoTick();
+                    HitchWatch.TickedIO(started);
                     return true;
                 }
                 // Otherwise if we're still at the beginning
                 // reset the flag
                 HasTickedReplayService = false;
             }
+            int bucket = __instance._nextBucketIndex;
+            long start = HitchWatch.Now;
             __instance.TickNextBucket();
+            HitchWatch.TickedBucket(bucket, start);
             NextBucket = __instance._nextBucketIndex;
             return false;
         }
@@ -882,6 +888,7 @@ namespace BeaverBuddies
                 numberOfBucketsToTick += extra;
             }
 
+            long ticking = HitchWatch.Now;
             while (ShouldTick(__instance, numberOfBucketsToTick--))
             {
                 if (TickReplayServiceOrNextBucket(__instance))
@@ -890,6 +897,8 @@ namespace BeaverBuddies
                     numberOfBucketsToTick++;
                 }
             }
+
+            HitchWatch.Ticked(ticking);
 
             // Tell the TickRequester we've finished this partial (or possibly complete) tick
             OnTickingCompleted();
