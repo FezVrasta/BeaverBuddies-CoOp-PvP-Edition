@@ -70,6 +70,9 @@ namespace BeaverBuddies.Steam
         private void OnLobbyChatUpdate(LobbyChatUpdate_t callback)
         {
             Plugin.Log("Lobby chat update: " + callback.m_ulSteamIDLobby);
+            // Only this game's lobby: a match's player leaving the
+            // matchmaking lobby as they join this one isn't leaving the game
+            if (callback.m_ulSteamIDLobby != LobbyID.m_SteamID) return;
             CSteamID user = new CSteamID(callback.m_ulSteamIDUserChanged);
             uint change = callback.m_rgfChatMemberStateChange;
             const uint gone = (uint)(EChatMemberStateChange.k_EChatMemberStateChangeLeft | EChatMemberStateChange.k_EChatMemberStateChangeDisconnected
