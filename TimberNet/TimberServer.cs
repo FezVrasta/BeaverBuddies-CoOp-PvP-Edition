@@ -120,7 +120,7 @@ namespace TimberNet
                             // Send the event before finishing queueing
                             // so it is guaranteed to arrive first.
                             // (This also sends it to other clients.)
-                            DoUserInitiatedEvent(initEvent, true);
+                            DoUserInitiatedEvent(initEvent, client);
                         }
                         FinishQueuing(client);
 
@@ -170,10 +170,12 @@ namespace TimberNet
 
         private void SendErrorMessage(ISocketStream client)
         {
-            SendLength(client, 0);
+            // Written straight away, off the game's thread: the connection
+            // closes as soon as this is done
+            StreamSender.WriteLength(client, 0);
             byte[] bytes = MessageToBuffer(errorMessage!);
             // TODO: Not sure this makes sense for Steam
-            SendDataWithLength(client, bytes);
+            StreamSender.WriteWithLength(client, bytes);
         }
 
         private async Task SendMap(ISocketStream client)
@@ -189,10 +191,10 @@ namespace TimberNet
             // while the map is sending
             StartQueuing(client);
 
-            Log($"Sending map with length {mapBytes.Length}");
-            SendDataWithLength(client, mapBytes);
+            // Queued first, so everything sent to them after goes out after it
+            QueueDataWithLength(client, mapBytes);
 
-            Log($"Sent map with length {mapBytes.Length} and Hash: {GetHashCode(mapBytes).ToString("X8")}");
+            Log($"Sending map with length {mapBytes.Length} and Hash: {GetHashCode(mapBytes).ToString("X8")}");
         }
 
         private void SendState(ISocketStream client)
@@ -205,30 +207,36 @@ namespace TimberNet
             SendEvent(client, message);
         }
 
-        void DoUserInitiatedEvent(JObject message, bool sendNow)
+        /**
+         * The joining client, still queueing, gets the event ahead of what
+         * was queued for it; everyone else gets it in the usual order.
+         */
+        void DoUserInitiatedEvent(JObject message, ISocketStream? joining)
         {
             base.DoUserInitiatedEvent(message);
-            SendEventToClients(message, sendNow);
+            SendEventToClients(message, joining);
         }
 
         public override void DoUserInitiatedEvent(JObject message)
         {
-            DoUserInitiatedEvent(message, false);
+            DoUserInitiatedEvent(message, null);
         }
 
-        private void SendEventToClients(JObject message, bool sendNow)
+        private void SendEventToClients(JObject message, ISocketStream? joining)
         {
-            lock (queuedMessages)
-            {
-                clients.RemoveAll(c => c == null || !c.Connected);
-            }
             // Make sure we're not running this while a client is being
             // setup to start or stop queueing
             lock (queuedMessages)
             {
+                List<ISocketStream> gone = clients.Where(c => c == null || !c.Connected).ToList();
+                foreach (ISocketStream client in gone)
+                {
+                    if (client != null) StopSending(client);
+                }
+                clients.RemoveAll(gone.Contains);
                 clients.ForEach(client =>
                 {
-                    if (sendNow)
+                    if (client == joining)
                     {
                         SendEvent(client, message);
                     }

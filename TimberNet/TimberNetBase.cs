@@ -41,6 +41,9 @@ namespace TimberNet
         // Errors arrive on the listening thread; OnError is raised from Update()
         private readonly ConcurrentQueue<string> errorQueue = new ConcurrentQueue<string>();
         private byte[]? mapBytes = null;
+        // One per stream, so writes leave the game's thread and stay in order
+        private readonly ConcurrentDictionary<ISocketStream, StreamSender> senders =
+            new ConcurrentDictionary<ISocketStream, StreamSender>();
 
         public bool IsStopped { get; private set; } = false;
 
@@ -67,6 +70,10 @@ namespace TimberNet
         public virtual void Close()
         {
             IsStopped = true;
+            foreach (ISocketStream stream in senders.Keys)
+            {
+                StopSending(stream);
+            }
         }
 
         public TimberNetBase()
@@ -173,30 +180,23 @@ namespace TimberNet
             Log($"Event: {GetType(message)}");
         }
 
-        protected void SendLength(ISocketStream stream, int length)
+        /**
+         * Queues data to go out on the stream's own thread, after anything
+         * already queued for it. Returns straight away.
+         */
+        protected void QueueDataWithLength(ISocketStream stream, byte[] data)
         {
-            byte[] buffer = BitConverter.GetBytes(length);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(buffer);
-            stream.Write(buffer, 0, buffer.Length);
+            senders.GetOrAdd(stream, s => new StreamSender(s, Log)).Send(data);
         }
 
-        protected void SendDataWithLength(ISocketStream stream, byte[] data)
+        /**
+         * Lets what's queued for the stream go out, then ends its thread.
+         */
+        protected void StopSending(ISocketStream stream)
         {
-            SendLength(stream, data.Length);
-            int chunkSize = stream.MaxChunkSize;
-            // How long to sleep between chunks (may be 0)
-            int sleepMS = stream.MaxChunkSize * 1000 / stream.MaxBytesPerSecond;
-            for (int i = 0; i < data.Length; i += chunkSize)
+            if (senders.TryRemove(stream, out StreamSender sender))
             {
-                if (i != 0)
-                {
-                    Thread.Sleep(sleepMS);
-                }
-                // Gone halfway through: the rest of a map would only take time
-                if (!stream.Connected) return;
-                int length = Math.Min(chunkSize, data.Length - i);
-                stream.Write(data, i, length);
+                sender.Stop();
             }
         }
 
@@ -204,14 +204,7 @@ namespace TimberNet
         {
             Log($"Sending: {GetType(message)} for tick {GetTick(message)}");
             byte[] buffer = MessageToBuffer(message);
-
-            try
-            {
-                SendDataWithLength(client, buffer);
-            } catch (Exception e)
-            {
-                Log($"Error sending event: {e.Message}");
-            }
+            QueueDataWithLength(client, buffer);
         }
 
         protected bool TryReadLength(ISocketStream stream, out int length)
@@ -392,14 +385,7 @@ namespace TimberNet
         protected void SendTransientMessage(ISocketStream stream, JObject message)
         {
             // Sent frequently, so don't log each message like SendEvent does
-            try
-            {
-                SendDataWithLength(stream, MessageToBuffer(message));
-            }
-            catch (Exception e)
-            {
-                Log($"Error sending transient message: {e.Message}");
-            }
+            QueueDataWithLength(stream, MessageToBuffer(message));
         }
 
         private void ProcessLogs()
