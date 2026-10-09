@@ -63,6 +63,8 @@ namespace BeaverBuddies.Events
             if (__instance.CurrentSpeed == speed) return true;
             // Also don't log if we're silent
             if (silently) return true;
+            // The host's first unpause asks first when a mod has a reason to wait
+            if (Connect.StartConfirmation.Holds(__instance, speed)) return false;
 
             var replayService = ReplayEvent.GetReplayServiceIfReady();
             if (replayService == null) return true;
@@ -201,5 +203,20 @@ namespace BeaverBuddies.Events
         {
             return Settings.PauseReductionSetting == PauseReductionLevel.Off;
         }
+    }
+}
+
+namespace BeaverBuddies.Events
+{
+    /**
+     * The tick once key ticks this machine alone, outside the synced
+     * ticks, so with others in the game it does nothing (the same key
+     * still pauses a running game). It would also start the game without
+     * the host's confirmation (see StartConfirmation).
+     */
+    [HarmonyPatch(typeof(Timberborn.TickSystem.Ticker), nameof(Timberborn.TickSystem.Ticker.TickOnce))]
+    public class TickOncePatcher
+    {
+        static bool Prefix() => EventIO.IsNull;
     }
 }
