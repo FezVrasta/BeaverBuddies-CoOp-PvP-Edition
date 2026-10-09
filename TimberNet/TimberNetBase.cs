@@ -387,10 +387,11 @@ namespace TimberNet
             {
                 if (received.reloadedMap != null)
                 {
-                    // What's left of the old game isn't played
+                    // What's left of the old game isn't played. The map is
+                    // handed over by the next Update, not mid-tick from ReadEvents
                     receivedEvents.Clear();
                     AwaitingReload = true;
-                    OnMapReceived?.Invoke(received.reloadedMap);
+                    mapBytes = received.reloadedMap;
                     continue;
                 }
                 try
@@ -472,13 +473,24 @@ namespace TimberNet
         /**
          * Updates, processing queued logs, maps and events.
          */
+        /**
+         * Updates, processing queued logs, events and maps: a map's
+         * callback may load another game, so this is called between ticks.
+         */
         public void Update()
         {
             ProcessLogs();
             if (!Started) return;
-            ProcessReceivedMap();
             ProcessReceivedEventsQueue();
+            ProcessReceivedMap();
+        }
 
+        // As Update, but leaving any map for it
+        private void UpdateEvents()
+        {
+            ProcessLogs();
+            if (!Started) return;
+            ProcessReceivedEventsQueue();
         }
 
         private List<JObject> FilterEvents(List<JObject> events)
@@ -501,7 +513,7 @@ namespace TimberNet
         {
             //if (ticksSinceLoad != TickCount) Log($"Setting ticks from {TickCount} to {ticksSinceLoad}");
             TickCount = ticksSinceLoad;
-            Update();
+            UpdateEvents();
             if (AwaitingReload) return new List<JObject>();
             List<JObject> toProcess = PopEventsToProcess(receivedEvents);
             toProcess.ForEach(e => ProcessReceivedEvent(e));
@@ -510,7 +522,7 @@ namespace TimberNet
 
         public bool HasEventsForTick(int tickSinceLoad)
         {
-            Update();
+            UpdateEvents();
             if (AwaitingReload) return false;
             return receivedEvents.Any(e => GetTick(e) == tickSinceLoad);
         }

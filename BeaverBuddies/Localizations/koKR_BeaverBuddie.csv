@@ -154,6 +154,4 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"호스트의 주소로 게임에 참가합�
 BeaverBuddies.Match.FindMatch.Tooltip,"같은 멀티플레이 모드를 고른 다른 플레이어와 Steam으로 1대1 대전을 합니다. 맵, 난이도, 게임 설정이 같은 플레이어를 먼저 찾습니다. 고른 항목이 다르면 동전 던지기로 정하고, 맵이 뽑힌 쪽이 호스트가 됩니다.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"지금 빠른 대전을 기다리는 플레이어입니다. 참가하면 상대의 맵, 난이도, 설정으로 플레이합니다.",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"호스트가 아직 재호스팅하지 않았습니다. 재호스팅하면 초대를 수락하세요.",""
-BeaverBuddies.Settings.JoinGamesInProgress,"진행 중인 게임 참여 허용",""
-BeaverBuddies.Settings.JoinGamesInProgress.Tooltip,"활성화하면 게임이 시작된 후에도 플레이어가 참여할 수 있습니다. 게임이 저장되고 모두에게 다시 로드되며, 잠시 시간이 걸립니다. 비활성화하면 일시정지를 해제하기 전에 참여해야 합니다.",""
 BeaverBuddies.JoinInProgress.FailedToReload,"참여하는 플레이어를 위해 게임을 저장하지 못해 참여시키지 못했습니다. 다시 시도하거나, 저장한 뒤 다시 호스팅하세요.",""

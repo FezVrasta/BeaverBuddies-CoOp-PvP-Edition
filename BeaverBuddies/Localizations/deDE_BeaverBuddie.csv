@@ -154,6 +154,4 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"Tritt einem Spiel über die Adresse seines 
 BeaverBuddies.Match.FindMatch.Tooltip,"Ein 1 gegen 1 über Steam gegen einen anderen Spieler, der denselben Mehrspielermodus gewählt hat. Spieler mit derselben Karte, demselben Schwierigkeitsgrad und denselben Spieleinstellungen werden zuerst versucht. Wo eure Auswahl abweicht, entscheidet ein Münzwurf, und wessen Karte gewählt wird, der hostet.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Spieler, die gerade auf ein schnelles Spiel warten. Tritt einem bei, um auf seiner Karte, mit seinem Schwierigkeitsgrad und seinen Einstellungen zu spielen.",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"Der Host hat noch nicht erneut gehostet. Nimm seine Einladung an, sobald er es getan hat.",""
-BeaverBuddies.Settings.JoinGamesInProgress,"Spielern den Beitritt zu laufenden Spielen erlauben",""
-BeaverBuddies.Settings.JoinGamesInProgress.Tooltip,"Wenn aktiviert, kann ein Spieler deinem Spiel auch nach dem Start beitreten: Das Spiel wird gespeichert und für alle neu geladen, was einen Moment dauert. Wenn deaktiviert, müssen Spieler beitreten, bevor du die Pause aufhebst.",""
 BeaverBuddies.JoinInProgress.FailedToReload,"Das Spiel konnte für den beitretenden Spieler nicht gespeichert werden, daher wurde er nicht hereingelassen. Versuche es erneut oder speichere und hoste erneut.",""

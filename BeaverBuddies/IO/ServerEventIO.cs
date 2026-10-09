@@ -122,23 +122,14 @@ namespace BeaverBuddies.IO
 
         public void OnGameStarted()
         {
-            if (!Settings.JoinInProgress)
-            {
-                Plugin.Log("Game started: no longer accepting clients");
-                string message = $"The Host has already started the game, and the game can no longer be joined. " +
-                    $"Ask the Host to rehost and join before they unpause.";
-                NetBase.StopAcceptingClients(message);
-            }
-            else
-            {
-                Plugin.Log("Game started: a player joining now has it reloaded for them");
-            }
+            Plugin.Log("Game started: a player joining now has it reloaded for them");
             lock (mapLock)
             {
                 // Not to be sent again: the game has moved on from it
                 mapBytes = null;
                 nextMap ??= new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
             }
+            NetBase?.ForgetReloadedMap();
         }
 
         /**
