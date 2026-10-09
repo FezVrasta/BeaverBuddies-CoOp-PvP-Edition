@@ -154,3 +154,4 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"通过主机的地址加入游戏。在 Ste
 BeaverBuddies.Match.FindMatch.Tooltip,"通过 Steam 与另一位选择了相同多人模式的玩家进行 1 对 1 对局。优先匹配地图、难度和游戏设置都相同的玩家。双方选择不同之处由掷硬币决定，地图被选中的一方担任主机。",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"正在等待快速对局的玩家。加入其中一位，即可使用对方的地图、难度和设置进行游戏。",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"主机尚未重新托管。主机重新托管后，请接受其邀请。",""
+BeaverBuddies.JoinInProgress.FailedToReload,"无法为正在加入的玩家保存游戏，因此未能让其加入。请重试，或保存后重新托管。",""

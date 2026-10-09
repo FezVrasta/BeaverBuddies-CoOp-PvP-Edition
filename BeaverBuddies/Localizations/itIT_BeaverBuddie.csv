@@ -154,3 +154,4 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"Entra in una partita con l'indirizzo di chi
 BeaverBuddies.Match.FindMatch.Tooltip,"Un 1 contro 1 su Steam contro un altro giocatore che ha scelto la stessa modalità multigiocatore. Prima si cercano giocatori con la stessa mappa, difficoltà e impostazioni di gioco. Dove le scelte sono diverse decide il lancio di una moneta, e ospita chi ha la mappa scelta.",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"Giocatori che stanno cercando una partita rapida in questo momento. Unisciti a uno per giocare con la sua mappa, difficoltà e impostazioni.",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"L'host non ha ancora riospitato. Accetta il suo invito quando l'avrà fatto.",""
+BeaverBuddies.JoinInProgress.FailedToReload,"Non è stato possibile salvare la partita per il giocatore che si stava unendo, quindi non è stato fatto entrare. Riprova, oppure salva e ospita di nuovo.",""

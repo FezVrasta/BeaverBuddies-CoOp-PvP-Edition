@@ -26,6 +26,9 @@ namespace TimberNet
         // the hash: they're handled as soon as they arrive and never replayed.
         public const string TRANSIENT_KEY = "transient";
         public const int MAX_BUFFER_SIZE = 8192 * 4; // 32K
+        // Sent for a length, it says the host reloaded the game: the next
+        // message is the map to load in place of the one being played
+        public const int RELOAD_MAP_LENGTH = -1;
 
         public delegate void MessageReceived(string message);
         public delegate void MapReceived(byte[] mapBytes);
@@ -35,8 +38,10 @@ namespace TimberNet
         public event MapReceived? OnMapReceived;
         public event Action<JObject>? OnTransientMessage;
 
-        private readonly ConcurrentQueue<(ISocketStream source, string message)> receivedEventQueue =
-            new ConcurrentQueue<(ISocketStream, string)>();
+        // A reload's map comes in turn with the events: the ones before it
+        // are from the game left behind, the ones after from the new one
+        private readonly ConcurrentQueue<(ISocketStream source, string? message, byte[]? reloadedMap)> receivedEventQueue =
+            new ConcurrentQueue<(ISocketStream, string?, byte[]?)>();
         private readonly ConcurrentQueue<string> logQueue = new ConcurrentQueue<string>();
         private byte[]? mapBytes = null;
 
@@ -45,6 +50,29 @@ namespace TimberNet
         public int Hash { get; private set; } = 17;
 
         public int TickCount { get; private set; }
+
+        // Handed a reload's map: its game's events wait for it to have
+        // loaded, not to be played by the game left behind
+        protected bool AwaitingReload { get; private set; } = false;
+
+        /** The game reloaded by the host has loaded: its events can be played. */
+        public void ReleaseReloadedEvents()
+        {
+            AwaitingReload = false;
+        }
+
+        /**
+         * Counts ticks from the start again, for the game reloaded in place
+         * of this one: what's waiting to be played goes in its first tick.
+         */
+        protected void RestartTicks()
+        {
+            TickCount = 0;
+            foreach (JObject message in receivedEvents)
+            {
+                message[TICKS_KEY] = 0;
+            }
+        }
 
         public int TicksBehind
         {
@@ -239,6 +267,16 @@ namespace TimberNet
             {
                 if (!TryReadLength(client, out int messageLength)) break;
 
+                // The host reloaded the game: the next message is its map
+                if (messageLength == RELOAD_MAP_LENGTH && isClient)
+                {
+                    Log("The host is reloading the game");
+                    if (!TryReadLength(client, out int mapLength)) break;
+                    receivedEventQueue.Enqueue((client, null, ReadMap(client, mapLength)));
+                    messageCount++;
+                    continue;
+                }
+
                 // First message is always the file
                 if (messageCount == 0 && isClient)
                 {
@@ -265,7 +303,7 @@ namespace TimberNet
 
                 string message = BufferToStringMessage(buffer);
                 //Log($"Queuing message of length {messageLength} bytes");
-                receivedEventQueue.Enqueue((client, message));
+                receivedEventQueue.Enqueue((client, message, null));
                 messageCount++;
             }
         }
@@ -329,11 +367,17 @@ namespace TimberNet
             AddToHash(bytes);
         }
 
-        private void ReceiveFile(ISocketStream stream, int messageLength)
+        private byte[] ReadMap(ISocketStream stream, int messageLength)
         {
             byte[] mapBytes = stream.ReadUntilComplete(messageLength);
-            AddFileToHash(mapBytes);
             Log($"Received map with length {mapBytes.Length} and Hash: {GetHashCode(mapBytes).ToString("X8")}");
+            return mapBytes;
+        }
+
+        private void ReceiveFile(ISocketStream stream, int messageLength)
+        {
+            byte[] mapBytes = ReadMap(stream, messageLength);
+            AddFileToHash(mapBytes);
             this.mapBytes = mapBytes;
         }
 
@@ -341,9 +385,18 @@ namespace TimberNet
         {
             while (receivedEventQueue.TryDequeue(out var received))
             {
+                if (received.reloadedMap != null)
+                {
+                    // What's left of the old game isn't played. The map is
+                    // handed over by the next Update, not mid-tick from ReadEvents
+                    receivedEvents.Clear();
+                    AwaitingReload = true;
+                    mapBytes = received.reloadedMap;
+                    continue;
+                }
                 try
                 {
-                    JObject message = JObject.Parse(received.message);
+                    JObject message = JObject.Parse(received.message!);
                     if (IsTransient(message))
                     {
                         ReceiveTransientMessage(received.source, message);
@@ -420,13 +473,24 @@ namespace TimberNet
         /**
          * Updates, processing queued logs, maps and events.
          */
+        /**
+         * Updates, processing queued logs, events and maps: a map's
+         * callback may load another game, so this is called between ticks.
+         */
         public void Update()
         {
             ProcessLogs();
             if (!Started) return;
-            ProcessReceivedMap();
             ProcessReceivedEventsQueue();
+            ProcessReceivedMap();
+        }
 
+        // As Update, but leaving any map for it
+        private void UpdateEvents()
+        {
+            ProcessLogs();
+            if (!Started) return;
+            ProcessReceivedEventsQueue();
         }
 
         private List<JObject> FilterEvents(List<JObject> events)
@@ -449,7 +513,8 @@ namespace TimberNet
         {
             //if (ticksSinceLoad != TickCount) Log($"Setting ticks from {TickCount} to {ticksSinceLoad}");
             TickCount = ticksSinceLoad;
-            Update();
+            UpdateEvents();
+            if (AwaitingReload) return new List<JObject>();
             List<JObject> toProcess = PopEventsToProcess(receivedEvents);
             toProcess.ForEach(e => ProcessReceivedEvent(e));
             return FilterEvents(toProcess);
@@ -457,7 +522,8 @@ namespace TimberNet
 
         public bool HasEventsForTick(int tickSinceLoad)
         {
-            Update();
+            UpdateEvents();
+            if (AwaitingReload) return false;
             return receivedEvents.Any(e => GetTick(e) == tickSinceLoad);
         }
     }
