@@ -40,6 +40,15 @@ namespace BeaverBuddies.Connect
             _dialogBoxShower = dialogBoxShower;
             _urlOpener = urlOpener;
             _settings = settings;
+
+            // In the game joined, the next map the host sends (reloading the
+            // game for a player joining it) loads from this scene, and the
+            // events of the one it reloaded, if it did, can be played now
+            if (EventIO.Get() is ClientEventIO joined)
+            {
+                joined.SetMapReceivedCallback(LoadMap);
+                joined.ReleaseReloadedEvents();
+            }
         }
 
         // The host of the last game joined through Steam, to find again

@@ -143,7 +143,11 @@ namespace BeaverBuddies
         public static bool IsLoaded { get; private set; } = false;
         private bool isReset = false;
 
-        private bool CanAct => io != null && !isReset && !IsDesynced;
+        // Saving the game for a player joining it, to reload it from that
+        // save: nothing more is played, as it wouldn't be in the save
+        private bool isReloadingForJoin = false;
+
+        private bool CanAct => io != null && !isReset && !IsDesynced && !isReloadingForJoin;
 
         public static bool IsReplayingEvents { get; private set; } = false;
 
@@ -510,6 +514,11 @@ namespace BeaverBuddies
                 Initialize();
                 waitUpdates = -1;
             }
+            if (io is ServerEventIO server && server.JoinWaiting)
+            {
+                ReloadForJoin(server);
+                return;
+            }
             io.Update();
             // Only replay events on Update if we're paused by the user.
             // Also only send events if paused, so the client doesn't play
@@ -528,6 +537,27 @@ namespace BeaverBuddies
                 SendEvents();
             }
             UpdateSpeed();
+        }
+
+        /**
+         * Someone joined the game in progress: at the end of this tick it's
+         * saved, and loaded from that save here and by every player.
+         */
+        private void ReloadForJoin(ServerEventIO server)
+        {
+            Plugin.Log("A player is joining the game in progress: reloading it for everyone");
+            isReloadingForJoin = true;
+            FinishFullTickIfNeededAndThen(() =>
+            {
+                SetTargetSpeed(0);
+                SpeedChangePatcher.SetSpeedSilentlyNow(_speedManager, 0);
+                if (GetSingleton<RehostingService>().ReloadForJoin(server)) return;
+                server.TurnAwayJoins();
+                isReloadingForJoin = false;
+                GetSingleton<DialogBoxShower>().Create()
+                    .SetLocalizedMessage("BeaverBuddies.JoinInProgress.FailedToReload")
+                    .Show();
+            });
         }
 
         public void SetTargetSpeed(float speed)
@@ -642,7 +672,7 @@ namespace BeaverBuddies
 
             if (io is ServerEventIO && ticksSinceLoad == 1)
             {
-                ((ServerEventIO)io).StopAcceptingClients();
+                ((ServerEventIO)io).OnGameStarted();
             }
         }
 

@@ -154,3 +154,6 @@ BeaverBuddies.Menu.JoinGame.Tooltip,"透過主機的位址加入遊戲。在 Ste
 BeaverBuddies.Match.FindMatch.Tooltip,"透過 Steam 與另一位選擇了相同多人模式的玩家進行 1 對 1 對局。優先配對地圖、難度和遊戲設定都相同的玩家。雙方選擇不同之處由擲硬幣決定，地圖被選中的一方擔任主機。",""
 BeaverBuddies.Match.OpenMatches.Tooltip,"正在等待快速對局的玩家。加入其中一位，即可使用對方的地圖、難度和設定進行遊戲。",""
 BeaverBuddies.ClientDesynced.WaitForInvite,"主機尚未重新託管。主機重新託管後，請接受其邀請。",""
+BeaverBuddies.Settings.JoinGamesInProgress,"允許加入進行中的遊戲",""
+BeaverBuddies.Settings.JoinGamesInProgress.Tooltip,"啟用後，玩家可以在遊戲開始後加入：遊戲會被儲存並為所有人重新載入，這需要一點時間。停用後，玩家必須在你取消暫停前加入。",""
+BeaverBuddies.JoinInProgress.FailedToReload,"無法為正在加入的玩家儲存遊戲，因此未能讓其加入。請重試，或儲存後重新託管。",""

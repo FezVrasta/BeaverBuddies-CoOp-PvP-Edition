@@ -28,6 +28,13 @@ namespace BeaverBuddies
                 ).SetLocalizedTooltip("BeaverBuddies.Settings.Port.Tooltip")
             );
 
+        public ModSetting<bool> JoinGamesInProgress { get; } =
+            new(true,
+                ModSettingDescriptor.CreateLocalized(
+                    "BeaverBuddies.Settings.JoinGamesInProgress"
+                ).SetLocalizedTooltip("BeaverBuddies.Settings.JoinGamesInProgress.Tooltip")
+            );
+
         public ModSetting<bool> ShowFirstTimerMessage { get; } =
             new(true,
                 ModSettingDescriptor.CreateLocalized(
@@ -121,6 +128,7 @@ namespace BeaverBuddies
         public static bool VerboseLogging => !(instance?.SilenceLogging.Value == true);
         public static int Port => instance?.DefaultPort.Value ?? 25565;
         public static bool EnableSteam => instance?.EnableSteamConnection.Value ?? true;
+        public static bool JoinInProgress => instance?.JoinGamesInProgress.Value ?? true;
         public static bool LobbyJoinable => instance?.FriendsCanJoinSteamGame.Value ?? true;
         public static bool ShouldShowFirstTimerMessage => instance?.ShowFirstTimerMessage.Value ?? true;
         // Saved with each game, picked when it's created (see DevTools.DevToolsRule)
