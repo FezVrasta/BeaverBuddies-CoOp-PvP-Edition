@@ -196,9 +196,10 @@ namespace BeaverBuddies.Matchmaking
             MatchPicks picks = match.picks;
             element.Q<Label>("DisplayName").text = picks.name;
             string options = string.Join(", ", MatchOptions.All.Where(o => picks.options?.ContainsKey(o.Id) == true).Select(o => o.Label(_loc, picks.options[o.Id])));
-            element.Q<Label>("GameTime").text = string.IsNullOrEmpty(options) ? $"{picks.mapTitle}, {Mode(picks)}" : $"{options}, {picks.mapTitle}, {Mode(picks)}";
+            string game = string.Join(", ", new[] { options, picks.mapTitle, Mode(picks) }.Where(s => !string.IsNullOrEmpty(s)));
+            element.Q<Label>("GameTime").text = game;
             element.Q<Label>("Timestamp").text = !match.compatible ? _loc.T("BeaverBuddies.Match.Incompatible")
-                : match.otherMods ? _loc.T("BeaverBuddies.Match.GetsMods") : Faction(picks.faction);
+                : match.otherMods ? _loc.T("BeaverBuddies.Match.GetsMods") : picks.faction != null ? Faction(picks.faction) : "";
             // Rows are reused, so every row sets it
             element.style.opacity = match.compatible ? 1f : 0.55f;
             _tooltipRegistrar.Register(element, () => Mods(match));
@@ -223,8 +224,8 @@ namespace BeaverBuddies.Matchmaking
             MatchPicks picks = match.picks;
             _details.text = _loc.T("BeaverBuddies.Match.Host", picks.name) + "\n"
                 + _loc.T("BeaverBuddies.Match.Map", picks.mapTitle) + "\n"
-                + _loc.T("BeaverBuddies.Match.Difficulty", Mode(picks)) + "\n"
-                + _loc.T("BeaverBuddies.Match.HostFaction", Faction(picks.faction)) + "\n"
+                + (Mode(picks) is string mode ? _loc.T("BeaverBuddies.Match.Difficulty", mode) + "\n" : "")
+                + (picks.faction != null ? _loc.T("BeaverBuddies.Match.HostFaction", Faction(picks.faction)) + "\n" : "")
                 + (picks.options?.Count > 0 ? MatchOptions.Describe(_loc, picks.options) + "\n" : "")
                 + GameSettingsText(picks) + "\n\n"
                 + (match.compatible ? "" : Incompatibility(match) + "\n\n")
@@ -254,6 +255,7 @@ namespace BeaverBuddies.Matchmaking
                 bool mine = Settings.Debug, theirs = match.debug == "1";
                 if (theirs != mine) reasons.Add(_loc.T(theirs ? "BeaverBuddies.Match.Incompatible.LoggingTheirs" : "BeaverBuddies.Match.Incompatible.LoggingMine"));
                 if (match.protocol != MatchmakingSession.Protocol.ToString()) reasons.Add(_loc.T("BeaverBuddies.Match.Incompatible.Protocol"));
+                if (reasons.Count == 0 && match.hosted && match.otherMods) reasons.Add(_loc.T("BeaverBuddies.Match.Incompatible.Mods"));
                 if (reasons.Count == 0) reasons.Add(_loc.T("BeaverBuddies.Match.Incompatible.OldMod"));
             }
             return _loc.T("BeaverBuddies.Match.IncompatibleTitle") + "\n" + string.Join("\n", reasons.Select(r => "• " + r));
@@ -311,7 +313,9 @@ namespace BeaverBuddies.Matchmaking
             _panelStack.Pop(this);
         }
 
-        private string Mode(MatchPicks picks) => _loc.T(picks.modeLocKey ?? "NewGameConfigurationPanel.Custom");
+        // Null for a hosted save, which doesn't say
+        private string Mode(MatchPicks picks) => picks.modeLocKey == null && (picks.mode == null || picks.mode.Count == 0) ? null
+            : _loc.T(picks.modeLocKey ?? "NewGameConfigurationPanel.Custom");
 
         private string Faction(string id)
         {

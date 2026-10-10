@@ -76,8 +76,11 @@ namespace BeaverBuddies.Matchmaking
         // What Base is made of, in the clear: the list of open matches
         // shows players it can't match with why
         internal const string ProtocolKey = "bb.match.protocol", GameKey = "bb.match.game", DebugKey = "bb.match.debug";
+        // A player waiting for a Quick match, or a hosted game (see
+        // HostedListing): both are listed, only the first is searched
+        internal const string KindKey = "bb.match.kind", QuickKind = "quick", HostedKind = "hosted";
         // Matchmaking's own version: two that differ can't find each other
-        internal const int Protocol = 5;
+        internal const int Protocol = 6;
         // Member data: the hosting player's game, who may not own the
         // lobby, and a player getting the owner's mods to come back with
         private const string ServerKey = "bb.match.server", UpdatingKey = "bb.match.updating";
@@ -131,7 +134,7 @@ namespace BeaverBuddies.Matchmaking
         private static bool IsOwner => lobby.IsValid() && SteamMatchmaking.GetLobbyOwner(lobby).m_SteamID == Me;
 
         // A match's lobby rather than a hosted game's: entering it doesn't connect to its owner
-        public static bool IsMatchLobby(CSteamID id) => SteamMatchmaking.GetLobbyData(id, MatchKey) == "1";
+        public static bool IsMatchLobby(CSteamID id) => SteamMatchmaking.GetLobbyData(id, MatchKey) == "1" && SteamMatchmaking.GetLobbyData(id, KindKey) != HostedKind;
 
         public static void Start(MatchPicks picks, NewGameConfiguration configuration)
         {
@@ -241,6 +244,7 @@ namespace BeaverBuddies.Matchmaking
             SteamMatchmaking.AddRequestLobbyListStringFilter(MatchKey, "1", ELobbyComparison.k_ELobbyComparisonEqual);
             SteamMatchmaking.AddRequestLobbyListStringFilter(BaseKey, Base, ELobbyComparison.k_ELobbyComparisonEqual);
             SteamMatchmaking.AddRequestLobbyListStringFilter(OpenKey, "1", ELobbyComparison.k_ELobbyComparisonEqual);
+            SteamMatchmaking.AddRequestLobbyListStringFilter(KindKey, QuickKind, ELobbyComparison.k_ELobbyComparisonEqual);
             // Mods' options always have to match, however long the wait
             SteamMatchmaking.AddRequestLobbyListStringFilter(OptionsKey, Mine.OptionsKey, ELobbyComparison.k_ELobbyComparisonEqual);
             if (Waited < AnyoneAfter) SteamMatchmaking.AddRequestLobbyListStringFilter(MapKey, Mine.MapKey, ELobbyComparison.k_ELobbyComparisonEqual);
@@ -298,22 +302,29 @@ namespace BeaverBuddies.Matchmaking
                 return;
             }
             lobby = id;
-            SteamMatchmaking.SetLobbyData(lobby, MatchKey, "1");
-            SteamMatchmaking.SetLobbyData(lobby, BaseKey, Base);
-            SteamMatchmaking.SetLobbyData(lobby, ProtocolKey, Protocol.ToString());
-            SteamMatchmaking.SetLobbyData(lobby, GameKey, GameVersions.CurrentVersion.ToString());
-            SteamMatchmaking.SetLobbyData(lobby, DebugKey, Settings.Debug ? "1" : "0");
-            SteamMatchmaking.SetLobbyData(lobby, CompatKey, Compat);
-            SteamMatchmaking.SetLobbyData(lobby, ModsKey, MatchMods.ToJson(MatchMods.Local));
-            SteamMatchmaking.SetLobbyData(lobby, MapKey, Mine.MapKey);
-            SteamMatchmaking.SetLobbyData(lobby, ModeKey, Mine.ModeKey);
-            SteamMatchmaking.SetLobbyData(lobby, OptionsKey, Mine.OptionsKey);
-            SteamMatchmaking.SetLobbyData(lobby, PicksKey, Mine.ToJson());
-            SteamMatchmaking.SetLobbyData(lobby, OpenKey, "1");
+            Describe(lobby, Mine, QuickKind);
             State = MatchState.Waiting;
             nextLookAt = Time.realtimeSinceStartup + LookEvery;
             Plugin.Log($"[Match] Waiting in {lobby}");
             Changed?.Invoke();
+        }
+
+        // What the list and the search read of a lobby, and open
+        internal static void Describe(CSteamID id, MatchPicks picks, string kind)
+        {
+            SteamMatchmaking.SetLobbyData(id, MatchKey, "1");
+            SteamMatchmaking.SetLobbyData(id, KindKey, kind);
+            SteamMatchmaking.SetLobbyData(id, BaseKey, Base);
+            SteamMatchmaking.SetLobbyData(id, ProtocolKey, Protocol.ToString());
+            SteamMatchmaking.SetLobbyData(id, GameKey, GameVersions.CurrentVersion.ToString());
+            SteamMatchmaking.SetLobbyData(id, DebugKey, Settings.Debug ? "1" : "0");
+            SteamMatchmaking.SetLobbyData(id, CompatKey, Compat);
+            SteamMatchmaking.SetLobbyData(id, ModsKey, MatchMods.ToJson(MatchMods.Local));
+            SteamMatchmaking.SetLobbyData(id, MapKey, picks.MapKey);
+            SteamMatchmaking.SetLobbyData(id, ModeKey, picks.ModeKey);
+            SteamMatchmaking.SetLobbyData(id, OptionsKey, picks.OptionsKey);
+            SteamMatchmaking.SetLobbyData(id, PicksKey, picks.ToJson());
+            SteamMatchmaking.SetLobbyData(id, OpenKey, "1");
         }
 
         private static void OnEntered(LobbyEnter_t result, bool failed)

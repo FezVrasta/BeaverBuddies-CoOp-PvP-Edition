@@ -210,6 +210,9 @@ namespace BeaverBuddies.Connect
             var configuration = new NewGameConfiguration(panel._factionSpec.Id, panel._map.MapFileReference, mode, settlement);
             Plugin.Log($"Hosting a new game: {configuration}");
             NewGameHosting.Pending = true;
+#if IS_STEAM
+            Matchmaking.HostedListing.HostingNewGame(configuration, panel._map.DisplayName, panel._predefinedGameMode?.DisplayNameLocKey);
+#endif
             Matchmaking.MatchOptions.StartGameWith(Matchmaking.MatchOptions.Current());
             _gameSceneLoader.StartNewGame(configuration);
         }

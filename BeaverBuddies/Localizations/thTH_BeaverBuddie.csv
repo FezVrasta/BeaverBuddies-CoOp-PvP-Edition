@@ -47,7 +47,7 @@ BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"อนุญาตให�
 หมายเหตุ: ฟีเจอร์นี้อาจไม่ทำงานหากเครือข่ายของคุณไม่รองรับ P2P
 นอกจากนี้ การเชื่อมต่อ P2P อาจช้ากว่าแบบตรง",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"ให้เพื่อนเข้าร่วมเกมผ่าน Steam ได้ตรงๆ",""
-BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"หากเปิดใช้งาน เพื่อนของคุณสามารถเข้าร่วมเกมผ่าน Steam โดยไม่ต้องเชิญ",""
+BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"หากเปิดใช้งาน เพื่อนของคุณสามารถเข้าร่วมเกมผ่าน Steam โดยไม่ต้องเชิญ และเกมจะแสดงในรายการ แมตช์ที่เปิดอยู่ให้ทุกคนเห็น",""
 BeaverBuddies.Settings.PauseReduction,"ลดจำนวนการหยุดชั่วคราวที่ถูกบังคับ",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"เพื่อประสบการณ์ที่ดีที่สุด ผู้เล่นทุกคนควรใช้การตั้งค่าเดียวกัน
 
@@ -136,6 +136,7 @@ BeaverBuddies.Match.Incompatible.Game,"เขามี Timberborn {0} คุณ�
 BeaverBuddies.Match.Incompatible.LoggingTheirs,"เขาเปิดบันทึกแบบละเอียดแต่คุณไม่ได้เปิด เปิด ""ใช้ log รายละเอียดเสมอ"" ในการตั้งค่า BeaverBuddies หรือขอให้เขาปิด","They have detailed logging on and you don't. Turn on ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it off."
 BeaverBuddies.Match.Incompatible.LoggingMine,"คุณเปิดบันทึกแบบละเอียดแต่เขาไม่ได้เปิด ปิด ""ใช้ log รายละเอียดเสมอ"" ในการตั้งค่า BeaverBuddies หรือขอให้เขาเปิด","You have detailed logging on and they don't. Turn off ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it on."
 BeaverBuddies.Match.Incompatible.Protocol,"BeaverBuddies ของเขาค้นหาแมตช์ต่างจากของคุณ ฝ่ายที่มีเวอร์ชันเก่ากว่าต้องอัปเดต","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
+BeaverBuddies.Match.Incompatible.Mods,"เกมของเขาใช้ม็อดอื่น หรือม็อดเวอร์ชันอื่น หากต้องการเข้าร่วมเกมที่โฮสต์ไว้ คุณต้องมีม็อดชุดเดียวกันทุกอย่าง","Their game uses other mods, or other versions of them. To join a hosted game you need exactly the same ones."
 BeaverBuddies.Match.Incompatible.OldMod,"BeaverBuddies ของเขาเก่าเกินกว่าจะบอกได้ว่าอะไรต่างกัน ฝ่ายที่มีเวอร์ชันเก่ากว่าต้องอัปเดต","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"ผู้เล่นที่คุณเล่นด้วยไม่ได้ถูกซ่อนไว้ ติ๊ก ""แสดงแมตช์ที่ไม่เข้ากัน"" ใต้รายการเพื่อดูพวกเขาและเหตุผล","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
 BeaverBuddies.Match.GameMode,"โหมดผู้เล่นหลายคน","Multiplayer mode"

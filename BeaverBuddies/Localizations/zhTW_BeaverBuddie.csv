@@ -47,7 +47,7 @@ BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"允許玩家通過 Steam �
 注意：若你的網絡不支援 P2P，該功能可能無法使用。
 此外，P2P 連接可能比直接連接慢。",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"允許好友透過 Steam 直接加入",""
-BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"啟用後，好友可以透過 Steam 無需邀請直接加入遊戲。",""
+BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"啟用後，好友可以透過 Steam 無需邀請直接加入遊戲，遊戲也會出現在「開放對局」列表中，任何人都看得到。",""
 BeaverBuddies.Settings.PauseReduction,"減少強制暫停的次數",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"為獲得最佳體驗，建議所有玩家使用相同設定。
 
@@ -136,6 +136,7 @@ BeaverBuddies.Match.Incompatible.Game,"對方是 Timberborn {0}，你是 {1}。�
 BeaverBuddies.Match.Incompatible.LoggingTheirs,"對方開啟了詳細日誌而你沒有。在 BeaverBuddies 設定中開啟「始終使用詳細日誌」，或請對方關閉。","They have detailed logging on and you don't. Turn on ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it off."
 BeaverBuddies.Match.Incompatible.LoggingMine,"你開啟了詳細日誌而對方沒有。在 BeaverBuddies 設定中關閉「始終使用詳細日誌」，或請對方開啟。","You have detailed logging on and they don't. Turn off ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it on."
 BeaverBuddies.Match.Incompatible.Protocol,"對方的 BeaverBuddies 尋找對局的方式與你的不同。版本較舊的一方需要更新。","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
+BeaverBuddies.Match.Incompatible.Mods,"對方的遊戲使用了其他模組，或模組的其他版本。加入主機的遊戲需要完全相同的模組。","Their game uses other mods, or other versions of them. To join a hosted game you need exactly the same ones."
 BeaverBuddies.Match.Incompatible.OldMod,"對方的 BeaverBuddies 版本太舊，無法說明差異。版本較舊的一方需要更新。","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"無法一起遊玩的玩家已隱藏。勾選列表下方的「顯示不相容的對局」即可查看他們及原因。","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
 BeaverBuddies.Match.GameMode,"多人模式","Multiplayer mode"

@@ -47,6 +47,7 @@ namespace BeaverBuddies
             if (DevTools.TestHarness.Active) containerDefinition.Bind<DevTools.TestHarness>().AsSingleton();
 #if IS_STEAM
             containerDefinition.Bind<Matchmaking.MatchHosting>().AsSingleton();
+            containerDefinition.Bind<Matchmaking.HostedGameInfo>().AsSingleton();
 #endif
 
             // What the game was created with, saved with it whether it's

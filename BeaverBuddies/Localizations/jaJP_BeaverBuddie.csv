@@ -47,7 +47,7 @@ BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"SteamのP2Pネットワー
 注意：ネットワークがP2Pをサポートしていない場合、この機能は動作しないことがあります。
 また、P2P接続は直接接続より遅くなる場合があります。",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"Steam経由で友達が参加可能に",""
-BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"有効にすると、あなたの友達がSteam経由で招待なしで直接参加できます。",""
+BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"有効にすると、あなたの友達がSteam経由で招待なしで直接参加でき、誰でも見られる「募集中の対戦」にも表示されます。",""
 BeaverBuddies.Settings.PauseReduction,"強制一時停止の回数を減らす",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"最適な体験のため、全プレイヤーが同じ設定を使用することを推奨します。
 
@@ -136,6 +136,7 @@ BeaverBuddies.Match.Incompatible.Game,"相手は Timberborn {0}、あなたは {
 BeaverBuddies.Match.Incompatible.LoggingTheirs,"相手は詳細ログがオンで、あなたはオフです。BeaverBuddies の設定で「詳細ログを常に使用」をオンにするか、相手にオフにしてもらってください。","They have detailed logging on and you don't. Turn on ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it off."
 BeaverBuddies.Match.Incompatible.LoggingMine,"あなたは詳細ログがオンで、相手はオフです。BeaverBuddies の設定で「詳細ログを常に使用」をオフにするか、相手にオンにしてもらってください。","You have detailed logging on and they don't. Turn off ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it on."
 BeaverBuddies.Match.Incompatible.Protocol,"相手の BeaverBuddies はあなたのものと違う方法でマッチを探しています。古いバージョンの方が更新してください。","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
+BeaverBuddies.Match.Incompatible.Mods,"相手のゲームは別のMODか、別のバージョンを使っています。ホストされたゲームに参加するには、まったく同じMODが必要です。","Their game uses other mods, or other versions of them. To join a hosted game you need exactly the same ones."
 BeaverBuddies.Match.Incompatible.OldMod,"相手の BeaverBuddies は古すぎて違いがわかりません。古いバージョンの方が更新してください。","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"一緒にプレイできないプレイヤーは非表示です。リストの下の「互換性のないマッチを表示」にチェックを入れると、理由と一緒に表示されます。","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
 BeaverBuddies.Match.GameMode,"マルチプレイモード","Multiplayer mode"

@@ -123,6 +123,7 @@ namespace BeaverBuddies.Connect
                 label.text = content;
 #if IS_STEAM
                 // A match's game starts by itself once the other player is in
+                Matchmaking.HostedListing.Joined(clients.Count);
                 if (Matchmaking.MatchmakingSession.ShouldStartWith(clients.Count))
                 {
                     Matchmaking.MatchmakingSession.Finish();
@@ -173,6 +174,9 @@ namespace BeaverBuddies.Connect
             // hosting box's own pause doesn't hold with fewer forced pauses
             SingletonManager.GetSingleton<ReplayService>()?.FreezeForHosting();
 
+#if IS_STEAM
+            Matchmaking.HostedListing.Hosting(saveReference, data);
+#endif
             ServerEventIO io = new ServerEventIO();
             EventIO.Set(io);
             if (!io.Start(data))
@@ -201,6 +205,9 @@ namespace BeaverBuddies.Connect
                 {
                     behavior.StopCoroutine(coroutine);
                 }
+#if IS_STEAM
+                Matchmaking.HostedListing.Unlist();
+#endif
 
                 // Make sure to set the RNG seed before loading the map
                 // The client will do the same
@@ -217,6 +224,9 @@ namespace BeaverBuddies.Connect
                     {
                         behavior.StopCoroutine(coroutine);
                     }
+#if IS_STEAM
+                    Matchmaking.HostedListing.Unlist();
+#endif
                     io.Close();
                 });
             if (steamListener != null)

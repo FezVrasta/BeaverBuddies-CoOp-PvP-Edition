@@ -47,7 +47,7 @@ BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Дозволяє грав�
 Примітка: ця функція може не працювати, якщо ваша мережа не підтримує P2P.
 Крім того, P2P‑з’єднання можуть бути повільнішими за прямі.",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"Дозволити друзям підключатись через Steam",""
-BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"Якщо ввімкнено, ваші друзі зможуть підключитись без запрошення через Steam.",""
+BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"Якщо ввімкнено, ваші друзі зможуть підключитись без запрошення через Steam, а гра буде видна всім у списку «Відкриті матчі».",""
 BeaverBuddies.Settings.PauseReduction,"Зменшити кількість примусових пауз",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"Для оптимального досвіду всі гравці мають встановити однакове налаштування.
 
@@ -136,6 +136,7 @@ BeaverBuddies.Match.Incompatible.Game,"У нього Timberborn {0}, у вас {
 BeaverBuddies.Match.Incompatible.LoggingTheirs,"У нього ввімкнено детальне журналювання, а у вас ні. Увімкніть ""Завжди детальне логування"" у налаштуваннях BeaverBuddies або попросіть його вимкнути.","They have detailed logging on and you don't. Turn on ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it off."
 BeaverBuddies.Match.Incompatible.LoggingMine,"У вас ввімкнено детальне журналювання, а в нього ні. Вимкніть ""Завжди детальне логування"" у налаштуваннях BeaverBuddies або попросіть його ввімкнути.","You have detailed logging on and they don't. Turn off ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it on."
 BeaverBuddies.Match.Incompatible.Protocol,"Його BeaverBuddies шукає матчі інакше, ніж ваш. Тому, у кого старіша версія, треба оновитися.","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
+BeaverBuddies.Match.Incompatible.Mods,"Його гра використовує інші моди або інші їхні версії. Щоб приєднатися до гри, потрібні точно такі самі.","Their game uses other mods, or other versions of them. To join a hosted game you need exactly the same ones."
 BeaverBuddies.Match.Incompatible.OldMod,"Його BeaverBuddies надто старий, щоб сказати, у чому різниця. Тому, у кого старіша версія, треба оновитися.","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"Гравці, з якими ви не можете грати, приховані. Позначте ""Показувати несумісні матчі"" під списком, щоб побачити їх і причину.","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
 BeaverBuddies.Match.GameMode,"Мережевий режим","Multiplayer mode"

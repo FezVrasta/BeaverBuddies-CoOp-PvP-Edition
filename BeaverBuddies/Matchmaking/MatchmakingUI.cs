@@ -3,6 +3,7 @@ using BeaverBuddies.Connect;
 using BeaverBuddies.Players;
 using BeaverBuddies.Steam;
 using HarmonyLib;
+using Steamworks;
 using System;
 using System.IO;
 using System.Linq;
@@ -48,6 +49,8 @@ namespace BeaverBuddies.Matchmaking
         private bool _resumeChecked;
         // Whose open match this player is joining
         private string _joining;
+        private CallResult<LobbyEnter_t> _hostedEntered;
+        private string _hostedFaction;
 
         public MatchmakingUI(DialogBoxShower dialogBoxShower, GameSceneLoader gameSceneLoader, GameModeSpecService gameModeSpecService,
             MapRepository mapRepository, FactionSpecService factionSpecService, PanelStack panelStack, NewGameFactionPanel newGameFactionPanel, ILoc loc,
@@ -90,6 +93,11 @@ namespace BeaverBuddies.Matchmaking
         // Into a host's match from the list (see HostBrowser), as the faction picked there
         public void JoinOpen(OpenMatch match, string faction)
         {
+            if (match.hosted)
+            {
+                JoinHosted(match, faction);
+                return;
+            }
             // Their map and difficulty, so theirs win and they host
             MatchPicks picks = MatchPicks.FromJson(match.picks.ToJson());
             picks.name = PlayerIdentity.LocalName;
@@ -100,6 +108,30 @@ namespace BeaverBuddies.Matchmaking
             Connect.MultiplayerMenu.Intent = Connect.NewGameIntent.Match;
             MatchmakingSession.JoinChosen(picks, configuration, match.lobby);
             ShowBox();
+        }
+
+        /**
+         * Into a hosted game from the list: entering its lobby connects to
+         * it, as an invite does (see SteamOverlayConnectionService). The
+         * faction picked goes to mods that let each player pick their own.
+         */
+        private void JoinHosted(OpenMatch match, string faction)
+        {
+            Plugin.Log($"[Match] Joining the hosted game {match.lobby} as {faction}");
+            _hostedEntered ??= CallResult<LobbyEnter_t>.Create(OnHostedEntered);
+            _hostedFaction = faction;
+            _hostedEntered.Set(SteamMatchmaking.JoinLobby(new CSteamID(match.lobby)));
+        }
+
+        private void OnHostedEntered(LobbyEnter_t result, bool failed)
+        {
+            if (failed || result.m_EChatRoomEnterResponse != (uint)EChatRoomEnterResponse.k_EChatRoomEnterResponseSuccess)
+            {
+                Plugin.Log($"[Match] Couldn't join the hosted game {result.m_ulSteamIDLobby}: {(EChatRoomEnterResponse)result.m_EChatRoomEnterResponse}");
+                _dialogBoxShower.Create().SetLocalizedMessage("BeaverBuddies.Match.Gone").Show();
+                return;
+            }
+            MatchHooks.RaiseStarting(_hostedFaction, false, false);
         }
 
         // How the search is going, until the game starts

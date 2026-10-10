@@ -163,6 +163,8 @@ namespace BeaverBuddies.Steam
 
         private void OnLobbyEntered(LobbyEnter_t callback)
         {
+            // Full, or gone: there's no one to connect to
+            if (callback.m_EChatRoomEnterResponse != (uint)EChatRoomEnterResponse.k_EChatRoomEnterResponseSuccess) return;
             // A match's lobby only pairs players up: its owner isn't hosting a game
             if (Matchmaking.MatchmakingSession.IsMatchLobby(new CSteamID(callback.m_ulSteamIDLobby))) return;
             ClearWaitForSteamOverlay();

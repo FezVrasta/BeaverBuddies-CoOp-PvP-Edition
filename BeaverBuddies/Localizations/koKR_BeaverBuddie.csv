@@ -47,7 +47,7 @@ BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Steam의 P2P 네트워크�
 주의: 네트워크가 P2P를 지원하지 않으면 이 기능이 작동하지 않을 수 있습니다.
 또한 P2P 연결은 직접 연결보다 느릴 수 있습니다.",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"친구가 Steam에서 바로 참여 가능",""
-BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"활성화하면 당신의 친구들이 Steam을 통해 초대 없이 바로 참여할 수 있습니다.",""
+BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"활성화하면 당신의 친구들이 Steam을 통해 초대 없이 바로 참여할 수 있고, 누구나 볼 수 있는 열린 대전 목록에도 표시됩니다.",""
 BeaverBuddies.Settings.PauseReduction,"강제 일시정지 횟수 줄이기",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"최적의 경험을 위해 모든 플레이어가 동일한 설정을 사용하는 것이 좋습니다.
 
@@ -136,6 +136,7 @@ BeaverBuddies.Match.Incompatible.Game,"상대는 Timberborn {0}, 당신은 {1}�
 BeaverBuddies.Match.Incompatible.LoggingTheirs,"상대는 상세 로그가 켜져 있고 당신은 꺼져 있습니다. BeaverBuddies 설정에서 ""항상 자세한 로그 사용""을(를) 켜거나 상대에게 끄라고 요청하세요.","They have detailed logging on and you don't. Turn on ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it off."
 BeaverBuddies.Match.Incompatible.LoggingMine,"당신은 상세 로그가 켜져 있고 상대는 꺼져 있습니다. BeaverBuddies 설정에서 ""항상 자세한 로그 사용""을(를) 끄거나 상대에게 켜라고 요청하세요.","You have detailed logging on and they don't. Turn off ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it on."
 BeaverBuddies.Match.Incompatible.Protocol,"상대의 BeaverBuddies는 당신과 다른 방식으로 매치를 찾습니다. 이전 버전을 가진 쪽이 업데이트해야 합니다.","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
+BeaverBuddies.Match.Incompatible.Mods,"상대 게임은 다른 모드나 다른 버전의 모드를 사용합니다. 호스팅된 게임에 참여하려면 똑같은 모드가 필요합니다.","Their game uses other mods, or other versions of them. To join a hosted game you need exactly the same ones."
 BeaverBuddies.Match.Incompatible.OldMod,"상대의 BeaverBuddies가 너무 오래되어 무엇이 다른지 알 수 없습니다. 이전 버전을 가진 쪽이 업데이트해야 합니다.","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"함께 플레이할 수 없는 플레이어는 숨겨져 있습니다. 목록 아래의 ""호환되지 않는 매치 표시""를 체크하면 이유와 함께 볼 수 있습니다.","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
 BeaverBuddies.Match.GameMode,"멀티플레이 모드","Multiplayer mode"

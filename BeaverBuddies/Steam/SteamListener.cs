@@ -58,6 +58,8 @@ namespace BeaverBuddies.Steam
 #if IS_STEAM
                 // A match's game: the other player joins it by this ID
                 Matchmaking.MatchmakingSession.ServerReady(LobbyID);
+                // Or in the list of open matches, for anyone
+                Matchmaking.HostedListing.Advertise(LobbyID);
 #endif
             }
             else

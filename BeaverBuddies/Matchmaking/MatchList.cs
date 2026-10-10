@@ -6,26 +6,30 @@ using System.Linq;
 
 namespace BeaverBuddies.Matchmaking
 {
-    // A player waiting in a match lobby of their own, for anyone to join
+    // A player waiting in a match lobby of their own, or a hosted game, for anyone to join
     public class OpenMatch
     {
         public ulong lobby;
         public MatchPicks picks;
+        // A hosted game (see HostedListing): joining it connects to it
+        public bool hosted;
         // Whether joining needs their mods from the Workshop first
         public bool otherMods;
         // The mods they play with
         public List<MatchMods.Entry> mods;
         // Whether the two can play at all: the same game version, detailed
-        // logging and matchmaking. When not, what the host has for each, null
-        // where their BeaverBuddies is too old to say.
+        // logging and matchmaking, and for a hosted game the same mods too,
+        // since there's no match to get them in. When not, what the host
+        // has for each, null where their BeaverBuddies is too old to say.
         public bool compatible = true;
         public string protocol, game, debug;
     }
 
     /**
      * The open matches: every player waiting for an opponent in a lobby of
-     * their own (see MatchmakingSession), with the same game version and
-     * detailed logging, whatever map and difficulty they picked. A player
+     * their own (see MatchmakingSession), and every hosted game waiting for
+     * players (see HostedListing), with the same game version and detailed
+     * logging, whatever map and difficulty they picked. A player
      * can pick one to join instead of letting the search pick for them.
      * With ShowIncompatible on, those who differ in any of those are listed
      * too, after the rest, so a player can see why they can't play them.
@@ -71,13 +75,16 @@ namespace BeaverBuddies.Matchmaking
                 if (SteamMatchmaking.GetLobbyOwner(id).m_SteamID == me && !DevTools.TestHarness.Active) continue;
                 MatchPicks picks = MatchPicks.FromJson(SteamMatchmaking.GetLobbyData(id, MatchmakingSession.PicksKey));
                 if (picks == null) continue;
+                bool hosted = SteamMatchmaking.GetLobbyData(id, MatchmakingSession.KindKey) == MatchmakingSession.HostedKind;
+                bool otherMods = SteamMatchmaking.GetLobbyData(id, MatchmakingSession.CompatKey) != MatchmakingSession.Compat;
                 Matches.Add(new OpenMatch
                 {
                     lobby = id.m_SteamID,
                     picks = picks,
-                    otherMods = SteamMatchmaking.GetLobbyData(id, MatchmakingSession.CompatKey) != MatchmakingSession.Compat,
+                    hosted = hosted,
+                    otherMods = otherMods,
                     mods = MatchMods.FromJson(SteamMatchmaking.GetLobbyData(id, MatchmakingSession.ModsKey)),
-                    compatible = SteamMatchmaking.GetLobbyData(id, MatchmakingSession.BaseKey) == MatchmakingSession.Base,
+                    compatible = SteamMatchmaking.GetLobbyData(id, MatchmakingSession.BaseKey) == MatchmakingSession.Base && !(hosted && otherMods),
                     protocol = Data(id, MatchmakingSession.ProtocolKey),
                     game = Data(id, MatchmakingSession.GameKey),
                     debug = Data(id, MatchmakingSession.DebugKey),

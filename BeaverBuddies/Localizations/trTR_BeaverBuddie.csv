@@ -47,7 +47,7 @@ Oyuncular ayrıca port yönlendirme ile katılabilir.
 Not: Ağınız P2P’yi desteklemiyorsa bu özellik çalışmayabilir.
 Ayrıca eşler arası bağlantılar doğrudan bağlantılardan daha yavaş olabilir.",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"Arkadaşların Steam Üzerinden Katılmasına İzin Ver",""
-BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"Etkinleştirilirse, arkadaşlarınız Steam üzerinden sizi davet etmeden doğrudan katılabilir.",""
+BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"Etkinleştirilirse, arkadaşlarınız Steam üzerinden sizi davet etmeden doğrudan katılabilir ve oyun herkes için Açık maçlar listesinde görünür.",""
 BeaverBuddies.Settings.PauseReduction,"Zorunlu duraklamaların sayısını azalt",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"En iyi deneyim için tüm oyuncuların aynı ayarı kullanması önerilir.
 
@@ -136,6 +136,7 @@ BeaverBuddies.Match.Incompatible.Game,"Onda Timberborn {0}, sende {1} var. İkin
 BeaverBuddies.Match.Incompatible.LoggingTheirs,"Onda ayrıntılı kayıt açık, sende değil. BeaverBuddies ayarlarında ""Her Zaman Ayrıntılı Günlük Kullan"" seçeneğini aç ya da ondan kapatmasını iste.","They have detailed logging on and you don't. Turn on ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it off."
 BeaverBuddies.Match.Incompatible.LoggingMine,"Sende ayrıntılı kayıt açık, onda değil. BeaverBuddies ayarlarında ""Her Zaman Ayrıntılı Günlük Kullan"" seçeneğini kapat ya da ondan açmasını iste.","You have detailed logging on and they don't. Turn off ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it on."
 BeaverBuddies.Match.Incompatible.Protocol,"Onun BeaverBuddies'i maçları seninkinden farklı arıyor. Eski sürümü olan güncellemeli.","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
+BeaverBuddies.Match.Incompatible.Mods,"Onun oyunu başka modlar ya da onların başka sürümlerini kullanıyor. Barındırılan bir oyuna katılmak için tam olarak aynılarına ihtiyacın var.","Their game uses other mods, or other versions of them. To join a hosted game you need exactly the same ones."
 BeaverBuddies.Match.Incompatible.OldMod,"Onun BeaverBuddies'i neyin farklı olduğunu söyleyemeyecek kadar eski. Eski sürümü olan güncellemeli.","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"Birlikte oynayamayacağın oyuncular gizli. Onları ve nedenini görmek için listenin altındaki ""Uyumsuz maçları göster"" kutusunu işaretle.","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
 BeaverBuddies.Match.GameMode,"Çok oyunculu mod","Multiplayer mode"

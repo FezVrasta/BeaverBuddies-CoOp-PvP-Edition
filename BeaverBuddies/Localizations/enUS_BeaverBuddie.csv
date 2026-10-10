@@ -47,7 +47,7 @@ Players will still be able to join via port forwarding.
 Note: This feature may not work if your network does not support peer-to-peer connections.
 Additionally, peer-to-peer connections may be slower than direct connections.",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"Allow Friends to Join Directly via Steam",""
-BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"When enabled, your friends can join your game directly via Steam without you inviting them.",""
+BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"When enabled, your friends can join your game directly via Steam without you inviting them, and it's listed in Open matches for anyone.",""
 BeaverBuddies.Settings.PauseReduction,"Reduce the number of forced pauses",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"For an optimal experience, all players should set it to the same value.
 
@@ -136,6 +136,7 @@ BeaverBuddies.Match.Incompatible.Game,"They have Timberborn {0}, you have {1}. Y
 BeaverBuddies.Match.Incompatible.LoggingTheirs,"They have detailed logging on and you don't. Turn on ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it off.",""
 BeaverBuddies.Match.Incompatible.LoggingMine,"You have detailed logging on and they don't. Turn off ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it on.",""
 BeaverBuddies.Match.Incompatible.Protocol,"Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update.",""
+BeaverBuddies.Match.Incompatible.Mods,"Their game uses other mods, or other versions of them. To join a hosted game you need exactly the same ones.",""
 BeaverBuddies.Match.Incompatible.OldMod,"Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update.",""
 BeaverBuddies.Match.ListEmptyHint,"Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why.",""
 BeaverBuddies.Match.GameMode,"Multiplayer mode","Multiplayer mode"

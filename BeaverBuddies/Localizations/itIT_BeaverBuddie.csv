@@ -47,7 +47,7 @@ I giocatori potranno comunque unirsi tramite inoltro porte.
 Nota: questa funzione potrebbe non funzionare se la tua rete non supporta P2P.
 Inoltre, le connessioni P2P possono essere più lente di quelle dirette.",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"Permetti agli amici di unirsi direttamente via Steam",""
-BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"Se attivo, i tuoi amici possono unirsi direttamente alla tua partita via Steam senza bisogno di inviti.",""
+BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"Se attivo, i tuoi amici possono unirsi direttamente alla tua partita via Steam senza bisogno di inviti, e compare in Partite aperte per chiunque.",""
 BeaverBuddies.Settings.PauseReduction,"Riduci il numero di pause forzate",""
 BeaverBuddies.Settings.PauseReduction.Tooltip,"Per un'esperienza ottimale, tutti i giocatori dovrebbero impostarlo allo stesso modo.
 
@@ -136,6 +136,7 @@ BeaverBuddies.Match.Incompatible.Game,"Ha Timberborn {0}, tu hai {1}. Vi serve l
 BeaverBuddies.Match.Incompatible.LoggingTheirs,"Ha il log dettagliato attivo e tu no. Attiva ""Usa sempre log dettagliati"" nelle impostazioni di BeaverBuddies, o chiedigli di disattivarlo.","They have detailed logging on and you don't. Turn on ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it off."
 BeaverBuddies.Match.Incompatible.LoggingMine,"Hai il log dettagliato attivo e lui no. Disattiva ""Usa sempre log dettagliati"" nelle impostazioni di BeaverBuddies, o chiedigli di attivarlo.","You have detailed logging on and they don't. Turn off ""Always Use Detailed Logging"" in the BeaverBuddies settings, or ask them to turn it on."
 BeaverBuddies.Match.Incompatible.Protocol,"Il suo BeaverBuddies cerca le partite in modo diverso dal tuo. Chi ha la versione più vecchia deve aggiornare.","Their BeaverBuddies looks for matches differently from yours. Whoever has the older version needs to update."
+BeaverBuddies.Match.Incompatible.Mods,"La sua partita usa altre mod, o altre versioni. Per entrare in una partita ospitata ti servono esattamente le stesse.","Their game uses other mods, or other versions of them. To join a hosted game you need exactly the same ones."
 BeaverBuddies.Match.Incompatible.OldMod,"Il suo BeaverBuddies è troppo vecchio per dire cosa cambia. Chi ha la versione più vecchia deve aggiornare.","Their BeaverBuddies is too old to say what's different. Whoever has the older version needs to update."
 BeaverBuddies.Match.ListEmptyHint,"I giocatori con cui non puoi giocare sono nascosti. Spunta ""Mostra partite incompatibili"" sotto la lista per vederli, e il perché.","Players you can't play with are hidden. Tick ""Show incompatible matches"" under the list to see them, and why."
 BeaverBuddies.Match.GameMode,"Modalità multigiocatore","Multiplayer mode"
