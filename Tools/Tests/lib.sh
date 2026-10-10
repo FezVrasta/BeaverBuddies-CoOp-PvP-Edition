@@ -109,8 +109,9 @@ bb_pid() {
     done
 }
 
-# The guest's window put right under the host's, which stays wherever it is, so both can be
-# watched. Through macOS, which knows where the windows are (the game reports 0,0)
+# The guest's window put right above the host's, which stays wherever it is unless there's no
+# room above it: then the host's goes down to make some, under the menu bar. Through macOS,
+# which knows where the windows are (the game reports 0,0)
 bb_stack_windows() {
     local host client at i
     host=$(bb_pid host); client=$(bb_pid client)
@@ -122,7 +123,12 @@ bb_stack_windows() {
     done
     [ -n "$at" ] || return 0
     IFS=', ' read -r x y _ h <<< "$at"
-    osascript -e "tell application \"System Events\" to tell (first process whose unix id is $client) to set position of window 1 to {$x, $((y + h))}" >/dev/null 2>&1 || true
+    local top=25
+    if [ $((y - h)) -lt $top ]; then
+        y=$((top + h))
+        osascript -e "tell application \"System Events\" to tell (first process whose unix id is $host) to set position of window 1 to {$x, $y}" >/dev/null 2>&1 || true
+    fi
+    osascript -e "tell application \"System Events\" to tell (first process whose unix id is $client) to set position of window 1 to {$x, $((y - h))}" >/dev/null 2>&1 || true
 }
 
 # bb_open <instance>: starts a copy without waiting for it, so two can load side by side
