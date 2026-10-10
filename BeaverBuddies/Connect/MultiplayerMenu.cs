@@ -36,7 +36,7 @@ namespace BeaverBuddies.Connect
     public class MultiplayerMenu : RegisteredSingleton
     {
         private const string MenuButtonName = "MultiplayerButton";
-        public const string DiscordUrl = "https://discord.gg/zUvM5vCU";
+        public const string DiscordUrl = "https://discord.gg/J9u64PRGyC";
         public const string HostButtonName = "HostNewGameButton";
 
         private readonly ILoc _loc;
