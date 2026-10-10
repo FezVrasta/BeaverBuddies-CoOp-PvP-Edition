@@ -97,12 +97,17 @@ wait_for() {
 }
 
 bb_launch() {
+    bb_open "$1"
+    wait_for "$1" "Registering Main Menu Services" 120
+}
+
+# bb_open <instance>: starts a copy without waiting for it, so two can load side by side
+bb_open() {
     local inst=$1
     rm -f "$BB_CMD_PREFIX-$inst" "$(bb_log "$inst")"
     prefs_windowed
     open -g -n -a "$BB_GAME" --env SteamAppId=1062090 --env SteamGameId=1062090 --env BB_INSTANCE="$inst" \
         --args -skipModManager -logFile "$(bb_log "$inst")" -screen-fullscreen 0 -screen-width 1400 -screen-height 880
-    wait_for "$inst" "Registering Main Menu Services" 120
 }
 
 # Whether the player's own Timberborn is running (not one of the test copies)
@@ -140,6 +145,7 @@ bb_kill() {
 start_match() {
     local hostf=${1:-Folktails} clientf=${2:-IronTeeth} mode=${3:-} pick
     bb_close
+    # One after the other: copies starting together race on the player's data file
     bb_launch host || return 1
     bb_launch client || return 1
     for pick in ${BB_HOST_SETTINGS:-}; do send host "gamesetting ${pick%%=*} ${pick#*=}"; done

@@ -41,19 +41,52 @@ FILES=$(scenario_files)
 if [ $LIST -eq 1 ]; then echo "$FILES"; exit 0; fi
 [ -n "$FILES" ] || { echo "No scenario matches."; exit 1; }
 
+# One run at a time: runs share the test folder, the Mods folder and the
+# player's data, so a second one waits for the first (a lock left by a run
+# that died is taken over)
+LOCK="$BB_TEST_DIR/.run-lock"
+mkdir -p "$BB_TEST_DIR"
+while ! mkdir "$LOCK" 2>/dev/null; do
+    owner=$(cat "$LOCK/pid" 2>/dev/null)
+    if [ -n "$owner" ] && ! kill -0 "$owner" 2>/dev/null; then rm -rf "$LOCK"; continue; fi
+    [ -n "${WAITED:-}" ] || { echo "Another test run is going: waiting for it."; WAITED=1; }
+    sleep 2
+done
+echo $$ > "$LOCK/pid"
+
 cleanup() {
     bb_close
     mod_enable_all
     prefs_restore
+    rm -rf "$LOCK"
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 # A run that didn't finish may have left a mod off
 mod_enable_all
+# The build is skipped when nothing it's made from changed since this checkout's
+# last one, and nothing else has installed into the Mods folder since (another
+# checkout's run, a package): BB_BUILD_SOURCES lists the folders it's made from
+build_current() {
+    local stamp="$BB_TEST_DIR/.build-stamp"
+    [ -n "${BB_BUILD_SOURCES:-}" ] && [ -f "$stamp" ] || return 1
+    [ "$(head -1 "$stamp")" == "$BB_BUILD_SOURCES" ] || return 1
+    local d
+    IFS=: read -ra dirs <<< "$BB_BUILD_SOURCES"
+    for d in "${dirs[@]}"; do
+        [ -n "$(find "$d" \( -name bin -o -name obj \) -prune -o -type f -newer "$stamp" -print -quit)" ] && return 1
+    done
+    [ -z "$(find "$(bb_mods_dir)" -maxdepth 3 -name '*.dll' -newer "$stamp" -print -quit)" ]
+}
 if [ $BUILD -eq 1 ] && [ -n "${BB_BUILD:-}" ]; then
-    echo "Building..."
-    eval "$BB_BUILD" || { echo "The build failed."; exit 1; }
+    if build_current; then
+        echo "Nothing changed since the last build: not building."
+    else
+        echo "Building..."
+        eval "$BB_BUILD" || { echo "The build failed."; exit 1; }
+        [ -n "${BB_BUILD_SOURCES:-}" ] && echo "$BB_BUILD_SOURCES" > "$BB_TEST_DIR/.build-stamp"
+    fi
 fi
 if player_game_running; then
     echo "Timberborn is running: close it first, the tests need the game to themselves."
