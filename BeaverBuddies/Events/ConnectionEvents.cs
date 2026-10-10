@@ -111,9 +111,10 @@ namespace BeaverBuddies.Events
             callback("BeaverBuddies.ClientDesynced.TraceSaved");
         }
 
-        private void TurnOnTracing(Action<string> callback)
+        private void TurnOnTracing(IReplayContext context, Action<string> callback)
         {
-            Settings.TemporarilyDebug = true;
+            // For everyone, on the same tick (see TracingEnabledEvent)
+            if (DoPrefix(() => new DesyncDetecter.TracingEnabledEvent())) new DesyncDetecter.TracingEnabledEvent().Replay(context);
             callback("BeaverBuddies.ClientDesynced.TracingEnabled");
         }
 
@@ -155,7 +156,7 @@ namespace BeaverBuddies.Events
             {
                 infoButton?.SetEnabled(false);
                 if (Settings.Debug) ReportOnDiscord(context, infoCallback);
-                else TurnOnTracing(infoCallback);
+                else TurnOnTracing(context, infoCallback);
             };
 
             string message = _loc.T("BeaverBuddies.ClientDesynced.Resynced");

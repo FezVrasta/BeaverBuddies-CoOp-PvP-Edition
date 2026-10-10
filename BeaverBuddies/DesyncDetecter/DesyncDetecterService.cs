@@ -35,6 +35,25 @@ namespace BeaverBuddies.DesyncDetecter
         }
     }
 
+    /**
+     * Detailed logging turned on for every player at once, from the resync
+     * dialog: each starts its traces over on the same tick, so they compare
+     * from there. Turned on one player at a time, mid-game, one's traces
+     * would start where the others' didn't (a water area traced the first
+     * time it's seen, say) and read as a desync.
+     */
+    [Serializable]
+    public class TracingEnabledEvent : ReplayEvent
+    {
+        public override void Replay(IReplayContext context)
+        {
+            Settings.TemporarilyDebug = true;
+            DesyncDetecterService.RestartTracing(context.GetSingleton<ReplayService>().TicksSinceLoad);
+        }
+
+        public override string ToActionString() => "Turning on detailed logging for everyone";
+    }
+
     public class DesyncDetecterService : RegisteredSingleton, IResettableSingleton
     {
         private static int currentTick;
@@ -44,6 +63,10 @@ namespace BeaverBuddies.DesyncDetecter
         private static readonly int maxTraceTicks = 10;
 
         private static string lastDesyncTrace = null;
+
+        // Whether this tick's traces were recorded from its start: tracing
+        // turned on mid-game begins with the next whole tick
+        private static bool tracing;
 
         DesyncDetecterService()
         {
@@ -56,14 +79,28 @@ namespace BeaverBuddies.DesyncDetecter
             lastDesyncTrace = null;
             traces.Clear();
             traces.Add(new List<Trace>());
+            tracing = Settings.Debug;
             if (Settings.Debug)
             {
                 Trace("Start Preload");
             }
         }
 
+        /** Traces from here on only, this tick's included, as on every other machine. */
+        public static void RestartTracing(int tick)
+        {
+            currentTick = tick;
+            traces.Clear();
+            traces.Add(new List<Trace>());
+            tracing = true;
+            ThreadSafeWaterMapUpdateDataPatcher.Reset();
+            Plugin.Log($"Tracing from tick {tick}");
+        }
+
         public static IEnumerable<ReplayEvent> CreateReplayEventsAndClear()
         {
+            // Turned on mid-tick: nothing whole to send until the next tick starts
+            if (!tracing) yield break;
             // The first tick is the current tick shifted by the number of traces - 1
             int tick = currentTick - (traces.Count - 1);
             while (traces.Count > 0)
@@ -83,7 +120,18 @@ namespace BeaverBuddies.DesyncDetecter
         {
             if (!Settings.Debug)
             {
+                tracing = false;
                 return;
+            }
+            // Turned on since the last tick (from the resync dialog): what
+            // was traced so far covers only part of a tick, which the other
+            // players traced whole or not at all, and would read as a desync
+            if (!tracing)
+            {
+                tracing = true;
+                currentTick = tick - 1;
+                traces.Clear();
+                Plugin.Log($"Tracing from tick {tick}");
             }
             if (tick < currentTick)
             {
@@ -118,8 +166,9 @@ namespace BeaverBuddies.DesyncDetecter
                 //Plugin.LogStackTrace();
                 return;
             }
-            // Trace called before the service has been initialized
-            if (traces.Count == 0) return;
+            // Trace called before the service has been initialized, or turned
+            // on mid-tick (see StartTick)
+            if (traces.Count == 0 || !tracing) return;
             string stackTrace = skipStackTrack ? "[Skipped stack trace]" : new StackTrace().ToString();
             CurrentTrace.Add(new Trace()
             {
