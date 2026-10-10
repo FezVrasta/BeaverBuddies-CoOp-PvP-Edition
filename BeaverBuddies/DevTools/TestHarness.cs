@@ -108,10 +108,13 @@ namespace BeaverBuddies.DevTools
             DisplayInfo display = Screen.mainWindowDisplayInfo;
             RectInt area = display.workArea;
             if (area.width <= 0 || area.height <= 0) return;
-            int height = area.height / 2;
-            int top = Instance == "host" ? 0 : height;
-            Screen.SetResolution(area.width, height, FullScreenMode.Windowed);
-            Screen.MoveMainWindowTo(display, new Vector2Int(area.x, area.y + top));
+            // Windowed as launched, just made to fit half the screen's height
+            // (less the title bar, which isn't part of it)
+            int height = Mathf.Min(Screen.height, area.height / 2 - 32);
+            int width = Screen.width * height / Mathf.Max(1, Screen.height);
+            int top = Instance == "host" ? 0 : area.height / 2;
+            Screen.SetResolution(width, height, FullScreenMode.Windowed);
+            Screen.MoveMainWindowTo(display, new Vector2Int(area.x + (area.width - width) / 2, area.y + top));
         }
 
         private static int I(string s) => int.Parse(s, CultureInfo.InvariantCulture);
