@@ -177,6 +177,19 @@ namespace BeaverBuddies.DesyncDetecter
             });
         }
 
+        /** Where this tick's traces are up to, to take back with Rewind. */
+        public static int Mark() => traces.Count == 0 ? 0 : CurrentTrace.Count;
+
+        /**
+         * Takes back what was traced since the mark: an event that failed
+         * isn't sent, so no other machine traces it.
+         */
+        public static void Rewind(int mark)
+        {
+            if (traces.Count == 0 || mark >= CurrentTrace.Count) return;
+            CurrentTrace.RemoveRange(mark, CurrentTrace.Count - mark);
+        }
+
         public static string GetLastDesyncTrace()
         {
             return lastDesyncTrace;

@@ -385,6 +385,7 @@ namespace BeaverBuddies
                     // A failed event isn't sent on, so it mustn't leave the
                     // random numbers moved on this machine alone
                     var randomState = UnityEngine.Random.state;
+                    int traceMark = DesyncDetecterService.Mark();
                     try
                     {
                         // For these events, make sure to record s0 beforehand
@@ -410,6 +411,7 @@ namespace BeaverBuddies
                     } catch (Exception e)
                     {
                         UnityEngine.Random.state = randomState;
+                        DesyncDetecterService.Rewind(traceMark);
                         Plugin.LogError($"Failed to replay event: {e}");
                         Plugin.LogError(e.ToString());
                     }
