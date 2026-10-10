@@ -480,14 +480,9 @@ namespace BeaverBuddies.DevTools
                     break;
                 }
                 case "finish":
-                {
-                    // Finishes the site there, as its builders would
-                    foreach (BlockObject o in Replay.GetSingleton<IBlockService>().GetObjectsAt(new Vector3Int(I(a[1]), I(a[2]), I(a[3]))))
-                    {
-                        o.GetComponent<Timberborn.ConstructionSites.ConstructionSite>()?.FinishNow();
-                    }
+                    // Finishes the site there, as its builders would: on every machine, so they stay in step
+                    Record(new HarnessEvent() { command = string.Join(" ", a) });
                     break;
-                }
                 case "materials":
                 {
                     // What a building draws with: each visible renderer's materials, gray or not
@@ -648,6 +643,12 @@ namespace BeaverBuddies.DevTools
             string[] a = command.Split(' ');
             switch (a[0])
             {
+                case "finish":
+                    foreach (BlockObject o in context.GetSingleton<IBlockService>().GetObjectsAt(new Vector3Int(I(a[1]), I(a[2]), I(a[3]))))
+                    {
+                        o.GetComponent<Timberborn.ConstructionSites.ConstructionSite>()?.FinishNow();
+                    }
+                    break;
                 case "train":
                 {
                     // The troops of the building there done training at once (Timber Empires' TroopTraining)
