@@ -105,6 +105,7 @@ bb_launch() {
 bb_open() {
     local inst=$1
     rm -f "$BB_CMD_PREFIX-$inst" "$(bb_log "$inst")"
+    [ "$inst" == host ] && rm -f "$BB_CMD_PREFIX-window"
     prefs_windowed
     open -g -n -a "$BB_GAME" --env SteamAppId=1062090 --env SteamGameId=1062090 --env BB_INSTANCE="$inst" \
         --args -skipModManager -logFile "$(bb_log "$inst")" -screen-fullscreen 0 -screen-width 1400 -screen-height 880

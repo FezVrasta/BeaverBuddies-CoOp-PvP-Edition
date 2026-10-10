@@ -62,7 +62,9 @@ namespace BeaverBuddies.DevTools
         private readonly VisualElementLoader _visualElementLoader;
         private readonly Bindito.Core.IContainer _container;
         private float _nextPoll;
-        private bool _tiled;
+        // Once per copy, not per scene
+        private static bool _placed;
+        private static Vector2Int _hostWindow = new(int.MinValue, 0);
         private Timberborn.BlockObjectTools.PreviewPlacer _previewPlacer;
 
         public TestHarness(GameModeSpecService gameModeSpecService, GameSceneLoader gameSceneLoader, ClientConnectionService clientConnectionService, PanelStack panelStack,
@@ -80,7 +82,7 @@ namespace BeaverBuddies.DevTools
         {
             if (!Active || Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 0.5f;
-            if (!_tiled) Tile();
+            PlaceWindow();
             if (!File.Exists(Flag)) return;
             string[] lines = File.ReadAllLines(Flag);
             File.Delete(Flag);
@@ -100,21 +102,28 @@ namespace BeaverBuddies.DevTools
             }
         }
 
-        // The host's window on the top half of the screen, the guest's
-        // under it, so both copies can be watched at once
-        private void Tile()
+        private static string HostWindowFile => Path.Combine(Path.GetDirectoryName(Flag), "BeaverBuddies-test-window");
+
+        // The host's window stays wherever it was put, and notes where that
+        // is; the guest's goes right under it, so both copies can be watched
+        private void PlaceWindow()
         {
-            _tiled = true;
-            DisplayInfo display = Screen.mainWindowDisplayInfo;
-            RectInt area = display.workArea;
-            if (area.width <= 0 || area.height <= 0) return;
-            // Windowed as launched, just made to fit half the screen's height
-            // (less the title bar, which isn't part of it)
-            int height = Mathf.Min(Screen.height, area.height / 2 - 32);
-            int width = Screen.width * height / Mathf.Max(1, Screen.height);
-            int top = Instance == "host" ? 0 : area.height / 2;
-            Screen.SetResolution(width, height, FullScreenMode.Windowed);
-            Screen.MoveMainWindowTo(display, new Vector2Int(area.x + (area.width - width) / 2, area.y + top));
+            if (Instance == "host")
+            {
+                Vector2Int at = Screen.mainWindowPosition;
+                if (at == _hostWindow) return;
+                _hostWindow = at;
+                File.WriteAllText(HostWindowFile, $"{at.x} {at.y} {Screen.height}");
+                return;
+            }
+            if (_placed || !File.Exists(HostWindowFile)) return;
+            string[] host = File.ReadAllText(HostWindowFile).Split(' ');
+            if (host.Length < 3) return;
+            _placed = true;
+            // Its height is the picture's, so the title bar is added: 28 points
+            float scale = Screen.dpi > 0 ? Mathf.Max(1, Mathf.Round(Screen.dpi / 110f)) : 1;
+            int below = I(host[1]) + I(host[2]) + Mathf.RoundToInt(28 * scale);
+            Screen.MoveMainWindowTo(Screen.mainWindowDisplayInfo, new Vector2Int(I(host[0]), below));
         }
 
         private static int I(string s) => int.Parse(s, CultureInfo.InvariantCulture);
