@@ -203,6 +203,12 @@ namespace BeaverBuddies.DesyncDetecter
                 return false;
             }
 
+            // Tick 0 is the lobby before the game starts: the host traces what
+            // it plays there from the moment it loads, and a player joining
+            // later never sees those events, so the two can't line up. Nothing
+            // simulates in it, and a real difference shows from tick 1 on.
+            if (tick == 0) return true;
+
 
             // The tick we're looking for is the last one
             // minus the difference between the requested and current tick
