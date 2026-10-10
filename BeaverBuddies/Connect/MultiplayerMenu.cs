@@ -208,10 +208,7 @@ namespace BeaverBuddies.Connect
             // As the game names autosaves: a settlement's name is its folder, which can't have dots or colons
             string settlement = "Co-op " + DateTime.Now.ToString("yyyy-MM-dd HH'h'mm", CultureInfo.InvariantCulture);
             var configuration = new NewGameConfiguration(panel._factionSpec.Id, panel._map.MapFileReference, mode, settlement);
-            Plugin.Log($"Hosting a new game: {configuration}");
-            NewGameHosting.Pending = true;
-            Matchmaking.MatchOptions.StartGameWith(Matchmaking.MatchOptions.Current());
-            _gameSceneLoader.StartNewGame(configuration);
+            NewGameHosting.Start(_gameSceneLoader, configuration, Matchmaking.MatchOptions.Current());
         }
     }
 
@@ -224,6 +221,15 @@ namespace BeaverBuddies.Connect
         private const float SettleTime = 2;
 
         public static bool Pending;
+
+        // Starts the new game to host it, with the picks next to the difficulties (the game mode)
+        public static void Start(GameSceneLoader loader, NewGameConfiguration configuration, Dictionary<string, string> options)
+        {
+            Plugin.Log($"Hosting a new game: {configuration}");
+            Pending = true;
+            Matchmaking.MatchOptions.StartGameWith(options);
+            loader.StartNewGame(configuration);
+        }
 
         private readonly RehostingService _rehostingService;
         private readonly DialogBoxShower _dialogBoxShower;

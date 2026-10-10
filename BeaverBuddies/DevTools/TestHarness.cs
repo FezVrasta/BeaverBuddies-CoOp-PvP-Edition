@@ -30,7 +30,9 @@ namespace BeaverBuddies.DevTools
      * At the main menu: "hostmatch Map Faction" starts a new game as a
      * match's host would (mixed factions, each player places their own
      * start) and hosts it; "joinmatch Faction [address]" joins it as the
-     * match's other player, at 127.0.0.1 by default.
+     * match's other player, at 127.0.0.1 by default. "hostnew Map Faction"
+     * hosts a new game as the New Game screens' Host game button does. A
+     * map is a built-in one's name, or user:Name for one in the Maps folder.
      * In game, through the same events a player's clicks make:
      * "place Template x y z [0|90|180|270] [instant]", "delete x y z", "speed n", "check x y z" logs what's there and whether it's finished;
      * "build Template x y z [0|90|180|270]" places it through the game's own
@@ -100,6 +102,11 @@ namespace BeaverBuddies.DevTools
 
         private static int I(string s) => int.Parse(s, CultureInfo.InvariantCulture);
 
+        // A built-in map by name, or one of the player's own as user:Name
+        private static MapFileReference Map(string name) =>
+            name.StartsWith("user:") ? MapFileReference.FromUserFolder(name.Substring(5)) : MapFileReference.FromResource(name);
+
+
         private void Run(string[] a)
         {
             switch (a[0])
@@ -118,7 +125,18 @@ namespace BeaverBuddies.DevTools
                         ? new System.Collections.Generic.Dictionary<string, string> { [Matchmaking.MatchOptions.GameModeId] = a[3] }
                         : Matchmaking.MatchOptions.Current());
                     _gameSceneLoader.StartNewGame(
-                        new NewGameConfiguration(faction, MapFileReference.FromResource(map), mode, settlement));
+                        new NewGameConfiguration(faction, Map(map), mode, settlement));
+                    break;
+                }
+                case "hostnew":
+                {
+                    // hostnew Map Faction [game mode id]: what the New Game screens' Host game button does
+                    var modes = _gameModeSpecService ?? throw new Exception("not at the main menu");
+                    var options = Matchmaking.MatchOptions.Current();
+                    if (a.Length > 3 && a[3] != "") options[Matchmaking.MatchOptions.GameModeId] = a[3];
+                    string settlement = "Co-op " + DateTime.Now.ToString("yyyy-MM-dd HH'h'mm", CultureInfo.InvariantCulture);
+                    NewGameHosting.Start(_gameSceneLoader, new NewGameConfiguration(a[2], Map(a[1]),
+                        new MultiplayerNewGameModeSpec(modes.GetDefaultSpec(), Editor.StartingLocationPlayer.MAX_PLAYERS), settlement), options);
                     break;
                 }
 #if IS_STEAM
@@ -237,7 +255,7 @@ namespace BeaverBuddies.DevTools
                     break;
                 }
                 case "newgame":
-                    _gameSceneLoader.StartNewGameInstantly(a[2], MapFileReference.FromResource(a[1]), "Harness " + DateTime.Now.ToString("HH'h'mm", CultureInfo.InvariantCulture));
+                    _gameSceneLoader.StartNewGameInstantly(a[2], Map(a[1]), "Harness " + DateTime.Now.ToString("HH'h'mm", CultureInfo.InvariantCulture));
                     break;
                 case "buildnow":
                 {

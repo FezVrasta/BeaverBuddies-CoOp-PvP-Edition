@@ -206,6 +206,17 @@ namespace BeaverBuddies.Modding
         // opponents): any true starts it with no starting building
         public static void AddNewGamePlacesStart(Func<bool> hook) => MatchHooks.NewGamePlacesStart.Add(hook);
 
+        // Whether a new game hosted from the menu (Host new game) on a map with
+        // several starting locations has each player take one of them: any
+        // true starts it with no starting building, as a match does, for the
+        // mod to found each player's settlement
+        public static void AddMapStartsPerPlayer(Func<bool> hook) => MatchHooks.MapStartsPerPlayer.Add(hook);
+
+        // Where the map's starting locations were, in player order, when a new
+        // game starting with no starting building loads on a map with several:
+        // called on the machine creating the game, before it's first saved
+        public static void AddMapStarts(Action<Placement[]> hook) => MatchHooks.MapStarts += hook;
+
         // A choice for new multiplayer games, like a game mode: a column of buttons
         // when hosting a new game or finding a match, by loc keys, which a
         // match needs both players to have picked the same
