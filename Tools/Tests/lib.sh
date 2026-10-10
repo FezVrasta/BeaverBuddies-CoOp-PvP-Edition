@@ -113,7 +113,7 @@ bb_open() {
 # Whether the player's own Timberborn is running (not one of the test copies)
 player_game_running() {
     local p
-    for p in $(pgrep -f "Timberborn.app/Contents/MacOS"); do
+    for p in $(pgrep -x Timberborn); do
         ps eww -p "$p" 2>/dev/null | grep -q "BB_INSTANCE=" || return 0
     done
     return 1
@@ -122,7 +122,7 @@ player_game_running() {
 # Closes the test copies, and only them: the player's own game isn't touched
 bb_close() {
     local p
-    for p in $(pgrep -f "Timberborn.app/Contents/MacOS"); do
+    for p in $(pgrep -x Timberborn); do
         ps eww -p "$p" 2>/dev/null | grep -q "BB_INSTANCE=" && kill -9 "$p" 2>/dev/null
     done
     rm -f "$BB_CMD_PREFIX-host" "$BB_CMD_PREFIX-client"
@@ -133,7 +133,7 @@ bb_close() {
 # bb_kill <instance>: closes one test copy
 bb_kill() {
     local p
-    for p in $(pgrep -f "Timberborn.app/Contents/MacOS"); do
+    for p in $(pgrep -x Timberborn); do
         ps eww -p "$p" 2>/dev/null | grep -q "BB_INSTANCE=$1 " && kill -9 "$p" 2>/dev/null
     done
     sleep 3
