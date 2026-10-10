@@ -167,6 +167,8 @@ Add these once, when your mod starts. Each one combines with every other mod's: 
 | `AddCanMixFactions(() => bool)` | Whether a game can have players of different factions. When any mod says yes, each player in a match keeps the faction they picked; otherwise a coin flip picks one for both |
 | `AddMatchStarting((faction, mixed, isHost) => void)` | Before a match's game starts on this machine: the faction this player plays, whether the game mixes factions, and whether this machine hosts it |
 | `AddPlayersPlaceStart(() => bool)` | Whether each player in a match places their own start: the match's game starts with no starting building, for your mod to found each player's settlement where they place it |
+| `AddMapStartsPerPlayer(() => bool)` | Whether a game hosted with Host new game, on a map with several starting locations, gives each player one: it starts with no starting building, as a match does, instead of all of them built for the host |
+| `AddMapStarts(placements => void)` | Where the map's starting locations were, in player order, when a game starting with no starting building loads on a map with several. Called on the machine creating the game, before it's saved, so keep them in your save |
 | `AddGameMode(id, labelLocKey)` | Adds a game mode to the Multiplayer mode list (see below) |
 | `DescribeGameMode(id, descriptionLocKey)` | A line about one of your modes, shown under the list when it's picked |
 | `GetGameMode()` | The game mode the new game loading on this machine was started with, or null |

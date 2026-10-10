@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Timberborn.Coordinates;
 
 namespace BeaverBuddies.Matchmaking
 {
@@ -25,9 +26,31 @@ namespace BeaverBuddies.Matchmaking
         // players a mod runs, say
         public static readonly List<Func<bool>> NewGamePlacesStart = new();
 
+        // Whether a new game hosted from the menu, on a map with several
+        // starting locations, gives each player one of them rather than
+        // building them all for the host
+        public static readonly List<Func<bool>> MapStartsPerPlayer = new();
+        // Where a map's starting locations were, in player order, as a new
+        // game where each player places their own start loads on a map with
+        // several of them
+        public static event Action<Placement[]> MapStarts;
+
         public static bool FactionsMix => CanMixFactions.Any(hook => hook());
         public static bool PlaceStart => PlayersPlaceStart.Any(hook => hook());
         public static bool NewGamePlaces => NewGamePlacesStart.Any(hook => hook());
+        public static bool StartsPerPlayer => MapStartsPerPlayer.Any(hook => hook());
+
+        public static void RaiseMapStarts(Placement[] starts)
+        {
+            try
+            {
+                MapStarts?.Invoke(starts);
+            }
+            catch (Exception e)
+            {
+                Plugin.LogError($"A mod failed to take the map's starts: {e}");
+            }
+        }
 
         public static void RaiseStarting(string faction, bool mixed, bool host)
         {

@@ -47,10 +47,19 @@ namespace BeaverBuddies.MultiStart
 
             // A match where each player places their own start, or a new
             // game a mod starts that way: no starting building, the camera
-            // on where the map would have put it
-            if (PlayersPlaceStart)
+            // on where the map would have put it. On a map with a start for
+            // each player, the mod gets them to hand out
+            bool perPlayer = startingLocations.Count > 1 && Connect.NewGameHosting.Pending && Matchmaking.MatchHooks.StartsPerPlayer;
+            if (PlayersPlaceStart || perPlayer)
             {
                 Plugin.Log("[Match] Each player places their own start");
+                if (startingLocations.Count > 1)
+                {
+                    startingLocations = InPlayerOrder(startingLocations);
+                    var starts = startingLocations.Select(sl => sl.GetComponent<BlockObject>().Placement).ToArray();
+                    Plugin.Log($"[Match] The map has {starts.Length} starts: {string.Join(", ", starts.Select(s => s.Coordinates))}");
+                    Matchmaking.MatchHooks.RaiseMapStarts(starts);
+                }
                 if (startingLocations.Count > 0)
                 {
                     __instance._startingBuildingSpawner._cameraTargeter.CenterCameraOn(startingLocations[0].GetComponent<SelectableObject>());
@@ -65,10 +74,7 @@ namespace BeaverBuddies.MultiStart
 			// If we don't have multiple starting locations, then use default behavior
 			if (startingLocations.Count <= 1) return true;
 
-			// Order the locations by player index
-			startingLocations = startingLocations.OrderBy(
-				sl => sl.GetComponent<StartingLocationPlayer>()?.PlayerIndex ?? 0
-			).ToList();
+			startingLocations = InPlayerOrder(startingLocations);
 
 			int count = 0;
 			int maxStartingLocations = startBuildingService.MaxStartLocations();
@@ -110,6 +116,14 @@ namespace BeaverBuddies.MultiStart
 #endif
 			}
 		}
+
+		// By player index, then by where they are, so the order never depends on the registry's
+		private static List<StartingLocation> InPlayerOrder(List<StartingLocation> locations) => locations
+			.OrderBy(sl => sl.GetComponent<StartingLocationPlayer>()?.PlayerIndex ?? 0)
+			.ThenBy(sl => sl.GetComponent<BlockObject>().Coordinates.x)
+			.ThenBy(sl => sl.GetComponent<BlockObject>().Coordinates.y)
+			.ThenBy(sl => sl.GetComponent<BlockObject>().Coordinates.z)
+			.ToList();
 
 		public static List<StartingLocation> GetAllStartingLocations(StartingLocationService sls)
 		{
