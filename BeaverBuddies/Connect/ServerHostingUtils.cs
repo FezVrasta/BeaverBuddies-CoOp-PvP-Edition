@@ -110,8 +110,14 @@ namespace BeaverBuddies.Connect
         {
             var label = box._root.Q<Label>("Message");
             string baseMessage = loc.T("BeaverBuddies.Host.ConnectedClients");
+            // Not clickable for a moment: it opens under the cursor, where a
+            // double click on Host started the game before anyone could join
+            var confirm = box._root.Q<Button>("ConfirmButton");
+            confirm?.SetEnabled(false);
+            float clickable = UnityEngine.Time.unscaledTime + 1.5f;
             while (true)
             {
+                if (confirm != null && !confirm.enabledSelf && UnityEngine.Time.unscaledTime >= clickable) confirm.SetEnabled(true);
                 List<string> clients = io.NetBase.GetConnectedClients();
                 string content = baseMessage;
                 int nonLocalID = 1;
@@ -205,9 +211,8 @@ namespace BeaverBuddies.Connect
                 {
                     behavior.StopCoroutine(coroutine);
                 }
-#if IS_STEAM
-                Matchmaking.HostedListing.Unlist();
-#endif
+                // A hosted game stays listed once it starts: players can join
+                // a running game, and it goes off the list when it's full
 
                 // Make sure to set the RNG seed before loading the map
                 // The client will do the same

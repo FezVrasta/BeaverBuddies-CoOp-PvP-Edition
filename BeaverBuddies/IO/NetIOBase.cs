@@ -31,7 +31,10 @@ namespace BeaverBuddies.IO
             if (NetBase == null) return;
             NetBase.Update();
             steamPacketListener?.Update();
+            Updated();
         }
+
+        protected virtual void Updated() { }
 
         private static ReplayEvent ToEvent(JObject obj)
         {

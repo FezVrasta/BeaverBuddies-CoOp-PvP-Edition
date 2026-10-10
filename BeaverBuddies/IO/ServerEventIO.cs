@@ -177,5 +177,17 @@ namespace BeaverBuddies.IO
         {
 
         }
+
+        private float _nextListingCheck;
+
+        // A hosted game stays listed while it runs, until it has no room left
+        protected override void Updated()
+        {
+#if IS_STEAM
+            if (UnityEngine.Time.unscaledTime < _nextListingCheck) return;
+            _nextListingCheck = UnityEngine.Time.unscaledTime + 2f;
+            Matchmaking.HostedListing.Joined(NetBase.GetConnectedClients().Count);
+#endif
+        }
     }
 }
