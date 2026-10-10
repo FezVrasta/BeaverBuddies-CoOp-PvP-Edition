@@ -5,10 +5,14 @@
 bb_close
 start_match Folktails Folktails || { fail "a match starts" "the copies never got into the game"; return; }
 pass "a match starts"
+# Each player's District Center first, so nothing a mod asks of a player without one covers the
+# dialog the resync ends with
+place_starts Folktails Folktails
 send host "speed 1"; sleep 6
 send client "desync traced"
-wait_for host "Sending the resync save" 30 && pass "the host resyncs" || fail "the host resyncs" "it never sent its save"
-wait_for client "Received the host's resync save" 60 && pass "the save reaches the client over the same connection" \
+wait_for host "Resyncing everyone after the desync of" 30 && wait_for host "Reloading everyone \([0-9]+ players?\) from a save of [0-9]+ bytes" 30 \
+    && pass "the host resyncs" || fail "the host resyncs" "it never sent its save"
+wait_for client "Received the host's reload save \([0-9]+ bytes\)" 60 && pass "the save reaches the client over the same connection" \
     || fail "the save reaches the client over the same connection" "it never arrived"
 wait_for host "Back in sync after a resync" 120 && wait_for client "Back in sync after a resync" 120 \
     && pass "both copies load it" || fail "both copies load it" "one never finished loading"
@@ -26,4 +30,5 @@ if [ -n "$trace" ] && [ -f "$trace" ]; then pass "the trace file is there"; rm -
 send host dismiss; send client dismiss; sleep 2
 send host "speed 1"; sleep 15
 expect_in_sync "the game carries on in sync"
+expect_eq "...with no second desync once logging's on for both, turned on at different moments" "$(grep -ac "Resyncing everyone after the desync" "$(bb_log host)")" "1"
 expect_no_log "nothing posted" host "api.airtable.com"
