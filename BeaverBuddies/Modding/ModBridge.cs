@@ -42,6 +42,8 @@ namespace BeaverBuddies.Modding
         public static Color LocalPlayerColor() => Settings.PingColorValue;
         // On the host: the people in the game, itself and every client connected (nobody joins after the first tick)
         public static int ConnectedPlayers() => EventIO.Get() is ServerEventIO server ? (server.NetBase?.ClientCount ?? 0) + 1 : EventIO.Get() is LocalEventIO ? 1 : 0;
+        // The players in the game right now, by LocalPlayerID, this one included (see PlayerPresence)
+        public static string[] OnlinePlayers() => PlayerPresence.Online();
 
         public static void Log(string message) => Plugin.Log(message);
         public static void LogWarning(string message) => Plugin.LogWarning(message);
