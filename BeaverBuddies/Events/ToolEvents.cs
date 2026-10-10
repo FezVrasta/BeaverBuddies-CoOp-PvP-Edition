@@ -566,7 +566,9 @@ namespace BeaverBuddies.Events
             {
                 return new BuildingUnlockedEvent()
                 {
-                    buildingName = buildingSpec.Blueprint.Name,
+                    // What GetBuilding looks it up by: a blueprint's name can
+                    // differ (WallTowerTrebuchet for WallTower.Trebuchet)
+                    buildingName = buildingSpec.GetSpec<TemplateSpec>().TemplateName,
                 };
             });
         }
