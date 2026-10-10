@@ -62,6 +62,7 @@ namespace BeaverBuddies.DevTools
         private readonly VisualElementLoader _visualElementLoader;
         private readonly Bindito.Core.IContainer _container;
         private float _nextPoll;
+        private bool _tiled;
         private Timberborn.BlockObjectTools.PreviewPlacer _previewPlacer;
 
         public TestHarness(GameModeSpecService gameModeSpecService, GameSceneLoader gameSceneLoader, ClientConnectionService clientConnectionService, PanelStack panelStack,
@@ -79,6 +80,7 @@ namespace BeaverBuddies.DevTools
         {
             if (!Active || Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 0.5f;
+            if (!_tiled) Tile();
             if (!File.Exists(Flag)) return;
             string[] lines = File.ReadAllLines(Flag);
             File.Delete(Flag);
@@ -96,6 +98,20 @@ namespace BeaverBuddies.DevTools
                     Plugin.LogError($"[Test] {line} failed: {e}");
                 }
             }
+        }
+
+        // The host's window on the left half of the screen, the guest's on
+        // the right, so both copies can be watched at once
+        private void Tile()
+        {
+            _tiled = true;
+            DisplayInfo display = Screen.mainWindowDisplayInfo;
+            RectInt area = display.workArea;
+            if (area.width <= 0 || area.height <= 0) return;
+            int width = area.width / 2;
+            int left = Instance == "host" ? 0 : width;
+            Screen.SetResolution(width, area.height, FullScreenMode.Windowed);
+            Screen.MoveMainWindowTo(display, new Vector2Int(area.x + left, area.y));
         }
 
         private static int I(string s) => int.Parse(s, CultureInfo.InvariantCulture);
