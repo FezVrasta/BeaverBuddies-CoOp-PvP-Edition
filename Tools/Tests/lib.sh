@@ -101,11 +101,34 @@ bb_launch() {
     wait_for "$1" "Registering Main Menu Services" 120
 }
 
+# The pid of a test copy
+bb_pid() {
+    local p
+    for p in $(pgrep -x Timberborn); do
+        ps eww -p "$p" 2>/dev/null | grep -q "BB_INSTANCE=$1\b" && { echo "$p"; return; }
+    done
+}
+
+# The guest's window put right under the host's, which stays wherever it is, so both can be
+# watched. Through macOS, which knows where the windows are (the game reports 0,0)
+bb_stack_windows() {
+    local host client at i
+    host=$(bb_pid host); client=$(bb_pid client)
+    [ -n "$host" ] && [ -n "$client" ] || return 0
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        at=$(osascript -e "tell application \"System Events\" to tell (first process whose unix id is $host) to get (position of window 1) & (size of window 1)" 2>/dev/null)
+        [ -n "$at" ] && break
+        sleep 0.5
+    done
+    [ -n "$at" ] || return 0
+    IFS=', ' read -r x y _ h <<< "$at"
+    osascript -e "tell application \"System Events\" to tell (first process whose unix id is $client) to set position of window 1 to {$x, $((y + h))}" >/dev/null 2>&1 || true
+}
+
 # bb_open <instance>: starts a copy without waiting for it, so two can load side by side
 bb_open() {
     local inst=$1
     rm -f "$BB_CMD_PREFIX-$inst" "$(bb_log "$inst")"
-    [ "$inst" == host ] && rm -f "$BB_CMD_PREFIX-window"
     prefs_windowed
     open -g -n -a "$BB_GAME" --env SteamAppId=1062090 --env SteamGameId=1062090 --env BB_INSTANCE="$inst" \
         --args -skipModManager -logFile "$(bb_log "$inst")" -screen-fullscreen 0 -screen-width 1400 -screen-height 880
@@ -149,6 +172,7 @@ start_match() {
     # One after the other: copies starting together race on the player's data file
     bb_launch host || return 1
     bb_launch client || return 1
+    bb_stack_windows
     for pick in ${BB_HOST_SETTINGS:-}; do send host "gamesetting ${pick%%=*} ${pick#*=}"; done
     for pick in ${BB_CLIENT_SETTINGS:-}; do send client "gamesetting ${pick%%=*} ${pick#*=}"; done
     send host "hostmatch ${BB_MAP:-Waterfalls} $hostf $mode"
