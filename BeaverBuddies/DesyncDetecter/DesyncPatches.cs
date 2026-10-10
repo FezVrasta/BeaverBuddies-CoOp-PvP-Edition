@@ -402,7 +402,10 @@ namespace BeaverBuddies.DesyncDetecter
             if (!Settings.Debug) return;
             var runningExecutorType = __instance._runningExecutor?.GetType().Name;
             var elapsedTime = __instance._runningExecutorElapsedTime;
-            DesyncDetecterService.Trace($"BehaviorManager ticking executor {runningExecutorType} with last elapsed time {elapsedTime}", true, true);
+            // Which unit, and for what, so a desync here names who went another way
+            var entityID = __instance.GetComponent<EntityComponent>()?.EntityId;
+            var behavior = __instance._runningBehavior?.GetType().Name;
+            DesyncDetecterService.Trace($"BehaviorManager ticking executor {runningExecutorType} of {entityID} ({behavior}) with last elapsed time {elapsedTime}", true, true);
         }
     }
 
