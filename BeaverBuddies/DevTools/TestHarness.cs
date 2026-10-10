@@ -100,18 +100,18 @@ namespace BeaverBuddies.DevTools
             }
         }
 
-        // The host's window on the left half of the screen, the guest's on
-        // the right, so both copies can be watched at once
+        // The host's window on the top half of the screen, the guest's
+        // under it, so both copies can be watched at once
         private void Tile()
         {
             _tiled = true;
             DisplayInfo display = Screen.mainWindowDisplayInfo;
             RectInt area = display.workArea;
             if (area.width <= 0 || area.height <= 0) return;
-            int width = area.width / 2;
-            int left = Instance == "host" ? 0 : width;
-            Screen.SetResolution(width, area.height, FullScreenMode.Windowed);
-            Screen.MoveMainWindowTo(display, new Vector2Int(area.x + left, area.y));
+            int height = area.height / 2;
+            int top = Instance == "host" ? 0 : height;
+            Screen.SetResolution(area.width, height, FullScreenMode.Windowed);
+            Screen.MoveMainWindowTo(display, new Vector2Int(area.x, area.y + top));
         }
 
         private static int I(string s) => int.Parse(s, CultureInfo.InvariantCulture);
