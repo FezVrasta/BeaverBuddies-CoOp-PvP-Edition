@@ -127,8 +127,17 @@
     <!-- Empty -->
   </Target>
 
+  <!-- A test run is using the Mods folder: a build that isn't the run's own would swap the DLL it plays (Tools/Tests/README.md) -->
+  <PropertyGroup>
+    <BBTestLock>$([System.IO.Path]::GetTempPath())bb-run-lock</BBTestLock>
+    <InstallBlockedByTests Condition="Exists('$(BBTestLock)') AND '$(BB_HOLDS_LOCK)' != '1'">true</InstallBlockedByTests>
+  </PropertyGroup>
+  <Target Name="WarnInstallBlocked" AfterTargets="PostBuildEvent" Condition="'$(InstallBlockedByTests)' == 'true'">
+    <Warning Text="A test run holds $(BBTestLock): not installing into the Mods folder, the run plays what is there. Build again once it is done." />
+  </Target>
+
   <!-- PostBuild -->
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(InstallBlockedByTests)' != 'true'">
     <Message Importance="High" Text="DestinationFolder -&gt; $(VersionOutputPath)" />
     <!-- Create Folder -->
     <MakeDir Directories="$(VersionOutputPath)" />

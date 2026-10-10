@@ -11,6 +11,11 @@
 HERE="$(cd "$(dirname "$0")" && pwd)"
 source "$HERE/lib.sh"
 
+# A worktree lacks the main checkout's untracked env.props, so its build fails
+ROOT="$(cd "$HERE/../.." && pwd)"
+MAIN="$(dirname "$(cd "$ROOT" && git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")"
+[ -f "$ROOT/BeaverBuddies/env.props" ] || [ ! -f "$MAIN/BeaverBuddies/env.props" ] || cp "$MAIN/BeaverBuddies/env.props" "$ROOT/BeaverBuddies/env.props"
+
 BUILD=1; LIST=0; NAMES=()
 for arg in "$@"; do
     case "$arg" in
@@ -41,20 +46,41 @@ FILES=$(scenario_files)
 if [ $LIST -eq 1 ]; then echo "$FILES"; exit 0; fi
 [ -n "$FILES" ] || { echo "No scenario matches."; exit 1; }
 
-# One run at a time: runs share the test folder, the Mods folder and the
-# player's data, so a second one waits for the first (a lock left by a run
-# that died is taken over)
-LOCK="$BB_TEST_DIR/.run-lock"
-mkdir -p "$BB_TEST_DIR"
-while ! mkdir "$LOCK" 2>/dev/null; do
+# One run at a time, first in first out: runs share the test folder, the Mods
+# folder and the player's data. The lock is at one fixed path whatever BB_TEST_DIR
+# is (the mod builds look for it there too, to keep out of the Mods folder while
+# it's held). Waiting runs queue with a ticket each, named by time; only the
+# oldest live ticket takes the lock, tickets and locks of dead runs are cleaned.
+LOCK="${TMPDIR:-/tmp}/bb-run-lock"
+QUEUE="${TMPDIR:-/tmp}/bb-run-queue"
+mkdir -p "$BB_TEST_DIR" "$QUEUE"
+TICKET="$QUEUE/$(perl -MTime::HiRes=time -e 'printf "%016.0f", time*1000')-$$"
+echo $$ > "$TICKET"
+trap 'rm -f "$TICKET"' EXIT
+trap 'exit 130' INT TERM
+while true; do
+    for t in "$QUEUE"/*; do
+        [ -f "$t" ] || continue
+        kill -0 "$(cat "$t" 2>/dev/null)" 2>/dev/null || rm -f "$t"
+    done
     owner=$(cat "$LOCK/pid" 2>/dev/null)
-    if [ -n "$owner" ] && ! kill -0 "$owner" 2>/dev/null; then rm -rf "$LOCK"; continue; fi
-    [ -n "${WAITED:-}" ] || { echo "Another test run is going: waiting for it."; WAITED=1; }
+    if [ -d "$LOCK" ]; then
+        if [ -n "$owner" ]; then
+            kill -0 "$owner" 2>/dev/null || rm -rf "$LOCK"
+        elif [ -n "$(find "$LOCK" -maxdepth 0 -mmin +1)" ]; then
+            rm -rf "$LOCK"
+        fi
+    fi
+    first=$(ls "$QUEUE" | head -1)
+    if [ "$first" == "$(basename "$TICKET")" ] && mkdir "$LOCK" 2>/dev/null; then break; fi
+    [ -n "${WAITED:-}" ] || { echo "Another test run is going or ahead of this one: waiting for it."; WAITED=1; }
     sleep 2
 done
 echo $$ > "$LOCK/pid"
+rm -f "$TICKET"
 
 cleanup() {
+    [ -n "${spid:-}" ] && kill -9 $spid 2>/dev/null
     bb_close
     mod_enable_all
     prefs_restore
@@ -84,7 +110,7 @@ if [ $BUILD -eq 1 ] && [ -n "${BB_BUILD:-}" ]; then
         echo "Nothing changed since the last build: not building."
     else
         echo "Building..."
-        eval "$BB_BUILD" || { echo "The build failed."; exit 1; }
+        ( export BB_HOLDS_LOCK=1; eval "$BB_BUILD" ) || { echo "The build failed."; exit 1; }
         [ -n "${BB_BUILD_SOURCES:-}" ] && echo "$BB_BUILD_SOURCES" > "$BB_TEST_DIR/.build-stamp"
     fi
 fi
@@ -105,7 +131,19 @@ for f in $FILES; do
     (
         export BB_SCENARIO="$name" BB_SCENARIO_DIR="$(cd "$(dirname "$f")" && pwd)"
         source "$f"
-    )
+    ) &
+    spid=$!
+    # A scenario that runs past BB_SCENARIO_TIMEOUT (600 s by default) fails and its copies are closed
+    while kill -0 $spid 2>/dev/null; do
+        if [ $(( $(date +%s) - t0 )) -ge "${BB_SCENARIO_TIMEOUT:-600}" ]; then
+            pkill -9 -P $spid 2>/dev/null; kill -9 $spid 2>/dev/null
+            BB_SCENARIO="$name" fail "finishes in time" "past the ${BB_SCENARIO_TIMEOUT:-600} s limit (BB_SCENARIO_TIMEOUT)"
+            break
+        fi
+        sleep 1
+    done
+    wait $spid 2>/dev/null
+    spid=
     bb_close
     mod_enable_all
     printf '%s\t%s\t%s\t%s\n' TIME "$name" "$(( $(date +%s) - t0 ))" "" >> "$BB_RESULTS"
@@ -127,9 +165,19 @@ PASSED=$(grep -c '^PASS' "$BB_RESULTS"); FAILED=$(grep -c '^FAIL' "$BB_RESULTS")
     done
 } > "$BB_TEST_DIR/report.md"
 
+# This run's own copy of the results, so the next run doesn't overwrite them
+RUN_NAMES=$(for f in $FILES; do basename "$f" .sh; done | paste -sd+ - | cut -c1-60)
+RUN_DIR="$BB_TEST_DIR/runs/$(date '+%Y%m%d-%H%M%S')-$RUN_NAMES"
+mkdir -p "$RUN_DIR/shots"
+cp "$BB_TEST_DIR/report.md" "$RUN_DIR/"
+cp "$BB_TEST_DIR"/shots/*.png "$RUN_DIR/shots/" 2>/dev/null
+cp "$(bb_log host)" "$(bb_log client)" "$RUN_DIR/" 2>/dev/null
+sed -i '' "s#$BB_TEST_DIR/shots/#$RUN_DIR/shots/#g" "$RUN_DIR/report.md"
+
 echo
 echo "=============================================="
-echo "$PASSED passed, $FAILED failed ($(( $(date +%s) - START )) s). Report: $BB_TEST_DIR/report.md"
+echo "$PASSED passed, $FAILED failed ($(( $(date +%s) - START )) s). Report: $RUN_DIR/report.md"
+echo "This run's folder: $RUN_DIR"
 if [ "$FAILED" -gt 0 ]; then
     awk -F'\t' '$1=="FAIL" {print "  FAILED " $2 ": " $3 ": " $4}' "$BB_RESULTS"
     exit 1

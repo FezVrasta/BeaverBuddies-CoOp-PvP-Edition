@@ -96,9 +96,28 @@ wait_for() {
     return 1
 }
 
+# The first exception either copy's log shows: a mod that fails to load (a binding for a type the
+# game binds differently, say) is there at once, and waiting on the game only hides it
+bb_load_error() {
+    local e
+    e=$(grep -aE "[A-Za-z]Exception\b" "$(bb_log host)" "$(bb_log client)" 2>/dev/null | grep -v "gpath.c" | head -1 | cut -c1-300)
+    [ -n "$e" ] && echo "$e"
+}
+
+# wait_for that gives up at once on an exception in either log
+wait_for_watch() {
+    local inst=$1 re=$2 t=${3:-60} i e
+    for ((i = 0; i < t * 2; i++)); do
+        grep -aEq -- "$re" "$(bb_log "$inst")" 2>/dev/null && return 0
+        e=$(bb_load_error) && { echo "  load error: $e"; return 1; }
+        sleep 0.5
+    done
+    return 1
+}
+
 bb_launch() {
     bb_open "$1"
-    wait_for "$1" "Registering Main Menu Services" 120
+    wait_for_watch "$1" "Registering Main Menu Services" 120
 }
 
 # The pid of a test copy
@@ -173,7 +192,7 @@ bb_kill() {
 # match game, dialogs dismissed. Returns 1 if it never got there. BB_HOST_SETTINGS and
 # BB_CLIENT_SETTINGS ("id=value ...") are each copy's picks for new games' settings
 start_match() {
-    local hostf=${1:-Folktails} clientf=${2:-IronTeeth} mode=${3:-} pick
+    local hostf=${1:-Folktails} clientf=${2:-IronTeeth} mode=${3:-} pick e
     bb_close
     # One after the other: copies starting together race on the player's data file
     bb_launch host || return 1
@@ -182,13 +201,14 @@ start_match() {
     for pick in ${BB_HOST_SETTINGS:-}; do send host "gamesetting ${pick%%=*} ${pick#*=}"; done
     for pick in ${BB_CLIENT_SETTINGS:-}; do send client "gamesetting ${pick%%=*} ${pick#*=}"; done
     send host "hostmatch ${BB_MAP:-Waterfalls} $hostf $mode"
-    wait_for host "Server started listening" 120 || return 1
+    wait_for_watch host "Server started listening" 120 || return 1
     send client "joinmatch $clientf"
     local i
     for ((i = 0; i < 180; i++)); do
         grep -aq "Registering Co-op services" "$(bb_log host)" \
             && sed -n '/Registering Co-op/,$p' "$(bb_log client)" | grep -aq "Load time" \
             && sed -n '/Registering Co-op/,$p' "$(bb_log host)" | grep -aq "Load time" && break
+        e=$(bb_load_error) && { echo "  load error: $e"; return 1; }
         sleep 1
     done
     [ $i -lt 180 ] || return 1
