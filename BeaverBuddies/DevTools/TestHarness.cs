@@ -1085,17 +1085,6 @@ namespace BeaverBuddies.DevTools
                     Plugin.Log($"[Test] orders: {all.Count} entities, {all.Distinct().Count()} distinct, {all.Count(o => o == 0)} zero; first {string.Join(",", all.Take(6))}");
                     break;
                 }
-                case "devmethod":
-                {
-                    // A dev panel method by its name, as the button sends it: "devmethod Jump to next season"
-                    var name = string.Join(" ", a.Skip(1));
-                    // Outside a shared game there is nothing to sync: the button itself
-                    var devMethods = Get<Timberborn.DebuggingUI.DevPanel>()?._devMethods;
-                    if (SingletonManager.GetSingleton<ReplayService>() == null) devMethods?.FirstOrDefault(m => m.Name == name)?.Invoke();
-                    else Record(new DevMethodEvent() { methodName = name });
-                    Plugin.Log($"[Test] Dev method {name}");
-                    break;
-                }
                 case "daytime":
                 {
                     // The day clock exactly, for comparing two copies at the same tick
