@@ -6,19 +6,19 @@ using UnityEngine;
 namespace BeaverBuddies.Modding
 {
     /**
-     * What the Minimap mod, when it's installed, learns from this one: the players' colors, as the match
-     * gives them (see PlayerColors). Minimap is optional; without it nothing is added.
+     * What the Timber Atlas mod, when it's installed, learns from this one: the players' colors, as the match
+     * gives them (see PlayerColors). Timber Atlas is optional; without it nothing is added.
      */
-    public static class MinimapHooks
+    public static class AtlasHooks
     {
         private static readonly Dictionary<string, Color32> Colors = new();
         private static float _readAt = float.NegativeInfinity;
 
         public static void Register()
         {
-            if (!MinimapBridge.Available) return;
-            MinimapBridge.AddHook("LocalPlayer", (Func<string>)(() => PlayerIdentity.LocalID));
-            MinimapBridge.AddHook("PlayerColor", (Func<string, Color32?>)ColorOf);
+            if (!AtlasBridge.Available) return;
+            AtlasBridge.AddHook("LocalPlayer", (Func<string>)(() => PlayerIdentity.LocalID));
+            AtlasBridge.AddHook("PlayerColor", (Func<string, Color32?>)ColorOf);
         }
 
         // Read again once a second: colors are shared out among the players here, and the map asks per dot

@@ -185,8 +185,8 @@ namespace BeaverBuddies
             // patches on the methods they replace see ours
             BeaverBuddies.Performance.RuntimePatches.Install();
 
-            // The players' colors on the map, when Minimap is installed
-            BeaverBuddies.Modding.MinimapHooks.Register();
+            // The players' colors on the map, when Timber Atlas is installed
+            BeaverBuddies.Modding.AtlasHooks.Register();
 
             Log(UnityEngine.Application.consoleLogPath);
         }

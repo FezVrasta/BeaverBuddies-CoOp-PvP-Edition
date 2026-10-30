@@ -6,17 +6,17 @@ using System.Reflection;
 namespace BeaverBuddies.Modding
 {
     /**
-     * Talks to Minimap without referencing it: finds its MapBridge class by name at runtime and binds each
-     * method to a delegate. Every type crossing over is .NET, Unity or Timberborn's. Without Minimap the
-     * calls do nothing, so Minimap is never a hard dependency.
+     * Talks to Timber Atlas without referencing it: finds its MapBridge class by name at runtime and binds each
+     * method to a delegate. Every type crossing over is .NET, Unity or Timberborn's. Without Timber Atlas the
+     * calls do nothing, so Timber Atlas is never a hard dependency.
      *
-     * This file stands alone: copy it into a mod and change the namespace. Add Minimap to the mod's
+     * This file stands alone: copy it into a mod and change the namespace. Add Timber Atlas to the mod's
      * OptionalMods in its manifest so it loads first, then add hooks in StartMod. The hooks and the delegate
-     * type each one takes are listed in MinimapMod/Modding/MapBridge.cs.
+     * type each one takes are listed in TimberAtlas/Modding/MapBridge.cs.
      */
-    public static class MinimapBridge
+    public static class AtlasBridge
     {
-        private const string BridgeType = "MinimapMod.Modding.MapBridge";
+        private const string BridgeType = "TimberAtlas.Modding.MapBridge";
         // The bridge version this was written against
         public const int SupportedVersion = 1;
 
@@ -51,7 +51,7 @@ namespace BeaverBuddies.Modding
 
         public static int Version => Bind<Func<int>>("GetVersion")?.Invoke() ?? 0;
 
-        /** Adds a hook by name. False without Minimap, or when it doesn't know the name or the delegate's type. */
+        /** Adds a hook by name. False without Timber Atlas, or when it doesn't know the name or the delegate's type. */
         public static bool AddHook(string name, Delegate handler) => Bind<Func<string, Delegate, bool>>("AddHook")?.Invoke(name, handler) ?? false;
 
         /** Reads the colors and pointers again after a mod's own state changed. */

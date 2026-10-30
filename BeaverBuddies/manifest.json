@@ -13,6 +13,6 @@
     }
   ],
   "OptionalMods": [
-    { "Id": "minimap" }
+    { "Id": "timberatlas" }
   ]
 }
