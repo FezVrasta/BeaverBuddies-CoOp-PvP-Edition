@@ -51,7 +51,7 @@ namespace BeaverBuddies.Trading
             public EntityPanelModule Get()
             {
                 EntityPanelModule.Builder builder = new EntityPanelModule.Builder();
-                builder.AddMiddleFragment(_siteFragment);
+                builder.AddSideFragment(_siteFragment);
                 builder.AddBottomFragment(_inventoryFragment);
                 return builder.Build();
             }
