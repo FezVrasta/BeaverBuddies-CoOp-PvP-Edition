@@ -103,6 +103,9 @@ grep -q "\"Version\": *\"$newmanifest\"" "$manifest" || die "couldn't set the ve
 grep -q "<Version>$new</Version>" "$csproj" || die "couldn't set the version in $csproj"
 
 zip=$("$repo/Tools/Package/package.sh" | tail -1)
+# The build skips installing while a test run holds the Mods folder, and the zip would then hold the old version
+installed=$(head -1 "$(ls -d "$HOME/Documents/Timberborn/Mods/BeaverBuddies"/version-* | sort -V | tail -1)/version.txt" 2>/dev/null | tr -d '[:space:]')
+[ "$installed" = "$new" ] || die "Mods has BeaverBuddies ${installed:-nothing} after the build, not $new: is a test run holding it?"
 
 git add "$manifest" "$csproj" "$changelog"
 git commit -q -m "Release $new"
