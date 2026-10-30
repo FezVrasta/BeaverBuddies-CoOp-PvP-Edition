@@ -185,6 +185,9 @@ namespace BeaverBuddies
             // patches on the methods they replace see ours
             BeaverBuddies.Performance.RuntimePatches.Install();
 
+            // The players' colors on the map, when Minimap is installed
+            BeaverBuddies.Modding.MinimapHooks.Register();
+
             Log(UnityEngine.Application.consoleLogPath);
         }
 
