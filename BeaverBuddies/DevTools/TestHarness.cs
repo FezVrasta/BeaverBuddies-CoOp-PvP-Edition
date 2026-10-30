@@ -506,6 +506,32 @@ namespace BeaverBuddies.DevTools
                     _gameSceneLoader.StartSaveGame(new Timberborn.GameSaveRepositorySystem.SaveReference(names[1], settlement));
                     break;
                 }
+                case "steamloop":
+                {
+                    // steamloop: a packet sent over Steam to this very account, back through the packet listener's thread
+                    var me = Steamworks.SteamUser.GetSteamID();
+                    var listener = new BeaverBuddies.Steam.SteamPacketListener();
+                    var socket = new BeaverBuddies.Steam.SteamSocket(me, true);
+                    socket.RegisterSteamPacketListener(listener);
+                    var times = new List<string>();
+                    for (int round = 0; round < 6; round++)
+                    {
+                        var received = System.Threading.Tasks.Task.Run(() =>
+                        {
+                            byte[] buffer = new byte[16];
+                            int n = socket.Read(buffer, 0, buffer.Length);
+                            return n + ":" + string.Join(",", buffer.Take(n));
+                        });
+                        long sent = System.Diagnostics.Stopwatch.GetTimestamp();
+                        socket.Write(new byte[] { 1, 2, 3, 4 }, 0, 4);
+                        bool arrived = received.Wait(4000);
+                        times.Add((arrived ? received.Result : "never") + " in " + ((System.Diagnostics.Stopwatch.GetTimestamp() - sent) * 1000.0 / System.Diagnostics.Stopwatch.Frequency).ToString("F0") + " ms");
+                        if (!arrived) break;
+                    }
+                    Plugin.Log($"[Test] steamloop {(times.All(t => t.StartsWith("4:1,2,3,4")) ? "arrived" : "never arrived")} {string.Join("; ", times)}");
+                    socket.Close();
+                    break;
+                }
                 case "hostsave":
                 {
                     // hostsave Settlement|Save name: a saved game loaded to be hosted in place, as a new game hosted is (its server up
