@@ -75,6 +75,13 @@ namespace BeaverBuddies.IO
 
         public static readonly JsonSettings Default = new JsonSettings();
 
+        // What goes over the network: the same, written without the indentation, and no round trip through text
+        public static readonly JsonSerializer Wire = JsonSerializer.Create(new JsonSettings { Formatting = Formatting.None });
+
+        public static JObject ToWire<T>(T obj) => JObject.FromObject(obj, Wire);
+
+        public static ReplayEvent FromWire(JObject obj) => obj.ToObject<ReplayEvent>(Wire);
+
         public static T Deserialize<T>(string json)
         {
             return (T)JsonConvert.DeserializeObject(json, Default);

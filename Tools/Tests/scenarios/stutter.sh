@@ -4,6 +4,8 @@
 # wait for its ticks, which shows as the game stuttering.
 if mod_installed TimberEmpires; then mod_disable TimberEmpires; fi
 [ -n "${BB_STUTTER_NOSTEAM:-}" ] && pref_set ModSetting.beaverbuddies.Settings.EnableSteamConnection 0
+# Tracing (a developer setting) costs megabytes of garbage a tick: off, as in play, unless asked for
+pref_set ModSetting.beaverbuddies.Settings.AlwaysTrace ${BB_STUTTER_TRACE:-0}
 export BB_HITCH_MS=${BB_HITCH_MS:-50}
 start_match Folktails Folktails || { fail "a match starts" "the copies never got into the game"; return; }
 pass "a match starts"

@@ -596,8 +596,12 @@ namespace BeaverBuddies
         private void DoTickIO()
         {
             if (_frozenForHosting) return;
+            long heap = HitchWatch.Heap;
             ReplayEvents();
+            HitchWatch.Garbaged("ReplayEvents", "io", heap);
+            heap = HitchWatch.Heap;
             SendEvents();
+            HitchWatch.Garbaged("SendEvents", "io", heap);
         }
 
         private void Initialize()
@@ -619,7 +623,9 @@ namespace BeaverBuddies
                 ShowHostLeft();
                 return;
             }
+            long watching = HitchWatch.Now;
             WatchHostSilence();
+            HitchWatch.Spent("WatchHostSilence", "replay", watching);
             if (!CanAct)
             {
                 // Still listening while desynced, or waiting for a reload,
@@ -642,7 +648,9 @@ namespace BeaverBuddies
                 ReloadForEveryone(server);
                 return;
             }
+            long polling = HitchWatch.Now;
             io.Update();
+            HitchWatch.Spent("io.Update", "replay", polling);
             // The host's save came in, and another game is loading
             if (!CanAct) return;
             // Only replay events on Update if we're paused by the user.
@@ -666,6 +674,7 @@ namespace BeaverBuddies
             part = HitchWatch.Now;
             UpdateSpeed();
             HitchWatch.Part("speed", part);
+            HitchWatch.Spent("UpdateSpeed", "replay", part);
         }
 
         /**
@@ -824,9 +833,14 @@ namespace BeaverBuddies
             // Remember DoTickIO can set EventIO to null
 
             // Log from IO
+            long heap = HitchWatch.Heap;
             io?.Update();
+            HitchWatch.Garbaged("io.Update", "io", heap);
 
+            heap = HitchWatch.Heap;
             DesyncDetecterService.RecordHashes(ticksSinceLoad, TEBPatcher.EntityUpdateHash, TEBPatcher.PositionHash, UnityEngine.Random.state.s0, DayClock());
+            HitchWatch.Garbaged("RecordHashes", "io", heap);
+            heap = HitchWatch.Heap;
 
             // IO Complete for Tick
             Plugin.Log($"Tick {ticksSinceLoad:D5} IO done; " +
@@ -839,8 +853,11 @@ namespace BeaverBuddies
                 //gameSaveHelper.LogStateCheck(ticksSinceLoad);
             }
 
+            HitchWatch.Garbaged("Plugin.Log", "io", heap);
+            heap = HitchWatch.Heap;
             // Update speed and pause if needed for the new tick.
             UpdateSpeed();
+            HitchWatch.Garbaged("UpdateSpeed", "io", heap);
 
             if (io is ServerEventIO && ticksSinceLoad == 1)
             {
@@ -985,9 +1002,10 @@ namespace BeaverBuddies
 
                     // Tick it and stop
                     HasTickedReplayService = true;
-                    long started = HitchWatch.Now;
+                    long started = HitchWatch.Now, ioHeap = HitchWatch.Heap;
                     replayService?.DoTick();
                     HitchWatch.TickedIO(started);
+                    HitchWatch.Garbaged("io", "replay", ioHeap);
                     return true;
                 }
                 // Otherwise if we're still at the beginning
@@ -995,9 +1013,11 @@ namespace BeaverBuddies
                 HasTickedReplayService = false;
             }
             int bucket = __instance._nextBucketIndex;
-            long start = HitchWatch.Now;
+            long start = HitchWatch.Now, heap = HitchWatch.Heap;
             __instance.TickNextBucket();
             HitchWatch.TickedBucket(bucket, start);
+            HitchWatch.Garbaged("entities", "bucket", heap);
+            HitchWatch.Spent("entities", "bucket", start);
             NextBucket = __instance._nextBucketIndex;
             return false;
         }

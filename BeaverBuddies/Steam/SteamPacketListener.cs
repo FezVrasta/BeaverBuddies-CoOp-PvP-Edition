@@ -27,8 +27,13 @@ namespace BeaverBuddies.Steam
 
         public void Update()
         {
+            // Nobody connected over Steam: asking Steam for packets costs most of a millisecond a frame
+            if (sockets.Count == 0) return;
             uint messageSize;
-            while (SteamNetworking.IsP2PPacketAvailable(out messageSize))
+            long polled = Performance.HitchWatch.Now;
+            bool available = SteamNetworking.IsP2PPacketAvailable(out messageSize);
+            Performance.HitchWatch.Spent("IsP2PPacketAvailable", "steam", polled);
+            while (available)
             {
                 byte[] buffer = new byte[messageSize];
                 uint bytesRead;
@@ -62,6 +67,9 @@ namespace BeaverBuddies.Steam
                 {
                     Plugin.LogWarning("Failed to read packet!");
                 }
+                polled = Performance.HitchWatch.Now;
+                available = SteamNetworking.IsP2PPacketAvailable(out messageSize);
+                Performance.HitchWatch.Spent("IsP2PPacketAvailable", "steam", polled);
             }
         }
     }

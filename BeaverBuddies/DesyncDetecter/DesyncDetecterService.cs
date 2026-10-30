@@ -12,7 +12,10 @@ namespace BeaverBuddies.DesyncDetecter
     public struct Trace
     {
         public string message;
-        public string stackTrace;
+        // Where it was traced from, kept here to read in a report: never sent (nobody reads another machine's), and
+        // written out only when a report asks (formatting one is most of the cost of tracing)
+        [Newtonsoft.Json.JsonIgnore]
+        public StackTrace stack;
     }
 
     [Serializable]
@@ -329,11 +332,10 @@ namespace BeaverBuddies.DesyncDetecter
             // Trace called before the service has been initialized, or turned
             // on mid-tick (see StartTick)
             if (traces.Count == 0 || !tracing) return;
-            string stackTrace = skipStackTrack ? "[Skipped stack trace]" : new StackTrace().ToString();
             CurrentTrace.Add(new Trace()
             {
                 message = message,
-                stackTrace = stackTrace,
+                stack = skipStackTrack ? null : new StackTrace(false),
             });
         }
 
@@ -584,7 +586,7 @@ namespace BeaverBuddies.DesyncDetecter
 
         private static void LogTrace(StringBuilder sb, Trace trace, bool withStack = false)
         {
-            string stack = withStack ? trace.stackTrace.ToString() : null;
+            string stack = withStack ? trace.stack?.ToString() ?? "[Skipped stack trace]" : null;
             LogTrace(sb, trace.message, stack);
         }
 

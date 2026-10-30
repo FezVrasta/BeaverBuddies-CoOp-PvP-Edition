@@ -296,40 +296,55 @@ namespace BeaverBuddies.DesyncDetecter
             var counts = map._threadSafeColumnCounts;
             int stride = map._mapIndexService.Stride;
             int maxIndex = map._mapIndexService.MaxIndex;
-            var structure = new System.Collections.Generic.Dictionary<(int, int), int>();
-            var water = new System.Collections.Generic.SortedDictionary<int, int>();
+            // Plain arrays, kept between ticks: a dictionary per tick over the whole map was megabytes of garbage a tick
+            int areasX = (stride + Area - 1) / Area;
+            int rows = maxIndex / stride;
+            int areaCount = areasX * ((rows + Area - 1) / Area);
+            int bandCount = (rows + Band - 1) / Band;
+            if (_structure == null || _structure.Length != areaCount) { _structure = new int[areaCount]; _structureSeen = new bool[areaCount]; }
+            if (_water == null || _water.Length != bandCount) { _water = new int[bandCount]; _waterSeen = new bool[bandCount]; }
+            System.Array.Clear(_structureSeen, 0, areaCount);
+            System.Array.Clear(_waterSeen, 0, bandCount);
             for (int index = 0; index < maxIndex; index++)
             {
                 int x = index % stride, y = index / stride;
-                var area = (x / Area, y / Area);
+                int area = (y / Area) * areasX + x / Area;
                 int band = y / Band;
                 for (int z = 0; z < counts[index]; z++)
                 {
                     int i = index + z * maxIndex;
                     if (i >= columns.Length) break;
                     var column = columns[i];
-                    int s = structure.TryGetValue(area, out int sh) ? sh : 13;
+                    int s = _structureSeen[area] ? _structure[area] : 13;
                     s = (s * 7) + BitConverter.SingleToInt32Bits(column.Floor);
                     s = (s * 7) + BitConverter.SingleToInt32Bits(column.Ceiling);
-                    structure[area] = s;
-                    int w = water.TryGetValue(band, out int wh) ? wh : 13;
+                    _structure[area] = s;
+                    _structureSeen[area] = true;
+                    int w = _waterSeen[band] ? _water[band] : 13;
                     w = (w * 7) + BitConverter.SingleToInt32Bits(column.WaterDepth);
                     w = (w * 7) + BitConverter.SingleToInt32Bits(column.Contamination);
                     w = (w * 7) + BitConverter.SingleToInt32Bits(column.Overflow);
-                    water[band] = w;
+                    _water[band] = w;
+                    _waterSeen[band] = true;
                 }
             }
-            foreach (var pair in structure)
+            for (int area = 0; area < areaCount; area++)
             {
-                if (lastStructure.TryGetValue(pair.Key, out int last) && last == pair.Value) continue;
-                lastStructure[pair.Key] = pair.Value;
-                DesyncDetecterService.Trace($"Water structure changed in tiles {pair.Key.Item1 * Area},{pair.Key.Item2 * Area} to {pair.Key.Item1 * Area + Area - 1},{pair.Key.Item2 * Area + Area - 1}: {pair.Value:X8}", true, true);
+                if (!_structureSeen[area]) continue;
+                var key = (area % areasX, area / areasX);
+                if (lastStructure.TryGetValue(key, out int last) && last == _structure[area]) continue;
+                lastStructure[key] = _structure[area];
+                DesyncDetecterService.Trace($"Water structure changed in tiles {key.Item1 * Area},{key.Item2 * Area} to {key.Item1 * Area + Area - 1},{key.Item2 * Area + Area - 1}: {_structure[area]:X8}", true, true);
             }
-            foreach (var pair in water)
+            for (int band = 0; band < bandCount; band++)
             {
-                DesyncDetecterService.Trace($"Water in rows {pair.Key * Band}-{pair.Key * Band + Band - 1}: {pair.Value:X8}", true, true);
+                if (!_waterSeen[band]) continue;
+                DesyncDetecterService.Trace($"Water in rows {band * Band}-{band * Band + Band - 1}: {_water[band]:X8}", true, true);
             }
         }
+
+        private static int[] _structure, _water;
+        private static bool[] _structureSeen, _waterSeen;
 
         private static int GetHashCode(ReadOnlyWaterColumn waterColumn)
         {

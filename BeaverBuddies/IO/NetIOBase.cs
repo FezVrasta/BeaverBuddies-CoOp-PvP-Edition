@@ -35,12 +35,15 @@ namespace BeaverBuddies.IO
             long start = Performance.HitchWatch.Now;
             NetBase.Update();
             Performance.HitchWatch.Part("net", start);
+            Performance.HitchWatch.Spent("net", "io", start);
             start = Performance.HitchWatch.Now;
             steamPacketListener?.Update();
             Performance.HitchWatch.Part("steam packets", start);
+            Performance.HitchWatch.Spent("steam packets", "io", start);
             start = Performance.HitchWatch.Now;
             Updated();
             Performance.HitchWatch.Part("io updated", start);
+            Performance.HitchWatch.Spent("io updated", "io", start);
         }
 
         protected virtual void Updated() { }
@@ -50,7 +53,7 @@ namespace BeaverBuddies.IO
             //Plugin.Log($"Recieving {obj}");
             try
             {
-                return JsonSettings.Deserialize<ReplayEvent>(obj.ToString());
+                return JsonSettings.FromWire(obj);
             }
             catch (Exception ex)
             {
@@ -75,7 +78,7 @@ namespace BeaverBuddies.IO
             {
                 // TODO: It is silly to convert to JObject here, but not sure if there's
                 // a better way to do it.
-                NetBase.DoUserInitiatedEvent(JObject.Parse(JsonSettings.Serialize(e)));
+                NetBase.DoUserInitiatedEvent(JsonSettings.ToWire(e));
             }
         }
 

@@ -2,6 +2,7 @@ using BeaverBuddies.IO;
 using HarmonyLib;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using Timberborn.SingletonSystem;
 using Timberborn.TickSystem;
 
@@ -73,6 +74,69 @@ namespace BeaverBuddies.Performance
 
         public static long Now => Stopwatch.GetTimestamp();
 
+        // Profiling only: the garbage each kind of work leaves, from the heap's used size read around it
+        // (a collection in between gives a negative change, which isn't counted)
+        private static readonly System.Collections.Generic.Dictionary<string, long> _garbage = new();
+        // Reading the heap costs enough to show in the times, so garbage is only followed with BB_HITCH_GARBAGE set
+        private static readonly bool FollowGarbage = Profiling && Environment.GetEnvironmentVariable("BB_HITCH_GARBAGE") != null;
+        internal static long Heap => FollowGarbage ? UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong() : 0;
+
+        internal static void Garbaged(object who, string kind, long before)
+        {
+            if (!FollowGarbage) return;
+            long grown = Heap - before;
+            if (grown <= 0) return;
+            string key = kind + " " + (who as string ?? who?.GetType().Name);
+            _garbage.TryGetValue(key, out long sum);
+            _garbage[key] = sum + grown;
+        }
+
+        // Profiling only: the time each kind of work took over the window, and how often it ran
+        private static readonly System.Collections.Generic.Dictionary<string, (long Time, int Calls)> _spent = new();
+
+        internal static void Spent(object who, string kind, long start)
+        {
+            if (!Profiling) return;
+            string key = kind + " " + (who as string ?? who?.GetType().Name);
+            _spent.TryGetValue(key, out var sum);
+            _spent[key] = (sum.Time + Now - start, sum.Calls + 1);
+        }
+
+        // Profiling only: a component whose tick took this long is named at once, with the entity it's on
+        internal static void SlowComponent(object component, long start)
+        {
+            double ms = Ms(Now - start);
+            if (ms < 40) return;
+            var behaviour = component as UnityEngine.Component;
+            Plugin.LogWarning($"[Slow] {component.GetType().Name} took {ms:F0} ms on {(behaviour ? behaviour.gameObject.name : "?")} at tick {SingletonManager.GetSingleton<ReplayService>()?.TicksSinceLoad}");
+        }
+
+        private static string TakeSpent()
+        {
+            long all = 0, updates = 0, lates = 0, ticks = 0, comps = 0;
+            foreach (var g in _spent)
+            {
+                all += g.Value.Time;
+                if (g.Key.StartsWith("update ")) updates += g.Value.Time;
+                else if (g.Key.StartsWith("late ")) lates += g.Value.Time;
+                else if (g.Key.StartsWith("tick ")) ticks += g.Value.Time;
+                else if (g.Key.StartsWith("component ")) comps += g.Value.Time;
+            }
+            string totals = $"totals: updates {Ms(updates):F0} ms, late {Ms(lates):F0} ms, singleton ticks {Ms(ticks):F0} ms, components {Ms(comps):F0} ms; ";
+            string top = totals + string.Join(", ", _spent.OrderByDescending(g => g.Value.Time).Take(30)
+                .Select(g => $"{g.Key} {Ms(g.Value.Time):F0} ms/{g.Value.Calls}"));
+            _spent.Clear();
+            return top;
+        }
+
+        private static string TakeGarbage()
+        {
+            string top = string.Join(", ", _garbage.OrderByDescending(g => g.Value).Take(8)
+                .Select(g => $"{g.Key} {g.Value >> 10} KB"));
+            _garbage.Clear();
+            return top;
+        }
+
         private static double Ms(long timestamps) => timestamps * MsPerTimestamp;
 
         // As the game updates its singletons. Two lifecycle services (the
@@ -123,13 +187,20 @@ namespace BeaverBuddies.Performance
                 Plugin.LogWarning($"[Hitch] Incremental GC: {UnityEngine.Scripting.GarbageCollector.isIncremental}");
             }
             var replay = SingletonManager.GetSingleton<ReplayService>();
+            // The engine's own account of the frames just before (a few behind): where the time was
+            var timings = new UnityEngine.FrameTiming[4];
+            UnityEngine.FrameTimingManager.CaptureFrameTimings();
+            uint got = UnityEngine.FrameTimingManager.GetLatestTimings(4, timings);
+            double main = 0, render = 0, gpu = 0;
+            for (int i = 0; i < got; i++) { main = Math.Max(main, timings[i].cpuMainThreadFrameTime); render = Math.Max(render, timings[i].cpuRenderThreadFrameTime); gpu = Math.Max(gpu, timings[i].gpuFrameTime); }
+            string engine = got == 0 ? "" : $", engine cpu main {main:F0} ms render thread {render:F0} ms gpu {gpu:F0} ms";
             string gc = collections == 0
                 ? $"no GC (last {Ms(now - _lastGc) / 1000:F0} s ago)"
                 : $"{collections} GC";
             Plugin.LogWarning($"[Hitch] {ms:F0} ms frame at tick {replay?.TicksSinceLoad}: {gc}, " +
                 $"heap {GC.GetTotalMemory(false) >> 20} MB, " +
                 $"ticking {Ms(_ticking):F0} ms in {_buckets} buckets (slowest #{_slowestBucketIndex} {Ms(_slowestBucket):F0} ms), " +
-                $"tick IO {Ms(_io):F0} ms, parallel wait {Ms(_parallelWait):F0} ms" +
+                $"tick IO {Ms(_io):F0} ms, parallel wait {Ms(_parallelWait):F0} ms" + engine +
                 _tick.Describe("tick") + _update.Describe("update") + _lateUpdate.Describe("late update") +
                 (_slowestPart == null ? "" : $", slowest part {_slowestPart} {Ms(_slowestPartTime):F0} ms") +
                 $", outside ticking {ms - Ms(_ticking):F0} ms");
@@ -151,6 +222,12 @@ namespace BeaverBuddies.Performance
                 $"avg {_sumFrame / _frames:F1} ms, max {_maxFrame:F0} ms, {_framesSlow} over 33 ms, " +
                 $"{_framesNoTick} with no bucket ticked, {_framesStalled} stalled for the host, margin {replay?.Margin * 1000:F0} ms, pace {replay?.BucketBoost:F2}, ticking avg {_sumTicking / _frames:F1} ms, " +
                 (GC.CollectionCount(0) == _gcsAtStart ? $"allocated {(GC.GetTotalMemory(false) - _heapAtStart) >> 20} MB" : "a GC ran"));
+            var timing = new UnityEngine.FrameTiming[1];
+            UnityEngine.FrameTimingManager.CaptureFrameTimings();
+            string cpu = UnityEngine.FrameTimingManager.GetLatestTimings(1, timing) > 0
+                ? $"cpu main {timing[0].cpuMainThreadFrameTime:F1} ms, render thread {timing[0].cpuRenderThreadFrameTime:F1} ms, gpu {timing[0].gpuFrameTime:F1} ms; " : "";
+            Plugin.LogWarning($"[Pace] time: {cpu}{TakeSpent()}");
+            Plugin.LogWarning($"[Pace] garbage: {TakeGarbage()}");
             _statsStart = now;
             _heapAtStart = GC.GetTotalMemory(false);
             _gcsAtStart = GC.CollectionCount(0);
@@ -175,7 +252,12 @@ namespace BeaverBuddies.Performance
 
         internal static void WaitedForParallelTick(long start) => _parallelWait += Now - start;
 
-        internal static void TickedSingleton(object singleton, long start) => _tick.Note(Now - start, singleton);
+        internal static void TickedSingleton(object singleton, long start)
+        {
+            _tick.Note(Now - start, singleton);
+            if (Profiling && Ms(Now - start) >= 40)
+                Plugin.LogWarning($"[Slow] singleton {singleton.GetType().Name} ticked {Ms(Now - start):F0} ms at tick {SingletonManager.GetSingleton<ReplayService>()?.TicksSinceLoad}");
+        }
 
         internal static void UpdatedSingleton(object singleton, long start) => _update.Note(Now - start, singleton);
 
@@ -199,9 +281,11 @@ namespace BeaverBuddies.Performance
             var singletons = __instance._updatableSingletons;
             for (int i = 0; i < singletons.Length; i++)
             {
-                long start = HitchWatch.Now;
+                long start = HitchWatch.Now, heap = HitchWatch.Heap;
                 singletons[i].UpdateSingleton();
                 HitchWatch.UpdatedSingleton(singletons[i], start);
+                HitchWatch.Garbaged(singletons[i], "update", heap);
+                HitchWatch.Spent(singletons[i], "update", start);
             }
             return false;
         }
@@ -222,9 +306,11 @@ namespace BeaverBuddies.Performance
             var singletons = __instance._lateUpdatableSingletons;
             for (int i = 0; i < singletons.Length; i++)
             {
-                long start = HitchWatch.Now;
+                long start = HitchWatch.Now, heap = HitchWatch.Heap;
                 singletons[i].LateUpdateSingleton();
                 HitchWatch.LateUpdatedSingleton(singletons[i], start);
+                HitchWatch.Garbaged(singletons[i], "late", heap);
+                HitchWatch.Spent(singletons[i], "late", start);
             }
             return false;
         }
@@ -245,9 +331,11 @@ namespace BeaverBuddies.Performance
             var singletons = __instance._tickableSingletons;
             for (int i = 0; i < singletons.Length; i++)
             {
-                long start = HitchWatch.Now;
+                long start = HitchWatch.Now, heap = HitchWatch.Heap;
                 singletons[i].Tick();
                 HitchWatch.TickedSingleton(singletons[i]._tickableSingleton, start);
+                HitchWatch.Garbaged(singletons[i]._tickableSingleton, "tick", heap);
+                HitchWatch.Spent(singletons[i]._tickableSingleton, "tick", start);
             }
             return false;
         }
@@ -266,6 +354,28 @@ namespace BeaverBuddies.Performance
         static void Postfix(long __state)
         {
             HitchWatch.WaitedForParallelTick(__state);
+        }
+    }
+
+    /**
+     * Profiling only: the time and garbage of every tickable component of the entities, by kind of component. The game
+     * times these itself only with its metrics on, and never by kind.
+     */
+    [HarmonyPatch(typeof(MeteredTickableComponent), nameof(MeteredTickableComponent.Tick))]
+    static class HitchWatchComponentTickPatcher
+    {
+        static bool Prepare() => HitchWatch.Profiling;
+
+        static bool Prefix(MeteredTickableComponent __instance)
+        {
+            if (!__instance.Enabled) return false;
+            var component = __instance._tickableComponent;
+            long start = HitchWatch.Now, heap = HitchWatch.Heap;
+            component.Tick();
+            HitchWatch.Spent(component, "component", start);
+            HitchWatch.SlowComponent(component, start);
+            HitchWatch.Garbaged(component, "component", heap);
+            return false;
         }
     }
 }

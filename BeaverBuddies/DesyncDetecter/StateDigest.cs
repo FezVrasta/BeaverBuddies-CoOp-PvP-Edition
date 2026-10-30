@@ -88,7 +88,13 @@ namespace BeaverBuddies.DesyncDetecter
             return unchecked((int)((uint)h * 2654435761u));
         }
 
-        private static int BucketOf(Guid id) => id.ToByteArray()[0];
+        // The Guid's first byte, read without the array ToByteArray makes for each call
+        private static int BucketOf(Guid id)
+        {
+            Span<byte> bytes = stackalloc byte[16];
+            id.TryWriteBytes(bytes);
+            return bytes[0];
+        }
 
         private static void Finish()
         {
@@ -97,7 +103,8 @@ namespace BeaverBuddies.DesyncDetecter
             foreach (Record r in current) buckets[BucketOf(r.Id)] = unchecked(buckets[BucketOf(r.Id)] + Hash(r));
             ticks[currentTick] = new TickRecord { Records = current.ToArray(), Buckets = buckets };
             while (ticks.Count > KeepTicks) ticks.Remove(ticks.Keys.First());
-            current = new List<Record>();
+            // The array was copied: the list keeps its room for the next tick
+            current.Clear();
         }
 
         // The buckets of a tick that's over, to send with its traces
@@ -117,7 +124,16 @@ namespace BeaverBuddies.DesyncDetecter
             var counts = map._threadSafeColumnCounts;
             int areasX = (stride + Area - 1) / Area;
             int areasY = (maxIndex / stride + Area - 1) / Area;
-            var areas = new int[areasX * areasY];
+            // The ring's oldest record gives its arrays to the new one: a copy of the map a tick was megabytes of garbage
+            WaterRecord spare = null;
+            if (waters.Count >= KeepWaterTicks)
+            {
+                int oldest = waters.Keys.First();
+                spare = waters[oldest];
+                waters.Remove(oldest);
+            }
+            var areas = spare != null && spare.Areas.Length == areasX * areasY ? spare.Areas : new int[areasX * areasY];
+            System.Array.Clear(areas, 0, areas.Length);
             for (int index = 0; index < maxIndex; index++)
             {
                 int x = index % stride, y = index / stride;
@@ -139,8 +155,10 @@ namespace BeaverBuddies.DesyncDetecter
             var record = new WaterRecord { Stride = stride, MaxIndex = maxIndex, AreasX = areasX, Areas = areas };
             if (columns.Length <= MaxWaterColumns)
             {
-                record.Columns = (ReadOnlyWaterColumn[])columns.Clone();
-                record.Counts = (byte[])counts.Clone();
+                record.Columns = spare?.Columns != null && spare.Columns.Length == columns.Length ? spare.Columns : new ReadOnlyWaterColumn[columns.Length];
+                System.Array.Copy(columns, record.Columns, columns.Length);
+                record.Counts = spare?.Counts != null && spare.Counts.Length == counts.Length ? spare.Counts : new byte[counts.Length];
+                System.Array.Copy(counts, record.Counts, counts.Length);
             }
             waters[tick] = record;
             while (waters.Count > KeepWaterTicks)
