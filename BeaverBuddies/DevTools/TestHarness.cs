@@ -274,6 +274,8 @@ namespace BeaverBuddies.DevTools
             {
                 case "difficulty":
                     _difficulty = a[1];
+                    // The settings with presets (Game Modes) follow it, as picking it on the New Game screen does
+                    GameModes.GameSettings.ApplyPresets(a[1]);
                     break;
                 case "hostmatch":
                 {
