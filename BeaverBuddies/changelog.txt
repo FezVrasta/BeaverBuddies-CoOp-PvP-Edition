@@ -1,3 +1,9 @@
+v1.1.0-1.10.1
+1.1.0-1.10.1
+* The Trades tab sets every good at once with buttons: reset, halve or double the values, or sell, buy or trade none of them. The trading post's site panel is on the side.
+* Players' colors show on the Timber Atlas map when it's installed.
+* Building and trade icons match the game's own gold.
+
 v1.1.0-1.10.0
 1.1.0-1.10.0
 * The Trading Post works like Archipelago's Trade Post: each half sets what it buys and sells and what each good is worth, and goods cross as far as both halves agree.

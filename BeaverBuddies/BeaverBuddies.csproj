@@ -25,7 +25,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>BeaverBuddies</AssemblyName>
     <Description>TimberModTest</Description>
-    <Version>1.1.0-1.10.0</Version>
+    <Version>1.1.0-1.10.1</Version>
     <TimberbornTargetVersion>1.1</TimberbornTargetVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
