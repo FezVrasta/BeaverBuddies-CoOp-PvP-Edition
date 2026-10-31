@@ -18,39 +18,23 @@ namespace BeaverBuddies.Modding
      */
     public static class ArchipelagoBridge
     {
-        private const string BridgeType = "Archipelago.Modding.ModBridge";
         // The bridge version this was written against
         public const int SupportedVersion = 1;
 
-        private static Type _type;
-        private static bool _looked;
+        private static Type Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
 
-        private static Type Type
-        {
-            get
-            {
-                if (_looked) return _type;
-                _looked = true;
-                _type = AppDomain.CurrentDomain.GetAssemblies()
-                    .Select(a => a.GetType(BridgeType, false))
-                    .FirstOrDefault(t => t != null);
-                return _type;
-            }
-        }
+        private static readonly Type Bridge = Find("Archipelago.Modding.ModBridge"),
+            Other = Find("Archipelago.Modding.SisterBridge");
 
-        // Whether Archipelago is installed
-        public static bool Available => Type != null;
+        // Whether the mod is installed
+        public static bool Available => Bridge != null;
 
         private static readonly Dictionary<string, Delegate> Bound = new();
 
         private static T Bind<T>(string name) where T : Delegate
         {
-            if (Bound.TryGetValue(name, out Delegate bound)) return (T)bound;
-            MethodInfo method = Type?.GetMethod(name, BindingFlags.Public | BindingFlags.Static);
-            T result = method == null ? null : (T)Delegate.CreateDelegate(typeof(T), method, false);
-            if (Type != null && result == null) Debug.LogWarning($"Archipelago's mod bridge has no {name}");
-            Bound[name] = result;
-            return result;
+            if (!Bound.TryGetValue(name, out Delegate bound)) Bound[name] = bound = (Bridge?.GetMethod(name) ?? Other?.GetMethod(name)) is { } method ? Delegate.CreateDelegate(typeof(T), method, false) : null;
+            return (T)bound;
         }
 
         public static int Version => Bind<Func<int>>("GetVersion")?.Invoke() ?? 0;

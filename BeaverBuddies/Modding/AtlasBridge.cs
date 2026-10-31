@@ -16,37 +16,22 @@ namespace BeaverBuddies.Modding
      */
     public static class AtlasBridge
     {
-        private const string BridgeType = "TimberAtlas.Modding.MapBridge";
         // The bridge version this was written against
         public const int SupportedVersion = 1;
 
-        private static Type _type;
-        private static bool _looked;
+        private static Type Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
 
-        private static Type Type
-        {
-            get
-            {
-                if (_looked) return _type;
-                _looked = true;
-                _type = AppDomain.CurrentDomain.GetAssemblies()
-                    .Select(a => a.GetType(BridgeType, false))
-                    .FirstOrDefault(t => t != null);
-                return _type;
-            }
-        }
+        private static readonly Type Bridge = Find("TimberAtlas.Modding.MapBridge");
 
-        public static bool Available => Type != null;
+        // Whether the mod is installed
+        public static bool Available => Bridge != null;
 
         private static readonly Dictionary<string, Delegate> Bound = new();
 
         private static T Bind<T>(string name) where T : Delegate
         {
-            if (Bound.TryGetValue(name, out Delegate bound)) return (T)bound;
-            MethodInfo method = Type?.GetMethod(name, BindingFlags.Public | BindingFlags.Static);
-            T result = method == null ? null : (T)Delegate.CreateDelegate(typeof(T), method, false);
-            Bound[name] = result;
-            return result;
+            if (!Bound.TryGetValue(name, out Delegate bound)) Bound[name] = bound = Bridge?.GetMethod(name) is { } method ? Delegate.CreateDelegate(typeof(T), method, false) : null;
+            return (T)bound;
         }
 
         public static int Version => Bind<Func<int>>("GetVersion")?.Invoke() ?? 0;
@@ -56,12 +41,5 @@ namespace BeaverBuddies.Modding
 
         /** Reads the colors and pointers again after a mod's own state changed. */
         public static void Refresh() => Bind<Action>("Refresh")?.Invoke();
-
-        // For tests and demos
-        public static void OpenMapTab() => Bind<Action>("OpenMapTab")?.Invoke();
-        public static void DevShow(bool shown) => Bind<Action<bool>>("DevShow")?.Invoke(shown);
-        public static void DevZoom(int step) => Bind<Action<int>>("DevZoom")?.Invoke(step);
-        public static void DevClick(float x, float y) => Bind<Action<float, float>>("DevClick")?.Invoke(x, y);
-        public static string DevStats() => Bind<Func<string>>("DevStats")?.Invoke() ?? "no minimap";
     }
 }
