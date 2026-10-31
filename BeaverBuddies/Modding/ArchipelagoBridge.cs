@@ -10,7 +10,7 @@ namespace BeaverBuddies.Modding
     /**
      * Talks to Archipelago without referencing it: finds its ModBridge class by name at runtime and binds
      * each method to a delegate, so a call costs no more than a normal one. Every type crossing over is
-     * .NET, Unity or Timberborn's. Without Archipelago (or with one too old to have a method) the map
+     * .NET, Unity or Timberborn's. Without Archipelago the map
      * reads as a plain one with no boats, and the hooks do nothing.
      *
      * This file stands alone: another mod can copy it as is. Add Archipelago to the mod's OptionalMods in
@@ -59,15 +59,6 @@ namespace BeaverBuddies.Modding
 
         // Says something about boats, or hears of them (see Archipelago's BoatHooks for the names and shapes)
         public static bool AddHook(string name, Delegate handler) => Bind<Func<string, Delegate, bool>>("AddHook")?.Invoke(name, handler) ?? false;
-
-        // A template (by name without the faction) that is a ship: it can only be placed on a naval workshop's slip
-        public static void AddShip(string template) => Bind<Action<string>>("AddShip")?.Invoke(template);
-
-        // A template that may stand in the sea, in the water of an island's shallows
-        public static void AllowInTheSea(string template) => Bind<Action<string>>("AllowInTheSea")?.Invoke(template);
-
-        // A spec type that makes a template a boat, for the mod's own ship templates. Before the game starts
-        public static void AddBoatSpec(Type spec) => Bind<Action<Type>>("AddBoatSpec")?.Invoke(spec);
 
         // ---- The sea ----
 
