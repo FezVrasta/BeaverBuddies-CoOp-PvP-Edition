@@ -138,12 +138,24 @@ namespace BeaverBuddies.Factions
         private readonly FactionTemplateCollectionIdProvider _game;
 
         // The game's own, made here: other mods patch what it returns, not the instance the game holds
-        public ExtraTemplateCollectionIds(FactionService factionService) : base(factionService) => _game = new FactionTemplateCollectionIdProvider(factionService);
+        private readonly ISpecService _specService;
+        private readonly Timberborn.Modding.ModRepository _mods;
+
+        public ExtraTemplateCollectionIds(FactionService factionService, ISpecService specService, Timberborn.Modding.ModRepository mods) : base(factionService)
+        {
+            _game = new FactionTemplateCollectionIdProvider(factionService);
+            _specService = specService;
+            _mods = mods;
+        }
 
         // What the game's provider gives as it stands, other mods' additions to it included (BeaverBuddies' buildings):
         // the template list isn't deduplicated, so a collection in both would load twice
-        public IEnumerable<string> GetTemplateCollectionIds() =>
-            Extra(FactionHooks.TemplateCollectionIds, _game.GetTemplateCollectionIds());
+        // Mods' FactionCollectionsSpec blueprints are read here, once the specs have loaded
+        public IEnumerable<string> GetTemplateCollectionIds()
+        {
+            FactionHooks.ReadCollections(_specService, _mods);
+            return Extra(FactionHooks.TemplateCollectionIds, _game.GetTemplateCollectionIds());
+        }
     }
 
     internal class ExtraGoodCollectionIds : ExtraCollectionIds, IGoodCollectionIdsProvider

@@ -4,11 +4,11 @@ BeaverBuddies keeps every machine in a game in sync by running the same simulati
 
 ## The bridge
 
-A mod doesn't reference BeaverBuddies to compile. `BeaverBuddies.Modding.ModBridge` is a static class whose methods only take and return .NET, Unity and Timberborn types. Your mod finds it by name at runtime and binds each method to a delegate once, so calling it costs no more than a normal call.
+A mod doesn't reference BeaverBuddies to compile. `BeaverBuddies.Modding.ModBridge` is a static class whose methods only take and return .NET, Unity and Timberborn types. Your mod finds it by name at runtime and binds each method to a delegate once, so calling it costs no more than a normal call. Hooks go in by name, through one method: `AddHook(name, delegate)`.
 
 If BeaverBuddies isn't installed (or it's too old to have the bridge), the lookup finds nothing and your mod should treat the game as single player. Everything keeps working, it just doesn't sync.
 
-The bridge only grows. Existing methods keep their signatures, new ones get added, and `Version()` goes up when a change can't be avoided.
+`Version()` goes up whenever a method or a hook changes shape. Version 2 replaced the `Add...` methods with `AddHook`, merged the faction lookups into `FactionOf`, moved a faction's extra collections to `FactionCollectionsSpec` blueprints, and dropped the game mode and game setting methods, which are the Game Modes mod's now.
 
 ### Binding it
 
@@ -33,7 +33,6 @@ public static class BeaverBuddiesBridge
         return result;
     }
 
-    public static int Version => Bind<Func<int>>("Version")?.Invoke() ?? 0;
     public static bool IsMultiplayer => Bind<Func<bool>>("IsMultiplayer")?.Invoke() ?? false;
     public static string LocalPlayerID => Bind<Func<string>>("LocalPlayerID")?.Invoke();
 
@@ -47,6 +46,8 @@ public static class BeaverBuddiesBridge
 
     public static void AddAddOn(string nameAndVersion) => Bind<Action<string>>("AddAddOn")?.Invoke(nameAndVersion);
 
+    public static bool AddHook(string name, Delegate handler) => Bind<Func<string, Delegate, bool>>("AddHook")?.Invoke(name, handler) ?? false;
+
     private class Nothing : IDisposable
     {
         public static readonly Nothing Instance = new();
@@ -55,7 +56,7 @@ public static class BeaverBuddiesBridge
 }
 ```
 
-Bind the rest of the methods below the same way, with the delegate type matching the signature in `ModBridge.cs`. Every fallback is what single player would do: `IsMultiplayer` is false, `DoPrefix` returns true so the caller just does the thing, `Unrecorded` returns something harmless to dispose. Check `Version` against the one you built for if you depend on newer methods.
+Bind the rest of the methods below the same way, with the delegate type matching the signature in `ModBridge.cs`. Every fallback is what single player would do: `IsMultiplayer` is false, `DoPrefix` returns true so the caller just does the thing, `Unrecorded` returns something harmless to dispose, `AddHook` returns false.
 
 List BeaverBuddies under `RequiredMods` in your manifest (`{ "Id": "beaverbuddies" }`) so it loads first and the type is there when you first look it up. Leave it out if your mod should also run without it.
 
@@ -146,84 +147,63 @@ Something that should stop when the player pauses the game (an arrow in flight, 
 
 ## Hooks
 
-Add these once, when your mod starts. Each one combines with every other mod's: any false refuses.
+Add these once, when your mod starts, with `AddHook(name, delegate)`. Cast the lambda to the delegate type the hook takes, or `AddHook` can't tell what it is:
 
-| Method | What it's for |
+```csharp
+BeaverBuddiesBridge.AddHook("CanPlaceOn", (Func<IEnumerable<Vector3Int>, string, bool>)((tiles, playerID) => MyClaims.Allows(tiles, playerID)));
+```
+
+It returns false and logs a warning for a name it doesn't know or a delegate of the wrong type. Every hook combines with every other mod's: any false refuses. The full list, with each delegate type, is at the top of `ModBridge.cs`.
+
+| Hook | What it's for |
 |---|---|
-| `AddAddOn(nameAndVersion)` | Names your mod and version. When players join, BeaverBuddies compares the host's add-ons with theirs and warns if they differ, since a different mod set falls out of sync |
-| `AddCanSend(event => bool)` | Keeps the local player from sending an event (BeaverBuddies' own events too), like orders to a building the player doesn't own |
-| `AddCanPlay((event, playerID) => bool)` | Drops an event on every machine when the player who sent it may not do it. It can also trim the event's fields. Runs on every machine, so it's the check that can't be bypassed by a modified client |
-| `AddPlayScope((event, playerID) => IDisposable)` | Opened around each event while it plays, to charge a cost to the player who sent it, for one |
-| `AddCanPlaceOn((tiles, playerID) => bool)` | Whether a player may build on these tiles. Land claims are this |
-| `CanPlace(tiles, playerID)` | Asks every mod's placement rules at once |
-| `AddPlaceInstead((spec, builder, placement, playerID) => bool)` | Places a building some other way. Return true when you did |
-| `AddPlaceScope(playerID => IDisposable)` | Opened around the game placing a building for a player |
-| `AddPlaced((placement, playerID) => void)` | After a player's building was placed, on every machine |
-| `AddRefused((spec, placement, playerID) => void)` | A player's building that couldn't be placed, on every machine |
-| `PlaceFor(placers, spec, placement, playerID)` | Places a building for a player from tick logic, sending nothing |
-| `AddShowCursorAt(world => bool)` | Hides another player's cursor at a spot, somewhere the local player can't see |
-| `AddUnlocksToolsHere(templateName => bool)` | Whether a building one player unlocked unlocks its tool on this machine, for per-player research |
-| `AddSetWorkingHoursInstead((playerID, hours) => bool)` | Sets a player's working hours some other way, for per-player schedules |
-| `AddCanMixFactions(() => bool)` | Whether a game can have players of different factions. When any mod says yes, each player in a match keeps the faction they picked; otherwise a coin flip picks one for both |
-| `AddMatchStarting((faction, mixed, isHost) => void)` | Before a match's game starts on this machine: the faction this player plays, whether the game mixes factions, and whether this machine hosts it |
-| `AddPlayersPlaceStart(() => bool)` | Whether each player in a match places their own start: the match's game starts with no starting building, for your mod to found each player's settlement where they place it |
-| `AddMapStartsPerPlayer(() => bool)` | Whether a game hosted with Host new game, on a map with several starting locations, gives each player one: it starts with no starting building, as a match does, instead of all of them built for the host |
-| `AddMapStarts(placements => void)` | Where the map's starting locations were, in player order, when a game starting with no starting building loads on a map with several. Called on the machine creating the game, before it's saved, so keep them in your save |
-| `AddGameMode(id, labelLocKey)` | Adds a game mode to the Multiplayer mode list (see below) |
-| `DescribeGameMode(id, descriptionLocKey)` | A line about one of your modes, shown under the list when it's picked |
-| `GetGameMode()` | The game mode the new game loading on this machine was started with, or null |
-| `AddMatchOption(...)` | Deprecated, does nothing: add a game mode or a game setting instead |
-| `AddGameToggle(id, groupLocKey, labelLocKey, tooltipLocKey, defaultOn, modes)` | Adds a checkbox to the game settings on the New Game screens (see below) |
-| `AddGameChoice(id, groupLocKey, labelLocKey, tooltipLocKey, values, valueLocKeys, defaultValue, modes)` | The same for one of a few values |
-| `AddGameSlider(id, groupLocKey, labelLocKey, tooltipLocKey, min, max, step, defaultValue, valueLocKey, modes)` | The same for a whole number on a slider, from `min` to `max` in steps of `step`, its value shown beside it by `valueLocKey` (`"{0} %"`) or at `min` by `valueLocKey` with `.Min` added where the mod translates that ("None"), and saved as the number |
-| `SetGameSettingNote(id, noteLocKey)` | A line of small print right under one of your settings' names ("still in beta"), for a setting added before; null takes it away |
-| `GetGameSetting(id)` | Your setting's pick for the new game loading on this machine (`on` or `off` for a toggle), or null |
+| `CanSend` `(event, playerID) => bool` | Keeps a player's event (BeaverBuddies' own too) from going out, like orders to a building they don't own |
+| `CanPlay` `(event, playerID) => bool` | Drops an event on every machine when its player may not do it. It can also trim the event's fields. Runs on every machine, so a modified client can't get around it |
+| `PlayScope` `(event, playerID) => IDisposable` | Opened around each event while it plays, to charge a cost to its player, for one |
+| `HostsAlone` `settings => bool` | Whether a game started alone is still hosted, so everything goes through events: a game against players your mod runs |
+| `CanPlaceOn` `(tiles, playerID) => bool` | Whether a player may build on these tiles. Land claims are this |
+| `PlaceInstead` `(spec, builder, placement, playerID) => bool` | Places a building some other way. Return true when you did |
+| `PlaceScope` `playerID => IDisposable` | Opened around the game placing a building for a player |
+| `Placed` `(placement, playerID) => void` | After a player's building was placed, on every machine |
+| `Refused` `(spec, placement, playerID) => void` | A player's building that couldn't be placed, on every machine |
+| `DistrictOwner` `district => playerID`, `PlayerName` `playerID => name` | Who owns a district: only its owner sets up its side of a Trading Post, Power Exchange or toll station |
+| `ShowCursorAt` `world => bool` | Hides another player's cursor somewhere the local player can't see |
+| `UnlocksToolsHere` `templateName => bool` | Whether a building one player unlocked unlocks its tool on this machine, for per-player research |
+| `SetWorkingHoursInstead` `(playerID, hours) => bool` | Sets a player's working hours some other way, for per-player schedules |
+| `MatchStarting` `() => void` | Before a match's game starts on this machine |
+| `PlayersPlaceStart` `() => bool` | Each player in a match places their own start: the game starts with no starting building, for your mod to found each settlement where it's placed |
+| `NewGamePlacesStart` `() => bool` | The same for a new game outside a match |
+| `MapStarts` `placements => void` | Where the map's starting locations were, in player order, as a game with no starting building is created. Called before it's saved, so keep them in your save |
+| `StartWarning` `() => string` | A reason to ask the host before the game first runs, or null |
+| `StrandedFaction` `beaver => faction` | The faction a beaver with no district keeps, or null |
 
 Hooks get your own events as you sent them and BeaverBuddies' events as they are, so a hook can tell them apart by type.
 
-## Game modes
+These are methods, not hooks: `AddAddOn(nameAndVersion)` names your mod and version (players who join with a different set get a warning, since they'd fall out of sync), `CanPlace(tiles, playerID)` asks every mod's placement rules at once, `PlaceFor(placers, spec, placement, playerID)` places a building for a player from tick logic, sending nothing, and `AddMultiplayerMode(modeId, mapStartsPerPlayer, newGamePlacesStart)` says how new games in one of your game modes start.
 
-A multiplayer game has a mode, picked when it's created: the **Multiplayer mode** column on the New Game screens' last page, between the difficulties and their details, when hosting a new game or finding a match: the game's own difficulty buttons, scrolling once there are more than fit. BeaverBuddies ships one, Co-op (`bb.coop`), and any mod can add its own with `AddGameMode(id, labelLocKey)`. Use an id that starts with your mod's, like `timberempires.pvp`. Give each mode a line with `DescribeGameMode(id, descriptionLocKey)`, shown under the list when it's picked. The column only shows once there's more than one mode to pick from, and it remembers each player's last pick.
+## Game modes and settings
 
-Matchmaking only pairs players who picked the same mode, and the open match list shows each match's mode. Joining an open match plays it in its host's mode.
+Game modes and game settings are the Game Modes mod's (`GameModes.Modes`, `GameModes.GameSettings`). Reference its DLL and add yours as your mod starts. BeaverBuddies ships Co-op (`bb.coop`), and Timber Empires adds PvE, PvP and Horde. Matchmaking only pairs players who picked the same mode, and their settings travel with their search.
 
-Read the pick with `GetGameMode()` as the new game loads (in a singleton's `Load`, say), and save it with the game yourself: it's only there for the new game being started on this machine, and null for a game started alone or loaded from a save. Players who join load the host's save, so they get your saved value, not `GetGameMode()`.
+## Factions
 
-Timber Empires adds PvE (`timberempires.pve`) and PvP (`timberempires.pvp`), and plays BeaverBuddies' Co-op as a shared settlement.
+Every game mixes factions: each player builds with their own, alone too. A guest picks theirs in the lobby, before the host starts, or with the My faction setting; the host's is the game's. Every faction installed loads in every game, and each player's toolbar shows only their own faction's buildings.
 
-## Game settings
+A faction mod made of content alone (blueprints, models, textures) works as it is, as long as every player has it. BeaverBuddies notes every faction the game loads and warns a player who joins without one the host has. Matchmaking only pairs players with the same factions.
 
-For a rule that changes how a game plays, use a game setting instead of a Mod Settings entry. It's picked once, when the game is created, and saved with it, so every player plays by the same rules and nobody has to send them around.
+Ask about factions with `LocalFaction()`, `PlayerFaction(playerID)`, `TemplateFaction(templateName)`, `FactionHas(templateName, faction)` and `FactionOf(entity)`: a beaver's or bot's is its district's, a building's is its template's, else its district's. `NeedAllowed` and `GoodAllowed` say whether a faction's beavers have a need or keep a good. A mod that adds buildings to a faction (Timber Empires does) lists them in a blueprint of its own, which the game only reads with BeaverBuddies there:
 
-`AddGameToggle` and `AddGameChoice` add yours to the end of the New Game screens' Customize list, the one with the game's own starting beavers, droughts and badtides, under a heading of your own (`groupLocKey`, shared by all your settings). A toggle is a checkbox. A choice is its name followed by a checkbox per value, one ticked at a time. A slider (`AddGameSlider`) is its name over a slider with the value it's at beside it. The tooltip shows on hover. Each player's picks are remembered between games, and a new game takes them whether the list was opened or not.
-
-`modes` lists the game modes a setting shows for, by id, so a rule that means nothing in Co-op can stay out of it. `bb.alone` is a game started alone, and `bb.others` is any mode of a game with others. Null shows it for every game.
-
-Read the pick with `GetGameSetting(id)` as the game loads (in a singleton's `Load`), and save it yourself. It's only there for a new game started on this machine, and null for a saved one, which should have its own:
-
-```csharp
-public void Load()
+```json
 {
-    if (_singletonLoader.TryGetSingleton(Key, out IObjectLoader loader) && loader.Has(EnabledKey)) Enabled = loader.Get(EnabledKey);
-    else Enabled = GetGameSetting("mymod.Floods") != "off";
+  "FactionCollectionsSpec": {
+    "FactionId": "Folktails",
+    "Collections": [ "MyMod.Buildings.Folktails" ],
+    "RequiredMod": "archipelago"
+  }
 }
 ```
 
-Players who join load the host's save, so the host's picks are the game's. A game started without your mod's setting (an older save, say) gets null too: pick a default that keeps it playing as it did.
-
-BeaverBuddies shows the picks before a game is played, so players know what they're getting into. It saves them with the game and in the save's metadata, and the Load Game screen shows the game's mode and the settings that aren't their defaults, all of them on hover. In matchmaking they go with the difficulty: each player's picks travel with their search, the search tries players with the same ones first, a coin flip settles them along with the difficulty when they differ, and the open match list shows the host's. Your setting's label and value names are what all of these show, so keep them short.
-
-BeaverBuddies has one of its own, whether dev tools are allowed in a game with others, under a Multiplayer heading. Timber Empires puts its rules under its own.
-
-## Faction mods
-
-A mod that adds a faction works in multiplayer as it is, as long as every player has it. A faction made of content alone (blueprints, models, textures) is the same on every machine by definition, so there's nothing to sync.
-
-BeaverBuddies checks that part for you. It notes every faction the game loads, other mods' too, and compares the host's with each player's as they join: a player missing one gets a warning saying which, instead of a game that won't load or falls out of sync. Matchmaking only pairs players with the same factions. A faction mod with no code needs no `AddAddOn` call for this.
-
-A faction mod with code is like any other mod here: call `AddAddOn` with its name and version, and send what players do through events.
-
-In a match, each player picks a faction as they look for an opponent. Unless a mod says factions can mix (`AddCanMixFactions`, in the hooks above), a coin flip picks one of the two for both. Timber Empires says they can, and plays other mods' factions too: its [modding guide](https://fezvrasta.github.io/TimberEmpires-Docs/modding.html) has what a faction needs for it.
+`RequiredMod` is optional: with it, the collections only load when that mod is enabled too, for buildings made of its specs.
 
 ## Testing alone
 
@@ -239,7 +219,7 @@ Desyncs need a second machine running the game. With debug mode on, BeaverBuddie
 
 ## Checklist
 
-1. Bind the bridge, fall back to single player when it's missing.
+1. Bind the bridge, fall back to single player when it's missing, and add your hooks with `AddHook`.
 2. Call `AddAddOn` with your mod's name and version.
 3. Register your events and send every player action through `DoPrefix`.
 4. Keep every state change in ticks or events, and use the game's random.

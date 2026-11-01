@@ -124,7 +124,7 @@ namespace BeaverBuddies.Matchmaking
                     _dialogBoxShower.Create().SetLocalizedMessage("BeaverBuddies.Match.Gone").Show();
                     return;
                 }
-                MatchHooks.RaiseStarting(faction, false, false);
+                MatchHooks.RaiseStarting(faction);
             });
         }
 

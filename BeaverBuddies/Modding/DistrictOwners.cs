@@ -6,7 +6,7 @@ namespace BeaverBuddies.Modding
     /**
      * Who owns a district, for the buildings that trade between districts
      * (Trading Post, Power Exchange, toll stations). Nobody does unless a
-     * mod says so through ModBridge.SetDistrictOwners: then only a
+     * mod says so through the DistrictOwner hook (see ModBridge): then only a
      * district's owner sets up its side.
      */
     public static class DistrictOwners

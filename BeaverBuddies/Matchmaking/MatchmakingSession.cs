@@ -469,7 +469,7 @@ namespace BeaverBuddies.Matchmaking
             bool mixed = Result.factionFrom == 0 && Mine.faction != Theirs.faction;
             Plugin.Log($"[Match] Settled with {OpponentName}: {(IsHost ? "hosting" : "joining")} {MapPicks.MapKey}, difficulty {ModePicks.ModeKey}, " +
                 $"playing {MyFaction} against {TheirFaction}{(mixed ? ", mixed" : "")}");
-            MatchHooks.RaiseStarting(MyFaction, mixed, IsHost);
+            MatchHooks.RaiseStarting(MyFaction);
             if (!IsHost)
             {
                 deadline = Time.realtimeSinceStartup + HostTimeout;

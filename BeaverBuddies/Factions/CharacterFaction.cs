@@ -162,6 +162,15 @@ namespace BeaverBuddies.Factions
             set.UnionWith(factions);
         }
 
+        // A beaver's or bot's, a district's, or a building's (its template's, else its district's)
+        public static string Of(BaseComponent entity)
+        {
+            if (!entity) return null;
+            if (entity.GetComponent<Citizen>()) return OfCharacter(entity);
+            if (entity.GetComponent<DistrictCenter>() is { } district) return OfDistrict(district);
+            return WorkerSlotFaction.Of(entity)?.Id;
+        }
+
         public static FactionSpec GetFaction(string factionId) =>
             MixedFactionsService.FactionService?._factionSpecService.Factions.FirstOrDefault(f => f.Id == factionId);
 

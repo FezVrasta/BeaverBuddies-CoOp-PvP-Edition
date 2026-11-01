@@ -170,7 +170,6 @@ namespace BeaverBuddies.Connect
             public string Name;
             public bool Host, You;
             public Color? Color;
-            public string Info;
             public string Faction;
             public bool Here;
         }
@@ -181,19 +180,19 @@ namespace BeaverBuddies.Connect
             var me = new Member
             {
                 Name = PlayerIdentity.LocalName, Host = _io != null, You = true,
-                Color = ColorOf(PlayerPresence.LocalColorIndex()), Info = Info(), Faction = Factions.LocalFaction.Id, Here = true,
+                Color = ColorOf(PlayerPresence.LocalColorIndex()), Faction = Factions.LocalFaction.Id, Here = true,
             };
             var members = new List<Member>();
             // The host first
             if (_io != null) members.Add(me);
             foreach (var other in others.Where(o => o.Host))
             {
-                members.Add(new Member { Name = other.Name ?? "?", Host = true, Color = ColorOf(other.Color), Info = other.Info, Faction = other.Faction, Here = true });
+                members.Add(new Member { Name = other.Name ?? "?", Host = true, Color = ColorOf(other.Color), Faction = other.Faction, Here = true });
             }
             if (_io == null) members.Add(me);
             foreach (var other in others.Where(o => !o.Host))
             {
-                members.Add(new Member { Name = other.Name ?? "?", Color = ColorOf(other.Color), Info = other.Info, Faction = other.Faction, Here = true });
+                members.Add(new Member { Name = other.Name ?? "?", Color = ColorOf(other.Color), Faction = other.Faction, Here = true });
             }
             // Connected to the host's game, but haven't loaded it yet
             int connected = _io?.NetBase.GetConnectedClients().Count ?? 0;
@@ -212,12 +211,6 @@ namespace BeaverBuddies.Connect
                 });
             }
             return members;
-        }
-
-        private static string Info()
-        {
-            try { return PlayerPresence.InfoProvider?.Invoke(); }
-            catch (Exception e) { Plugin.LogWarning($"The presence info failed: {e.Message}"); return null; }
         }
 
         private static Color ColorOf(int index) => PlayerColors.Palette[PlayerColors.Clamp(index)].Color;
@@ -248,13 +241,6 @@ namespace BeaverBuddies.Connect
             name.style.overflow = Overflow.Hidden;
             name.style.textOverflow = TextOverflow.Ellipsis;
             row.Add(name);
-            if (!string.IsNullOrEmpty(m.Info))
-            {
-                var info = new Label(m.Info);
-                info.AddToClassList("game-text-normal");
-                info.style.marginRight = 14;
-                row.Add(info);
-            }
             // A guest picks theirs here; the host's is the game's
             if (m.You && _io == null) row.Add(FactionPicker(m.Faction));
             else if (!string.IsNullOrEmpty(m.Faction))
@@ -491,7 +477,7 @@ namespace BeaverBuddies.Connect
         public void Update()
         {
             List<Member> members = Members();
-            string key = string.Join("|", members.Select(m => $"{m.Name}/{m.Info}/{m.Faction}/{m.Here}/{(m.Color.HasValue ? ColorUtility.ToHtmlStringRGB(m.Color.Value) : "")}")) + PlayerLimit.Setting.Current;
+            string key = string.Join("|", members.Select(m => $"{m.Name}/{m.Faction}/{m.Here}/{(m.Color.HasValue ? ColorUtility.ToHtmlStringRGB(m.Color.Value) : "")}")) + PlayerLimit.Setting.Current;
             if (key != _layoutKey)
             {
                 _layoutKey = key;

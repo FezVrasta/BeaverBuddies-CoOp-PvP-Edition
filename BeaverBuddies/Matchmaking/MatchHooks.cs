@@ -15,19 +15,14 @@ namespace BeaverBuddies.Matchmaking
         // game starts with no starting building, and the mod founds each
         // player's settlement where they put it
         public static readonly List<Func<bool>> PlayersPlaceStart = new();
-        // The faction this player plays, whether the game mixes factions,
-        // and whether this machine hosts it
-        public static event Action<string, bool, bool> Starting;
+        // A match's game is about to start on this machine
+        public static event Action Starting;
 
         // Whether the new game loading starts with every player placing
         // their own start even though it isn't a match: a game against
         // players a mod runs, say
         public static readonly List<Func<bool>> NewGamePlacesStart = new();
 
-        // Whether a new game hosted from the menu, on a map with several
-        // starting locations, gives each player one of them rather than
-        // building them all for the host
-        public static readonly List<Func<bool>> MapStartsPerPlayer = new();
         // Where a map's starting locations were, in player order, as a new
         // game where each player places their own start loads on a map with
         // several of them
@@ -55,7 +50,7 @@ namespace BeaverBuddies.Matchmaking
         public static string Preferred => string.IsNullOrEmpty(Settings.MyFaction) ? null : Settings.MyFaction;
         public static bool PlaceStart => PlayersPlaceStart.Any(hook => hook());
         public static bool NewGamePlaces => NewGamePlacesStart.Any(hook => hook()) || InMode(h => h.NewGamePlacesStart);
-        public static bool StartsPerPlayer => MapStartsPerPlayer.Any(hook => hook()) || InMode(h => h.MapStartsPerPlayer);
+        public static bool StartsPerPlayer => InMode(h => h.MapStartsPerPlayer);
 
         public static void RaiseMapStarts(Placement[] starts)
         {
@@ -69,12 +64,13 @@ namespace BeaverBuddies.Matchmaking
             }
         }
 
-        public static void RaiseStarting(string faction, bool mixed, bool host)
+        // The faction this player plays in it
+        public static void RaiseStarting(string faction)
         {
             Factions.LocalFaction.StartMatch(faction);
             try
             {
-                Starting?.Invoke(faction, mixed, host);
+                Starting?.Invoke();
             }
             catch (Exception e)
             {

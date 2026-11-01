@@ -385,7 +385,7 @@ namespace BeaverBuddies.Matchmaking
             }
             // A hosted game not both on Steam: its join code, over WebRTC
             Plugin.Log($"[Match] Joining the hosted game {match.joinCode} ({match.platform}) as {_factionId}");
-            MatchHooks.RaiseStarting(_factionId, false, false);
+            MatchHooks.RaiseStarting(_factionId);
             _clientConnectionService.ConnectOrShowFailureMessage(WebRtc.JoinCode.Prefix + match.joinCode);
         }
 
