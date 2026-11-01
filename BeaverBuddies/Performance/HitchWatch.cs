@@ -218,7 +218,7 @@ namespace BeaverBuddies.Performance
             if (_statsStart == 0) { _statsStart = now; _heapAtStart = GC.GetTotalMemory(false); _gcsAtStart = GC.CollectionCount(0); }
             if (Ms(now - _statsStart) < 10000) return;
             var replay = SingletonManager.GetSingleton<ReplayService>();
-            Plugin.LogWarning($"[Pace] tick {replay?.TicksSinceLoad} speed {replay?.TargetSpeed}: {_frames} frames, " +
+            Plugin.LogWarning($"[Pace] tick {replay?.TicksSinceLoad} speed {replay?.TargetSpeed} timescale {UnityEngine.Time.timeScale:F1}: {_frames} frames, " +
                 $"avg {_sumFrame / _frames:F1} ms, max {_maxFrame:F0} ms, {_framesSlow} over 33 ms, " +
                 $"{_framesNoTick} with no bucket ticked, {_framesStalled} stalled for the host, margin {replay?.Margin * 1000:F0} ms, pace {replay?.BucketBoost:F2}, ticking avg {_sumTicking / _frames:F1} ms, " +
                 (GC.CollectionCount(0) == _gcsAtStart ? $"allocated {(GC.GetTotalMemory(false) - _heapAtStart) >> 20} MB" : "a GC ran"));
