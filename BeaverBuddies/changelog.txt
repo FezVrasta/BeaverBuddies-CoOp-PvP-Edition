@@ -1,3 +1,9 @@
+v1.1.0-1.11.0
+1.1.0-1.11.0
+* Big colonies run smoother: many of the Performance Plus optimizations are now built in, made safe for multiplayer.
+* With T3MP or Performance Plus on, a warning says to turn them off before playing with others.
+* Fixed crashes from a Trading Post or Power Exchange whose other half is gone.
+
 v1.1.0-1.10.2
 1.1.0-1.10.2
 * Smoother multiplayer games on Steam, with fewer hitches while players are connected.
