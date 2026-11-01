@@ -197,7 +197,7 @@ namespace BeaverBuddies.Matchmaking
             }
         }
 
-        public static MatchResult Settle(ulong owner, MatchPicks ownerPicks, ulong guest, MatchPicks guestPicks, bool canMixFactions, Random random)
+        public static MatchResult Settle(ulong owner, MatchPicks ownerPicks, ulong guest, MatchPicks guestPicks, Random random)
         {
             var result = new MatchResult();
             ulong Flip() => random.Next(2) == 0 ? owner : guest;
@@ -213,12 +213,7 @@ namespace BeaverBuddies.Matchmaking
                 result.modeFrom = Flip();
                 result.modeFlip = true;
             }
-            if (ownerPicks.faction == guestPicks.faction || canMixFactions) result.factionFrom = 0;
-            else
-            {
-                result.factionFrom = Flip();
-                result.factionFlip = true;
-            }
+            // Every game mixes factions: each player keeps their own (factionFrom stays 0)
             return result;
         }
     }

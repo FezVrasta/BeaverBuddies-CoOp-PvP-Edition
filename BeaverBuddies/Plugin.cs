@@ -46,6 +46,7 @@ namespace BeaverBuddies
             containerDefinition.Bind<Settings>().AsSingleton();
 
             MultiStartConfigurator.Configure(containerDefinition);
+            Factions.FactionsConfigurator.Configure(containerDefinition);
 
             // Buildings that work between districts, alone or not
             Trading.TradingConfigurator.Configure(containerDefinition);
@@ -102,6 +103,8 @@ namespace BeaverBuddies
             // so it's best to reset everything.
             SingletonManager.Reset();
             EventIO.Reset();
+            // A faction picked for the last game isn't the next one's
+            Factions.PlayerFactionService.Pending = Factions.PlayerFactionService.Picked = null;
 
             Plugin.Log($"Registering Main Menu Services");
             containerDefinition.Bind<ClientConnectionService>().AsSingleton();

@@ -243,15 +243,38 @@ namespace BeaverBuddies.Modding
         // none: with any, the host is asked before it starts
         public static void AddStartWarning(Func<string> hook) => Connect.StartConfirmation.Warnings.Add(hook);
 
+        // ---- Factions (see Factions/) ----
+        // Every game mixes factions: each player builds with their own, and
+        // buildings, beavers and bots belong to one, or to none if shared
+
+        public static string LocalFaction() => Factions.LocalFaction.Id;
+        public static string PlayerFaction(string playerID) => Factions.PlayerFactionService.Instance?.Of(playerID);
+        public static string TemplateFaction(string templateName) => Factions.MixedFactionsService.GetTemplateFaction(templateName);
+        // The factions whose toolbars have a template, or null if none has it
+        public static string[] TemplateFactions(string templateName) => Factions.MixedFactionsService.FactionsOf(templateName)?.ToArray();
+        // Whether a faction's players build a template: one of its own, or one nobody owns
+        public static bool FactionHas(string templateName, string faction) => Factions.MixedFactionsService.FactionHas(templateName, faction);
+        public static string DistrictFaction(Timberborn.GameDistricts.DistrictCenter district) => Factions.FactionRules.OfDistrict(district);
+        public static string CharacterFaction(Timberborn.BaseComponentSystem.BaseComponent character) => Factions.FactionRules.OfCharacter(character);
+        // Whose workers and dwellers a building has: its template's faction, else its district's
+        public static string BuildingFaction(Timberborn.BaseComponentSystem.BaseComponent building) => Factions.WorkerSlotFaction.Of(building)?.Id;
+        public static bool NeedAllowed(string faction, string needId) => Factions.FactionRules.NeedAllowed(faction, needId);
+        public static bool GoodAllowed(string faction, string goodId) => Factions.FactionRules.GoodAllowed(faction, goodId);
+        public static bool GoodAllowedIn(Timberborn.BaseComponentSystem.BaseComponent building, string goodId) => Factions.FactionRules.GoodAllowedIn(building, goodId);
+        // Announces the faction of whoever is acting (an AI opponent, under ActAs)
+        public static void AnnounceFaction(string faction) => Factions.PlayerFactionService.Announce(faction);
+
+        // A faction's template collections beyond its own: a mod's buildings for it
+        public static void AddFactionCollections(Func<Timberborn.FactionSystem.FactionSpec, IEnumerable<string>> hook) => Factions.FactionHooks.TemplateCollections.Add(hook);
+        // The faction a beaver with no district keeps, or null
+        public static void AddStrandedFaction(Func<Timberborn.BaseComponentSystem.BaseComponent, string> hook) => Factions.FactionHooks.StrandedFaction.Add(hook);
+
         // ---- Matches (see Matchmaking) ----
 
-        // Whether a game can have players of different factions; any true
-        // lets each player in a match keep the faction they picked
-        public static void AddCanMixFactions(Func<bool> hook) => MatchHooks.CanMixFactions.Add(hook);
-
-        // The faction this player would rather play, or null: what joining
-        // an open match picks to start with
-        public static void AddPreferredFaction(Func<string> hook) => MatchHooks.PreferredFaction.Add(hook);
+        // Kept for mods built against an older bridge: every game mixes factions now, and the
+        // faction a player would rather play is BeaverBuddies' own "My faction" setting
+        public static void AddCanMixFactions(Func<bool> hook) { }
+        public static void AddPreferredFaction(Func<string> hook) { }
 
         // Before a match's game starts on this machine: the faction this
         // player plays, whether the game mixes factions, and whether this

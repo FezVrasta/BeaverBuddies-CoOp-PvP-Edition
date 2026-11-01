@@ -16,7 +16,7 @@ namespace BeaverBuddies.Connect
     /**
      * The box a host waits in before the game starts: what the game is (its
      * map, mode and settings), who's in it (each player's color and faction,
-     * and whether they've loaded it yet), and the join code with buttons to
+     * which a guest picks here, and whether they've loaded it yet), and the join code with buttons to
      * copy it and to invite friends, always there. It's the content of the
      * hosting dialog; Update is called every frame while it's up.
      */
@@ -170,6 +170,7 @@ namespace BeaverBuddies.Connect
             public string Name;
             public bool Host, You;
             public Color? Color;
+            public string Info;
             public string Faction;
             public bool Here;
         }
@@ -180,19 +181,19 @@ namespace BeaverBuddies.Connect
             var me = new Member
             {
                 Name = PlayerIdentity.LocalName, Host = _io != null, You = true,
-                Color = ColorOf(PlayerPresence.LocalColorIndex()), Faction = Info(), Here = true,
+                Color = ColorOf(PlayerPresence.LocalColorIndex()), Info = Info(), Faction = Factions.LocalFaction.Id, Here = true,
             };
             var members = new List<Member>();
             // The host first
             if (_io != null) members.Add(me);
             foreach (var other in others.Where(o => o.Host))
             {
-                members.Add(new Member { Name = other.Name ?? "?", Host = true, Color = ColorOf(other.Color), Faction = other.Info, Here = true });
+                members.Add(new Member { Name = other.Name ?? "?", Host = true, Color = ColorOf(other.Color), Info = other.Info, Faction = other.Faction, Here = true });
             }
             if (_io == null) members.Add(me);
             foreach (var other in others.Where(o => !o.Host))
             {
-                members.Add(new Member { Name = other.Name ?? "?", Color = ColorOf(other.Color), Faction = other.Info, Here = true });
+                members.Add(new Member { Name = other.Name ?? "?", Color = ColorOf(other.Color), Info = other.Info, Faction = other.Faction, Here = true });
             }
             // Connected to the host's game, but haven't loaded it yet
             int connected = _io?.NetBase.GetConnectedClients().Count ?? 0;
@@ -247,9 +248,18 @@ namespace BeaverBuddies.Connect
             name.style.overflow = Overflow.Hidden;
             name.style.textOverflow = TextOverflow.Ellipsis;
             row.Add(name);
-            if (!string.IsNullOrEmpty(m.Faction))
+            if (!string.IsNullOrEmpty(m.Info))
             {
-                var faction = new Label(m.Faction);
+                var info = new Label(m.Info);
+                info.AddToClassList("game-text-normal");
+                info.style.marginRight = 14;
+                row.Add(info);
+            }
+            // A guest picks theirs here; the host's is the game's
+            if (m.You && _io == null) row.Add(FactionPicker(m.Faction));
+            else if (!string.IsNullOrEmpty(m.Faction))
+            {
+                var faction = new Label(FactionName(m.Faction));
                 faction.AddToClassList("game-text-normal");
                 faction.AddToClassList("text--yellow");
                 faction.style.marginRight = 14;
@@ -262,6 +272,49 @@ namespace BeaverBuddies.Connect
             status.style.unityTextAlign = TextAnchor.MiddleRight;
             row.Add(status);
             return row;
+        }
+
+        private static string FactionName(string id) => Factions.FactionRules.DisplayName(id);
+
+        private static string[] FactionIds() =>
+            Factions.MixedFactionsService.FactionService is { } service
+                ? Factions.FactionRules.Ordered(service._factionSpecService.Factions).Select(f => f.Id).ToArray() : Array.Empty<string>();
+
+        // Arrows either side of the faction, like the game's own option rows
+        private VisualElement FactionPicker(string current)
+        {
+            var picker = new VisualElement { name = "FactionPicker" };
+            picker.style.flexDirection = FlexDirection.Row;
+            picker.style.alignItems = Align.Center;
+            picker.style.marginRight = 14;
+            var name = new Label(FactionName(current));
+            name.AddToClassList("game-text-normal");
+            name.AddToClassList("text--yellow");
+            name.style.minWidth = 90;
+            name.style.unityTextAlign = TextAnchor.MiddleCenter;
+            picker.Add(Arrow("‹", -1));
+            picker.Add(name);
+            picker.Add(Arrow("›", 1));
+            return picker;
+
+            Button Arrow(string text, int step)
+            {
+                var arrow = new Button { text = text };
+                arrow.AddToClassList("game-text-normal");
+                arrow.style.backgroundColor = Color.clear;
+                arrow.style.borderTopWidth = arrow.style.borderBottomWidth = arrow.style.borderLeftWidth = arrow.style.borderRightWidth = 0;
+                arrow.style.color = Gold;
+                arrow.style.fontSize = 18;
+                arrow.style.paddingLeft = arrow.style.paddingRight = 4;
+                arrow.RegisterCallback((ClickEvent _) =>
+                {
+                    string[] ids = FactionIds();
+                    if (ids.Length < 2) return;
+                    int index = Array.IndexOf(ids, Factions.LocalFaction.Id);
+                    Factions.LocalFaction.Pick(ids[((index + step) % ids.Length + ids.Length) % ids.Length]);
+                });
+                return arrow;
+            }
         }
 
         private VisualElement EmptyRow()
@@ -438,7 +491,7 @@ namespace BeaverBuddies.Connect
         public void Update()
         {
             List<Member> members = Members();
-            string key = string.Join("|", members.Select(m => $"{m.Name}/{m.Faction}/{m.Here}/{(m.Color.HasValue ? ColorUtility.ToHtmlStringRGB(m.Color.Value) : "")}")) + PlayerLimit.Setting.Current;
+            string key = string.Join("|", members.Select(m => $"{m.Name}/{m.Info}/{m.Faction}/{m.Here}/{(m.Color.HasValue ? ColorUtility.ToHtmlStringRGB(m.Color.Value) : "")}")) + PlayerLimit.Setting.Current;
             if (key != _layoutKey)
             {
                 _layoutKey = key;

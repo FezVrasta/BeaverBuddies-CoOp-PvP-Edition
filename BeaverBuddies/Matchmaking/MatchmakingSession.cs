@@ -451,7 +451,7 @@ namespace BeaverBuddies.Matchmaking
             if (State != MatchState.Matched || Result != null || !IsOwner) return;
             Theirs ??= MatchPicks.FromJson(lobby.GetMemberData(opponent, MatchKeys.Picks));
             if (Theirs == null) return;
-            Result = MatchResult.Settle(Me, Mine, opponent, Theirs, MatchHooks.FactionsMix, random);
+            Result = MatchResult.Settle(Me, Mine, opponent, Theirs, random);
             lobby.SetData(ResultKey, Result.ToJson());
             Begin();
         }

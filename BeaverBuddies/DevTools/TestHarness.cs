@@ -1108,6 +1108,11 @@ namespace BeaverBuddies.DevTools
                     Plugin.Log($"[Test] toppanel: {top?.GetType().Name ?? "none"} of {_panelStack._stack.Count}; buttons {buttons}");
                     break;
                 }
+                case "pickfaction":
+                    // pickfaction Faction: as the arrows beside a guest's name in the lobby pick it
+                    if (a.Length > 1) Factions.LocalFaction.Pick(a[1]);
+                    Plugin.Log($"[Test] pickfaction: {Factions.LocalFaction.Id}");
+                    break;
                 case "dismiss":
                     // Presses OK on every dialog showing, as a player would
                     for (int i = 0; i < 5 && _panelStack._stack.Count > 0 && _panelStack._stack.Peek().PanelController is DialogBox box; i++)

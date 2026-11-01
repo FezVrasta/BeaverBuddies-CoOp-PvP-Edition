@@ -6,15 +6,11 @@ using Timberborn.Coordinates;
 namespace BeaverBuddies.Matchmaking
 {
     /**
-     * What mods built on BeaverBuddies tell a match (see Modding/ModBridge):
-     * whether a game can mix factions, so each player keeps the faction
-     * they picked, and what each machine plays once the match is settled.
+     * What mods built on BeaverBuddies tell a match (see Modding/ModBridge),
+     * and what each machine plays once the match is settled.
      */
     public static class MatchHooks
     {
-        public static readonly List<Func<bool>> CanMixFactions = new();
-        // The faction this player would rather play, if a mod knows one
-        public static readonly List<Func<string>> PreferredFaction = new();
         // Whether each player places their own start: then the match's new
         // game starts with no starting building, and the mod founds each
         // player's settlement where they put it
@@ -55,8 +51,8 @@ namespace BeaverBuddies.Matchmaking
             return mode != null && ByMode.TryGetValue(mode, out ModeHooks hooks) && pick(hooks)?.Invoke() == true;
         }
 
-        public static string Preferred => PreferredFaction.Select(hook => hook()).FirstOrDefault(f => !string.IsNullOrEmpty(f));
-        public static bool FactionsMix => CanMixFactions.Any(hook => hook());
+        // The faction this player would rather play: their "My faction" setting
+        public static string Preferred => string.IsNullOrEmpty(Settings.MyFaction) ? null : Settings.MyFaction;
         public static bool PlaceStart => PlayersPlaceStart.Any(hook => hook());
         public static bool NewGamePlaces => NewGamePlacesStart.Any(hook => hook()) || InMode(h => h.NewGamePlacesStart);
         public static bool StartsPerPlayer => MapStartsPerPlayer.Any(hook => hook()) || InMode(h => h.MapStartsPerPlayer);
@@ -75,6 +71,7 @@ namespace BeaverBuddies.Matchmaking
 
         public static void RaiseStarting(string faction, bool mixed, bool host)
         {
+            Factions.LocalFaction.StartMatch(faction);
             try
             {
                 Starting?.Invoke(faction, mixed, host);

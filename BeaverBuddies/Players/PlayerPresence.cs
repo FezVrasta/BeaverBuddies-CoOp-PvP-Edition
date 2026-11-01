@@ -30,6 +30,7 @@ namespace BeaverBuddies.Players
         private readonly Dictionary<string, int> _preferredColors = new();
         private readonly Dictionary<string, string> _names = new();
         private readonly Dictionary<string, string> _infos = new();
+        private readonly Dictionary<string, string> _factions = new();
         private readonly HashSet<string> _hosts = new();
         // Whether the host said it's still waiting in its box, the last time we heard from it; null if we haven't
         private bool? _hostWaiting;
@@ -38,15 +39,15 @@ namespace BeaverBuddies.Players
         public static bool? HostWaiting => _instance?._hostWaiting;
 
         /**
-         * What a mod says about this player to the others, with their name: the
-         * faction they play, say. The host's box lists it.
+         * What a mod says about this player to the others, with their name.
+         * The host's box lists it.
          */
         public static Func<string> InfoProvider;
 
-        /** The players here other than this one, with each one's name, what they say of themselves and their color, as the match gives it. */
-        public static List<(string Id, string Name, string Info, int Color, bool Host)> Others()
+        /** The players here other than this one, with each one's name, what they say of themselves, their faction and their color, as the match gives it. */
+        public static List<(string Id, string Name, string Info, string Faction, int Color, bool Host)> Others()
         {
-            var result = new List<(string, string, string, int, bool)>();
+            var result = new List<(string, string, string, string, int, bool)>();
             if (_instance == null) return result;
             float now = Time.unscaledTime;
             var preferences = _instance._lastHeard.Where(p => now - p.Value <= GoneSeconds && _instance._preferredColors.ContainsKey(p.Key))
@@ -56,7 +57,8 @@ namespace BeaverBuddies.Players
             var colors = PlayerColors.Assign(preferences);
             foreach (string id in preferences.Keys.Where(k => k != local).OrderBy(k => k, StringComparer.Ordinal))
             {
-                result.Add((id, _instance._names.TryGetValue(id, out string n) ? n : null, _instance._infos.TryGetValue(id, out string i) ? i : null, colors[id], _instance._hosts.Contains(id)));
+                result.Add((id, _instance._names.TryGetValue(id, out string n) ? n : null, _instance._infos.TryGetValue(id, out string i) ? i : null,
+                    _instance._factions.TryGetValue(id, out string f) ? f : null, colors[id], _instance._hosts.Contains(id)));
             }
             return result;
         }
@@ -109,6 +111,7 @@ namespace BeaverBuddies.Players
             _preferredColors.Clear();
             _names.Clear();
             _infos.Clear();
+            _factions.Clear();
             _hosts.Clear();
             _hostWaiting = null;
             if (_instance == this) _instance = null;
@@ -129,6 +132,7 @@ namespace BeaverBuddies.Players
                 ["color"] = PlayerColors.Clamp(Settings.PreferredColorIndex),
                 ["name"] = PlayerIdentity.LocalName,
                 ["info"] = Info(),
+                ["faction"] = Factions.LocalFaction.Id,
                 ["host"] = io is ServerEventIO,
                 ["waiting"] = Connect.NewGameHosting.SettingUp,
             });
@@ -150,6 +154,7 @@ namespace BeaverBuddies.Players
             _preferredColors[playerID] = message.Value<int?>("color") ?? 0;
             _names[playerID] = message.Value<string>("name");
             _infos[playerID] = message.Value<string>("info");
+            _factions[playerID] = message.Value<string>("faction");
             if (message.Value<bool?>("host") == true)
             {
                 _hosts.Add(playerID);

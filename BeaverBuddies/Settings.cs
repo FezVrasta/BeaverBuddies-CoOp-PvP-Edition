@@ -98,6 +98,9 @@ namespace BeaverBuddies
                     .SetLocalizedTooltip("BeaverBuddies.Settings.PreferredColor.Tooltip")
         );
 
+        // Filled with the game's factions before the settings load (see OnBeforeLoad)
+        public LimitedStringModSetting MyFactionSetting { get; private set; }
+
         public ModSetting<bool> ShowPlayerCursors { get; } =
             new(true,
                 ModSettingDescriptor.CreateLocalized(
@@ -162,12 +165,55 @@ namespace BeaverBuddies
 
         public static bool ShowCursors => instance?.ShowPlayerCursors.Value ?? true;
 
+        private const string MyFactionKey = "ModSetting." + Plugin.ID + ".Settings.MyFactionSetting";
+        // Where Timber Empires kept it, before factions moved here
+        private const string OldMyFactionKey = "ModSetting.timberempires.Settings.MyFactionSetting";
+
+        /**
+         * The faction this player builds with in someone else's game, or ""
+         * for the host's. Read from the stored preference while the settings
+         * haven't loaded: a joined game's toolbar is put together before they do.
+         */
+        public static string MyFaction
+        {
+            get
+            {
+                if (instance == null) return "";
+                // Never set here: what Timber Empires kept, if anything
+                if (!instance._settings.Has(MyFactionKey)) return instance._settings.GetSafeString(OldMyFactionKey, "");
+                return instance.MyFactionSetting?.Value ?? instance._settings.GetSafeString(MyFactionKey, "");
+            }
+        }
+
+        // From the lobby, where a guest picks it
+        public static void SetMyFaction(string faction)
+        {
+            if (instance?.MyFactionSetting != null) instance.MyFactionSetting.SetValue(faction);
+            else instance?._settings.SetString(MyFactionKey, faction);
+        }
+
+        private readonly ISettings _settings;
+        private readonly Timberborn.BlueprintSystem.ISpecService _specService;
+
         public Settings(ISettings settings,
                         ModSettingsOwnerRegistry modSettingsOwnerRegistry,
-                        ModRepository modRepository) :
+                        ModRepository modRepository,
+                        Timberborn.BlueprintSystem.ISpecService specService) :
             base(settings, modSettingsOwnerRegistry, modRepository)
         {
+            _settings = settings;
+            _specService = specService;
             instance = this;
+        }
+
+        protected override void OnBeforeLoad()
+        {
+            var factions = Factions.FactionRules.Ordered(_specService.GetSpecs<Timberborn.FactionSystem.FactionSpec>())
+                .Select(f => new LimitedStringModSettingValue(f.Id, "Faction." + f.Id + ".DisplayName"));
+            MyFactionSetting = new(0,
+                new[] { new LimitedStringModSettingValue("", "BeaverBuddies.Settings.MyFaction.Host") }.Concat(factions).ToArray(),
+                ModSettingDescriptor.CreateLocalized("BeaverBuddies.Settings.MyFaction")
+                    .SetLocalizedTooltip("BeaverBuddies.Settings.MyFaction.Tooltip"));
         }
 
         protected override string ModId => Plugin.ID;
