@@ -144,7 +144,7 @@
   <PropertyGroup>
     <DroppedFacades>;Microsoft.CSharp;Microsoft.Win32.Registry;System.AppContext;System.Collections.Concurrent;System.Dynamic.Runtime;System.IO.Compression.ZipFile;System.IO.FileSystem.Primitives;System.Linq;System.Linq.Expressions;System.ObjectModel;System.Reflection.Emit;System.Reflection.TypeExtensions;System.Runtime.InteropServices.RuntimeInformation;System.Runtime.Numerics;System.Security.Cryptography.OpenSsl;System.Security.Cryptography.Primitives;System.Text.RegularExpressions;System.Xml.ReaderWriter;System.Xml.XDocument;</DroppedFacades>
   </PropertyGroup>
-  <!-- SIPSorcery and its dependencies go in lib\, where the game doesn't look (see WebRtc/Libraries.cs) -->
+  <!-- SIPSorcery and its dependencies go in lib\ as .lib files: the game loads every .dll under a mod's folder (see WebRtc/Libraries.cs) -->
   <PropertyGroup>
     <WebRtcLibraries>;BouncyCastle.Cryptography;Common.Logging;Common.Logging.Core;Concentus;DnsClient;Makaretu.Dns;Makaretu.Dns.Multicast;Microsoft.Extensions.DependencyInjection.Abstractions;Microsoft.Extensions.Logging.Abstractions;SIPSorcery;SIPSorceryMedia.Abstractions;SimpleBase;System.Diagnostics.DiagnosticSource;System.Net.IPNetwork;System.Threading.Tasks.Extensions;websocket-sharp;</WebRtcLibraries>
   </PropertyGroup>
@@ -154,7 +154,11 @@
       <WebRtcDll Include="@(OutputDll)" Condition="$(WebRtcLibraries.Contains(';%(Filename);'))" />
     </ItemGroup>
     <Delete Files="@(OutputDll)" Condition="$(DroppedFacades.Contains(';%(Filename);'))" />
-    <Copy SourceFiles="@(WebRtcDll)" DestinationFolder="$(ProjectDir)$(OutDir)lib" />
+    <ItemGroup>
+      <OldWebRtcDll Include="$(ProjectDir)$(OutDir)lib\*.dll" />
+    </ItemGroup>
+    <Delete Files="@(OldWebRtcDll)" />
+    <Copy SourceFiles="@(WebRtcDll)" DestinationFiles="@(WebRtcDll->'$(ProjectDir)$(OutDir)lib\%(Filename).lib')" />
     <Delete Files="@(WebRtcDll)" />
   </Target>
 

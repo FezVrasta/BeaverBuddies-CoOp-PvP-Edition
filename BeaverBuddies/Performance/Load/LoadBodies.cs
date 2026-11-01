@@ -1,8 +1,6 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
-// Changed for BeaverBuddies: namespace, settings and logging; the
-// optimizations themselves are unchanged.
 
 using System;
 using System.Collections.Generic;
@@ -17,9 +15,8 @@ namespace BeaverBuddies.Performance;
 // bodies it reimplements or bypasses, and methods whose behavior it assumes.
 // A feature runs only when the combined fingerprint of these bodies is one
 // it was reviewed against (MethodFingerprint: rebuild-stable, content-exact).
-// Accepted prints: 1.1.2.0 = 1.1.2.7; a second print is 1.0.13.1, accepted
-// where the feature carries its own 1.0 branch. Recompute with scripts/LoadPrints
-// after reviewing a changed body.
+// Accepted prints are 1.1.2.0 to 1.1.2.7; a game update that changes a body
+// turns its feature off until the body is reviewed and its print added.
 // Entries are "Namespace.Type::Method" (every overload); "A|B::M" accepts
 // either type name; ".ctor" and ".cctor" name constructors. Unity engine
 // wrappers are left out: their codegen differs between engine builds.

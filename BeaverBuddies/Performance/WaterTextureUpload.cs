@@ -1,8 +1,6 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
-// Changed for BeaverBuddies: namespace, and the RuntimePatches entry point
-// (settings and logging); the optimizations themselves are unchanged.
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +12,7 @@ using Timberborn.WaterSystemRendering;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Debug = UnityEngine.Debug;
+using HarmonyLib;
 
 namespace BeaverBuddies.Performance;
 
@@ -25,42 +23,29 @@ namespace BeaverBuddies.Performance;
 // that texture layer already holds. The simulation, the data arrays and the
 // renderer are untouched; only redundant GPU transfers are skipped. The
 // texture arrays are compute-shader inputs and have no other native writer than
-// this method (audited on 1.0.13.1 and 1.1.2.4). Regenerating a Harmony wrapper
+// this method (audited on 1.1.2.4). Regenerating a Harmony wrapper
 // discards snapshots because its native path may have written different bytes.
+[HarmonyPatch]
 internal static class WaterTextureUpload
 {
-    private const string Owner = "beaverbuddies.perf.water";
     private sealed class State { public readonly Dictionary<int, byte[]> Layers = new Dictionary<int, byte[]>(); }
     private static ConditionalWeakTable<Texture2DArray, State> States = new ConditionalWeakTable<Texture2DArray, State>();
-    internal static long Calls, Uploaded, Reused;
-    internal static bool Installed { get; private set; }
 
-    internal static void Install(Type harmonyType, Type harmonyMethodType, MethodInfo patch)
-    {
-        if (Installed) return;
-        var open = typeof(DataTextureArray<>);
-        RuntimePatches.Apply(Owner, harmonyType, harmonyMethodType, patch, apply =>
-        {
-            foreach (var (type, rewrite) in new[] {
-                (typeof(float), nameof(RewriteFloat)), (typeof(Vector2), nameof(RewriteVector2)), (typeof(byte), nameof(RewriteByte)) })
-                apply(RuntimePatches.Find(open.MakeGenericType(type), "UpdateTextureArrays", new[] { typeof(int) }), null, null, rewrite, null);
-        }, typeof(WaterTextureUpload));
-        Installed = true;
-        Debug.Log("[BeaverBuddies Perf] Water upload de-duplication installed (" + SystemInfo.graphicsDeviceType + ").");
-    }
+    static bool Prepare() => PerformanceSettings.Enabled;
 
-    private static IEnumerable<T> RewriteFloat<T>(IEnumerable<T> instructions) => Rewrite<T>(typeof(float));
-    private static IEnumerable<T> RewriteVector2<T>(IEnumerable<T> instructions) => Rewrite<T>(typeof(Vector2));
-    private static IEnumerable<T> RewriteByte<T>(IEnumerable<T> instructions) => Rewrite<T>(typeof(byte));
-    private static IEnumerable<T> Rewrite<T>(Type element)
+    static IEnumerable<MethodBase> TargetMethods() => new[] { typeof(float), typeof(Vector2), typeof(byte) }
+        .Select(type => AccessTools.Method(typeof(DataTextureArray<>).MakeGenericType(type), nameof(DataTextureArray<float>.UpdateTextureArrays)));
+
+    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase __originalMethod)
     {
         // Harmony rebuilt the method: forget snapshots taken before.
         States = new ConditionalWeakTable<Texture2DArray, State>();
-        return RuntimePatches.CallAndReturn<T>(typeof(WaterTextureUpload).GetMethod(nameof(Update), RuntimePatches.All)!.MakeGenericMethod(element), 2);
+        Type element = __originalMethod.DeclaringType!.GetGenericArguments()[0];
+        return Replace.With(AccessTools.Method(typeof(WaterTextureUpload), nameof(Update)).MakeGenericMethod(element));
     }
 
     // Same statements as vanilla UpdateTextureArrays with the transfer routed through Upload.
-    internal static void Update<T>(DataTextureArray<T> array, int columnIndex) where T : struct
+    static void Update<T>(DataTextureArray<T> array, int columnIndex) where T : struct
     {
         Upload(array._bufferTexture, array.OldArray, array._oldData[columnIndex], columnIndex);
         Upload(array._bufferTexture, array.NewArray, array._newData[columnIndex], columnIndex);
@@ -68,13 +53,11 @@ internal static class WaterTextureUpload
 
     private static void Upload<T>(Texture2D temporary, Texture2DArray target, T[] data, int layer) where T : struct
     {
-        Calls++;
         var bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(data));
         var state = States.GetOrCreateValue(target);
         state.Layers.TryGetValue(layer, out var previous);
         if (previous != null && EqualBytes(bytes, previous))
         {
-            Reused++;
             return;
         }
         Original(temporary, target, data, layer);
@@ -85,7 +68,6 @@ internal static class WaterTextureUpload
             state.Layers[layer] = previous;
         }
         CopyBytes(bytes, previous);
-        Uploaded++;
     }
 
     // Native memcmp/memcpy: the managed Span helpers are not vectorized on the

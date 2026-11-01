@@ -1054,6 +1054,11 @@ namespace BeaverBuddies
             long ticking = HitchWatch.Now;
             while (ShouldTick(__instance, numberOfBucketsToTick--))
             {
+                // No whole tick left in this frame after this one: it's the one drawn
+                if (IsAtStartOfTick(__instance))
+                {
+                    Performance.FrameTicks.LastOfFrame = ShouldCompleteFullTick || numberOfBucketsToTick < __instance.TotalNumberOfBuckets;
+                }
                 if (TickReplayServiceOrNextBucket(__instance))
                 {
                     // Refund a bucket if we ticked the ReplayService

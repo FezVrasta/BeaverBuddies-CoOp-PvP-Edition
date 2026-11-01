@@ -1,83 +1,59 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
-// Changed for BeaverBuddies: namespace, settings and logging; the
-// optimizations themselves are unchanged.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using Timberborn.Common;
 using Timberborn.Navigation;
-using Debug = UnityEngine.Debug;
-namespace BeaverBuddies.Performance;
 
-// Empty flow fields cannot intersect changed node IDs. Preserve all cache flags
-// and keep native invalidation for populated fields and runtime notifications.
-internal static class EmptyFlowFieldLoad
+namespace BeaverBuddies.Performance
 {
-    private const string Owner = "beaverbuddies.perf.load.empty-flow-fields";
-    private const BindingFlags All = LoadPatchBridge.All;
-    internal static bool Installed { get; private set; }
-    [ThreadStatic] private static int _depth;
-    private static bool _compatible;
-    private static long _skipped, _lookups;
-    private static readonly MethodBase[] Protected = new[] { typeof(AccessFlowField), typeof(PathFlowField) }
-        .SelectMany(t=>new[]{t.GetMethod("OnNodesChanged",All)!,t.GetMethod("HasNode",All)!})
-        .Concat(new[]{typeof(ReadOnlyList<int>).GetProperty("Count")!.GetMethod!,typeof(ReadOnlyList<int>).GetProperty("Item")!.GetMethod!}).ToArray();
-    private static bool Reviewed() => LoadCompatibility.Reviewed(LoadBodies.EmptyFlowField);
-    private static bool Compatible() => Reviewed() && LoadCompatibility.Unmodified(Protected,Owner);
-    internal static void Install()
+    // While navigation loads, an empty flow field skips the changed nodes: none of them can be in it
+    [HarmonyPatch]
+    [HarmonyPriority(HarmonyLib.Priority.Last)]
+    static class EmptyFlowFieldLoad
     {
-        if(Installed || Environment.GetCommandLineArgs().Contains("-t3mpTestEmptyFlowBaseline"))return;
-        if(!Reviewed()){Debug.Log("[BBPerfEMPTYFLOW] native fallback: unreviewed modules");return;}
-        var ht=LoadPatchBridge.Find("HarmonyLib.Harmony");var hm=LoadPatchBridge.Find("HarmonyLib.HarmonyMethod");
-        var harmony=Activator.CreateInstance(ht,Owner)!;
-        var patch=ht.GetMethods().Single(m=>m.Name=="Patch"&&m.GetParameters().Length==5);
-        object Hook(string name)=>Activator.CreateInstance(hm,typeof(EmptyFlowFieldLoad).GetMethod(name,All))!;
-        try
+        const BindingFlags All = LoadCompatibility.All;
+        [ThreadStatic] static int _depth;
+        static bool _compatible;
+
+        static readonly MethodBase[] Protected = new[] { typeof(AccessFlowField), typeof(PathFlowField) }
+            .SelectMany(t => new[] { t.GetMethod("OnNodesChanged", All)!, t.GetMethod("HasNode", All)! })
+            .Concat(new[] { typeof(ReadOnlyList<int>).GetProperty("Count")!.GetMethod!, typeof(ReadOnlyList<int>).GetProperty("Item")!.GetMethod! }).ToArray();
+
+        static bool Prepare() => PerformanceSettings.Enabled && LoadCompatibility.Reviewed(LoadBodies.EmptyFlowField);
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(NavigationSynchronizer), nameof(NavigationSynchronizer.PostLoad))]
+        static void Begin()
         {
-            patch.Invoke(harmony,new object?[]{typeof(NavigationSynchronizer).GetMethod("PostLoad",All),Hook(nameof(Begin)),null,null,Hook(nameof(End))});
-            patch.Invoke(harmony,new object?[]{typeof(AccessFlowField).GetMethod("OnNodesChanged",All),Hook(nameof(Access)),null,null,null});
-            patch.Invoke(harmony,new object?[]{typeof(PathFlowField).GetMethod("OnNodesChanged",All),Hook(nameof(Path)),null,null,null});
-            Installed=true;Debug.Log("[BBPerfEMPTYFLOW] installed; initial navigation notifications only");
+            if (_depth++ == 0) _compatible = LoadCompatibility.Unmodified(Protected, PerformanceSettings.HarmonyId);
         }
-        catch(Exception e)
+
+        [HarmonyFinalizer]
+        [HarmonyPatch(typeof(NavigationSynchronizer), nameof(NavigationSynchronizer.PostLoad))]
+        static void End() => _depth--;
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(AccessFlowField), nameof(AccessFlowField.OnNodesChanged))]
+        static bool Access(AccessFlowField __instance, ReadOnlyList<int> nodeIds) =>
+            __instance.GetType() != typeof(AccessFlowField) || !Empty(__instance._nodes, nodeIds);
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(PathFlowField), nameof(PathFlowField.OnNodesChanged))]
+        static bool Path(PathFlowField __instance, ReadOnlyList<int> nodeIds) =>
+            __instance.GetType() != typeof(PathFlowField) || !Empty(__instance._nodes, nodeIds);
+
+        static bool Empty<T>(Dictionary<int, T> nodes, ReadOnlyList<int> nodeIds)
         {
-            ht.GetMethod("UnpatchAll",All)!.Invoke(harmony,new object[]{Owner});
-            Debug.LogWarning("[BBPerfEMPTYFLOW] disabled: "+e.GetBaseException().Message);
+            if (_depth == 0 || !_compatible || nodes == null || nodes.Count != 0 || !ReferenceEquals(nodes.Comparer, EqualityComparer<int>.Default)) return false;
+            // The game reads Count even for an empty field: keep its exception for a default list
+            _ = nodeIds.Count;
+            return true;
         }
-    }
-    private static void Begin(out bool __state)
-    {
-        __state=true;
-        if(_depth++!=0)return;
-        _compatible=Compatible();_skipped=_lookups=0;
-    }
-    private static void End(bool __state)
-    {
-        if(!__state||_depth<=0||--_depth!=0)return;
-        Debug.Log($"[BBPerfEMPTYFLOW] skipped={_skipped} avoidedLookups={_lookups} compatible={_compatible}");
-    }
-    private static bool Access(AccessFlowField __instance, ReadOnlyList<int> nodeIds)
-    {
-        if(_depth==0||!_compatible||__instance.GetType()!=typeof(AccessFlowField)||__instance._nodes==null||
-            __instance._nodes.Count!=0||!ReferenceEquals(__instance._nodes.Comparer,EqualityComparer<int>.Default))return true;
-        return Skip(nodeIds);
-    }
-    private static bool Path(PathFlowField __instance, ReadOnlyList<int> nodeIds)
-    {
-        if(_depth==0||!_compatible||__instance.GetType()!=typeof(PathFlowField)||__instance._nodes==null||
-            __instance._nodes.Count!=0||!ReferenceEquals(__instance._nodes.Comparer,EqualityComparer<int>.Default))return true;
-        return Skip(nodeIds);
-    }
-    private static bool Skip(ReadOnlyList<int> nodeIds)
-    {
-        // Native code always reads Count, even for an empty field. Preserve
-        // the exception for a default/null-backed ReadOnlyList.
-        var count=nodeIds.Count;
-        _skipped++;_lookups+=count;
-        return false;
     }
 }

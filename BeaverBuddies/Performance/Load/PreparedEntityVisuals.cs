@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -14,21 +14,22 @@ using Timberborn.Common;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
+using HarmonyLib;
+using Timberborn.SingletonSystem;
+using Timberborn.TemplateInstantiation;
+
 namespace BeaverBuddies.Performance;
 
 // Prepare only reviewed visual subtrees while their entity root is inactive.
 // Native Awake/load/model decisions and every later notification still execute.
+[HarmonyPatch]
 internal static class PreparedEntityVisuals
 {
-    internal static bool Natural = Environment.GetCommandLineArgs().Contains("-t3mpTestNaturalVisualPreparation");
-    internal static bool Building = Environment.GetCommandLineArgs().Contains("-t3mpTestBuildingVisualPreparation");
+    internal static bool Natural, Building;
     internal static bool Enabled => Natural || Building;
-    internal static bool Installed { get; private set; }
     private const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
     private static readonly Dictionary<GameObject, GameObject> Clones = new Dictionary<GameObject, GameObject>();
     [ThreadStatic] private static int _depth;
-    private static Type? _harmonyType;
-    private static string _owner = "";
     private static bool _compatible = true;
     private static readonly Dictionary<Type, bool> ComponentSafety = new Dictionary<Type, bool>();
     private sealed class Node { internal int[] Path = null!; internal string Name = ""; }
@@ -37,116 +38,66 @@ internal static class PreparedEntityVisuals
     private static readonly HashSet<string> Reasons = new HashSet<string>();
     private static long _natural, _building, _nodes, _renderers, _colliders, _fallback;
 
-    internal static void Install(string owner)
+    static bool Prepare()
     {
-        if (Installed) return;
-        Natural = Building = !Environment.GetCommandLineArgs().Contains("-t3mpTestVisualPreparationBaseline");
-        if (!Enabled) return;
-        Type Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name)).First(t => t != null)!;
-        Type? ht = null;
-        object? harmony = null;
-        try
-        {
-            if (!ReviewedModules())
-            {
-                Natural = Building = false;
-                Debug.Log("[BBPerfVISUALPREP] native fallback: visual preparation not enabled for these game/Unity modules");
-                return;
-            }
-            ht = Find("HarmonyLib.Harmony"); var hm = Find("HarmonyLib.HarmonyMethod");
-            _harmonyType = ht; _owner = owner;
-            harmony = Activator.CreateInstance(ht, owner)!;
-            var patch = ht.GetMethods().Single(m => m.Name == "Patch" && m.GetParameters().Length == 5);
-            object Hook(string name, int priority = 400)
-            {
-                var hook = Activator.CreateInstance(hm, typeof(PreparedEntityVisuals).GetMethod(name, All))!;
-                hm.GetField("priority")!.SetValue(hook, priority); return hook;
-            }
-            patch.Invoke(harmony, new object?[] { typeof(BaseInstantiator).GetMethod("InstantiateInactive", All), null, Hook(nameof(RememberClone)), null, null });
-            patch.Invoke(harmony, new object?[] { Find("Timberborn.SingletonSystem.SingletonLifecycleService").GetMethod("LoadAll", All),
-                Hook(nameof(BeginLoad)), null, null, Hook(nameof(EndLoad), 900) });
-            var rewrite = MakeTranspiler(Find("HarmonyLib.CodeInstruction"));
-            patch.Invoke(harmony, new object?[] { Find("Timberborn.TemplateInstantiation.TemplateInstantiator").GetMethod("Instantiate", All),
-                null, null, Activator.CreateInstance(hm, rewrite), null });
-            Installed = true;
-            Debug.Log("[BBPerfVISUALPREP] installed natural=True building=True");
-        }
-        catch (Exception e)
-        {
-            Natural = Building = false;
-            try { if (ht != null && harmony != null) ht.GetMethod("UnpatchAll", All)!.Invoke(harmony, new object[] { owner }); }
-            catch (Exception cleanup) { Debug.LogError("[BBPerfVISUALPREP] hook cleanup failed: " + cleanup); }
-            Debug.LogWarning("[BBPerfVISUALPREP] disabled: " + e.GetBaseException().Message);
-        }
+        Natural = Building = PerformanceSettings.Enabled && ReviewedModules();
+        return Enabled;
     }
+
+    [HarmonyPrefix]
+    [HarmonyPriority(400)]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void BeginLoad()
     {
         if (_depth++ != 0) return;
         Clones.Clear(); ComponentSafety.Clear(); Begin(); _compatible = ReviewedModules();
         if (!_compatible) Debug.Log("[BBPerfVISUALPREP] native fallback: module compatibility");
     }
+    [HarmonyFinalizer]
+    [HarmonyPriority(900)]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void EndLoad() { if (--_depth == 0) { Clones.Clear(); End(); } }
+    [HarmonyPostfix]
+    [HarmonyPriority(400)]
+    [HarmonyPatch(typeof(BaseInstantiator), nameof(BaseInstantiator.InstantiateInactive))]
     private static void RememberClone(GameObject prefab, GameObject __result)
     { if (_depth > 0 && __result) Clones[__result] = prefab; }
     internal static void Activate(GameObject root, bool active)
     {
-        if (_depth > 0 && _compatible && active && !root.activeInHierarchy && Clones.TryGetValue(root, out var prefab)) Prepare(root, prefab);
+        if (_depth > 0 && _compatible && active && !root.activeInHierarchy && Clones.TryGetValue(root, out var prefab)) PrepareVisuals(root, prefab);
         root.SetActive(active);
     }
-    private static IEnumerable<T> RewriteActivation<T>(IEnumerable<T> source)
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(TemplateInstantiator), nameof(TemplateInstantiator.Instantiate))]
+    private static IEnumerable<CodeInstruction> RewriteActivation(IEnumerable<CodeInstruction> instructions)
     {
-        var operand = typeof(T).GetField("operand")!; var opcode = typeof(T).GetField("opcode")!; var matches = 0;
-        foreach (var instruction in source)
+        var setActive = AccessTools.Method(typeof(GameObject), nameof(GameObject.SetActive));
+        int matches = 0;
+        foreach (var instruction in instructions)
         {
-            if (operand.GetValue(instruction) is MethodInfo method && method == typeof(GameObject).GetMethod(nameof(GameObject.SetActive)))
-            { operand.SetValue(instruction, typeof(PreparedEntityVisuals).GetMethod(nameof(Activate), All)); opcode.SetValue(instruction, OpCodes.Call); matches++; }
+            if (instruction.Calls(setActive))
+            {
+                instruction.opcode = OpCodes.Call;
+                instruction.operand = AccessTools.Method(typeof(PreparedEntityVisuals), nameof(Activate));
+                matches++;
+            }
             yield return instruction;
         }
-        if (matches != 1) throw new InvalidOperationException("Unexpected template activation call count: " + matches);
+        if (matches != 1) throw new InvalidOperationException("TemplateInstantiator.Instantiate: " + matches + " activations");
     }
-    private static MethodInfo MakeTranspiler(Type instruction)
-    {
-        // Harmony must persist a nongeneric MethodInfo when another mod later
-        // patches the same method. A closed generic transpiler loses its type
-        // arguments on this game's Harmony/Mono combination.
-        var sequence = typeof(IEnumerable<>).MakeGenericType(instruction);
-        var callbackType = typeof(Func<,>).MakeGenericType(sequence, sequence);
-        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("BBPerf.VisualPreparationBridge"), AssemblyBuilderAccess.Run);
-        var type = assembly.DefineDynamicModule("Main").DefineType("BBPerfVisualPreparationBridge", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
-        var callback = type.DefineField("Rewrite", callbackType, FieldAttributes.Public | FieldAttributes.Static);
-        var method = type.DefineMethod("Transpile", MethodAttributes.Public | MethodAttributes.Static, sequence, new[] { sequence });
-        var il = method.GetILGenerator();
-        il.Emit(OpCodes.Ldsfld, callback); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Callvirt, callbackType.GetMethod("Invoke")!); il.Emit(OpCodes.Ret);
-        var created = type.CreateType()!;
-        created.GetField("Rewrite")!.SetValue(null, Delegate.CreateDelegate(callbackType,
-            typeof(PreparedEntityVisuals).GetMethod(nameof(RewriteActivation), All)!.MakeGenericMethod(instruction)));
-        return created.GetMethod("Transpile")!;
-    }
-    // 1.0 passed model/world comparison but changed 155 native ray records; its
-    // bodies differ, so native activation stays there.
     private static bool ReviewedModules() => LoadCompatibility.Reviewed(LoadBodies.EntityVisuals);
     private static bool SafeComponent(Type type)
     {
         if (ComponentSafety.TryGetValue(type, out var safe)) return safe;
         safe = type.Assembly.GetName().Name?.StartsWith("Timberborn.", StringComparison.Ordinal) ?? false;
-        if (safe && _harmonyType != null)
+        if (safe)
         {
-            var infoMethod = _harmonyType.GetMethod("GetPatchInfo", All)!;
             foreach (var method in type.GetMethods(All).Where(m => m.Name == "Awake" || m.Name.Contains("Initialize") ||
                          m.Name.Contains("Model") || m.Name.Contains("Material") || m.Name.Contains("Bounds")))
             {
-                var info = infoMethod.Invoke(null, new object[] { method });
-                if (info == null) continue;
-                var owners = (IEnumerable<string>)info.GetType().GetProperty("Owners", All)!.GetValue(info)!;
-                bool Accepted(string owner) => owner == _owner || LoadCompatibility.ReviewedEverywhere(method, owner) || owner == "local.gpupathinginvestigation.benchmarkprobe" ||
-                    (owner == "beaverbuddies.perf.load.good-stack-models" || owner == "beaverbuddies.perf.test.lazy-good-stack" && Environment.GetCommandLineArgs().Contains("-t3mpTestLazyGoodStack")) &&
-                    (method.DeclaringType?.FullName == "Timberborn.Rendering.EntityMaterials" && (method.Name == "AddMaterials" || method.Name == "AddMaterial" || method.Name == "GetChildMaterials") ||
-                     method.DeclaringType?.FullName == "Timberborn.GoodStackSystem.GoodStackModel" && method.Name == "UpdateModel" ||
-                     method.DeclaringType?.FullName == "Timberborn.ForestryEffects.TreeShaker" && method.Name == "InitializeEntity") ||
-                    owner == "beaverbuddies.perf.load.status-icons" && method.DeclaringType?.FullName == "Timberborn.StatusSystem.StatusIconCycler" && method.Name == "InitializeIcon" ||
-                    owner == "beaverbuddies.perf.test.model-layout" && (method.DeclaringType?.FullName == "Timberborn.TubeSystem.TubeModel" && method.Name == "InitializeModels" ||
-                        method.DeclaringType?.FullName == "Timberborn.PathSystem.DynamicPathModel" && method.Name == "GetModelVariant" ||
-                        method.DeclaringType?.FullName == "Timberborn.ConstructionSites.ConstructionSiteProgressVisualizer" && method.Name == "InitializeStages");
+                var owners = Harmony.GetPatchInfo(method)?.Owners;
+                if (owners == null) continue;
+                bool Accepted(string owner) => LoadCompatibility.ReviewedEverywhere(method, owner);
                 if (owners.Any(o => !Accepted(o)))
                 {
                     Debug.Log("[BBPerfVISUALPREP] native component fallback: " + method.DeclaringType!.FullName + "." + method.Name);
@@ -164,7 +115,7 @@ internal static class PreparedEntityVisuals
         if (Enabled) Debug.Log($"[BBPerfVISUALPREP] natural={_natural} building={_building} nodes={_nodes} renderers={_renderers} colliders={_colliders} fallback={_fallback} plans={Plans.Count}");
         Plans.Clear(); Reasons.Clear(); ComponentSafety.Clear();
     }
-    internal static void Prepare(GameObject root, object layout)
+    internal static void PrepareVisuals(GameObject root, object layout)
     {
         if (!Enabled || root.activeInHierarchy) return;
         if (!Plans.TryGetValue(layout, out var plan)) Plans.Add(layout, plan = Build(root));

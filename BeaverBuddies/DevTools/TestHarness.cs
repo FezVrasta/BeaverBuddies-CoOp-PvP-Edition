@@ -57,6 +57,9 @@ namespace BeaverBuddies.DevTools
      */
     public class TestHarness : IUpdatableSingleton, IUnloadableSingleton
     {
+#if IS_STEAM
+        private static Steamworks.Callback<Steamworks.DownloadItemResult_t> _workshopDownloads;
+#endif
         public static readonly string Instance = Environment.GetEnvironmentVariable("BB_INSTANCE");
         public static bool Active => !string.IsNullOrEmpty(Instance);
         // This machine hosts a match's new game, started here rather than by matchmaking
@@ -358,6 +361,21 @@ namespace BeaverBuddies.DevTools
                     // The list's Join button
                     SingletonManager.GetSingleton<Matchmaking.HostBrowser>().OnUIConfirmed();
                     break;
+                case "workshopget":
+                {
+                    // A Workshop item downloaded without subscribing to it, for a run to install in its own Mods folder
+                    var item = new Steamworks.PublishedFileId_t(ulong.Parse(a[1]));
+                    _workshopDownloads ??= Steamworks.Callback<Steamworks.DownloadItemResult_t>.Create(result =>
+                    {
+                        Steamworks.SteamUGC.GetItemInstallInfo(result.m_nPublishedFileId, out _, out string at, 1024, out _);
+                        Plugin.Log($"[Test] workshop {result.m_nPublishedFileId} {result.m_eResult} at {at}");
+                    });
+                    bool started = Steamworks.SteamUGC.DownloadItem(item, true);
+                    // Already on disk: no callback comes
+                    if (Steamworks.SteamUGC.GetItemInstallInfo(item, out _, out string folder, 1024, out _) && Directory.Exists(folder)) Plugin.Log($"[Test] workshop {a[1]} k_EResultOK at {folder}");
+                    else Plugin.Log($"[Test] workshop {a[1]} downloading: {started}");
+                    break;
+                }
                 case "matchmods":
                     foreach (var match in Matchmaking.MatchList.Matches)
                     {

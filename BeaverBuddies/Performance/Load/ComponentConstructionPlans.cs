@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -15,23 +15,21 @@ using Bindito.Core.Internal;
 using Timberborn.BaseComponentSystem;
 using Timberborn.BlueprintSystem;
 using Binder = Bindito.Core.Internal.Binder;
+using HarmonyLib;
+using Timberborn.SingletonSystem;
 using Debug = UnityEngine.Debug;
 
 namespace BeaverBuddies.Performance;
 
+[HarmonyPatch]
 internal static partial class ComponentConstructionPlans
 {
     private static bool Reviewed() => ConstructionPlans.Reviewed() && LoadCompatibility.Reviewed(LoadBodies.ComponentConstruction);
-    private const string PatchId = "beaverbuddies.perf.load.component-recipes";
-    internal static bool Installed { get; private set; }
     private const BindingFlags All = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
     [ThreadStatic] private static int _depth;
     [ThreadStatic] private static Dictionary<BaseInstantiator, Owner>? _owners;
     [ThreadStatic] private static long _lists, _plans, _specReads, _specHits, _providerReads, _providerHits, _fallbacks;
     private static bool _compatible;
-    private static bool _singleInitializer;
-    private static Type _harmonyType = null!;
-    private static MethodBase[] _protectedMethods = null!;
 
     private sealed class Owner
     {
@@ -60,61 +58,22 @@ internal static partial class ComponentConstructionPlans
         internal readonly Step[] Steps;
         internal Plan(ImmutableArray<Type> types) { Types = types; Steps = new Step[types.Length]; }
     }
-    private static Type Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name)).First(t => t != null)!;
 
-    internal static void Install()
-    {
-        if (Installed || Environment.GetCommandLineArgs().Contains("-t3mpTestConstructionBaseline")) return;
-        if (!Reviewed()) { Debug.Log("[BBPerfCOMPONENTRECIPE] native fallback: unreviewed modules"); return; }
-        _harmonyType = Find("HarmonyLib.Harmony"); var hm = Find("HarmonyLib.HarmonyMethod");
-        var harmony = Activator.CreateInstance(_harmonyType, PatchId);
-        var patch = _harmonyType.GetMethods().Single(m => m.Name == "Patch" && m.GetParameters().Length == 5);
-        try
-        {
-        object Hook(string name)
-        {
-            var result = Activator.CreateInstance(hm, typeof(ComponentConstructionPlans).GetMethod(name, All))!;
-            if (name == nameof(End)) hm.GetField("priority")!.SetValue(result, 900);
-            return result;
-        }
-        patch.Invoke(harmony, new object?[] { Find("Timberborn.SingletonSystem.SingletonLifecycleService").GetMethod("LoadAll", All),
-            Hook(nameof(Begin)), null, null, Hook(nameof(End)) });
-        var instantiate = typeof(BaseInstantiator).GetMethod("InstantiateComponents", All)!;
-        _singleInitializer = instantiate.GetParameters().Length == 3;
-        patch.Invoke(harmony, new object?[] { instantiate,
-            Hook(_singleInitializer ? nameof(BeforeComponentsV10) : nameof(BeforeComponents)), null, null, null });
-        _protectedMethods = new MethodBase[] {
-            typeof(BaseInstantiator).GetMethod("InstantiateComponents", All)!,
-            typeof(BaseInstantiator).GetMethod("InstantiateComponent", All)!,
-            typeof(Blueprint).GetMethod(nameof(Blueprint.GetSpec), new[] { typeof(Type) })!,
-            typeof(Container).GetMethod(nameof(Container.GetInstance), new[] { typeof(Type) })!,
-            typeof(InstanceBank).GetMethod(nameof(InstanceBank.TryGetInstance))!,
-            typeof(InstanceProviderBank).GetMethod(nameof(InstanceProviderBank.TryGetInstanceProvider))!,
-            typeof(InstanceProviderBank).GetMethod(nameof(InstanceProviderBank.TryGetExportedInstanceProvider))!
-        };
-        Debug.Log("[BBPerfCOMPONENTRECIPE] installed; per-blueprint component order and lazy native provider links");
-        Installed = true;
-        }
-        catch (Exception e)
-        {
-            _harmonyType.GetMethod("UnpatchAll", All)!.Invoke(harmony, new object[] { PatchId });
-            Debug.LogWarning("[BBPerfCOMPONENTRECIPE] disabled: " + e.GetBaseException().Message);
-        }
-    }
+    static bool Prepare() => PerformanceSettings.Enabled && Reviewed();
 
-    private static bool CheckCompatibility()
-    {
-        if (!Reviewed()) return false;
-        var get = _harmonyType.GetMethod("GetPatchInfo", All)!;
-        foreach (var method in _protectedMethods)
-        {
-            var info = get.Invoke(null, new object[] { method });
-            if (info == null) continue;
-            var owners = (IEnumerable<string>)info.GetType().GetProperty("Owners", All)!.GetValue(info)!;
-            if (owners.Any(owner => owner != PatchId)) return false;
-        }
-        return true;
-    }
+    private static readonly MethodBase[] ProtectedMethods = {
+        typeof(BaseInstantiator).GetMethod("InstantiateComponents", All)!,
+        typeof(BaseInstantiator).GetMethod("InstantiateComponent", All)!,
+        typeof(Blueprint).GetMethod(nameof(Blueprint.GetSpec), new[] { typeof(Type) })!,
+        typeof(Container).GetMethod(nameof(Container.GetInstance), new[] { typeof(Type) })!,
+        typeof(InstanceBank).GetMethod(nameof(InstanceBank.TryGetInstance))!,
+        typeof(InstanceProviderBank).GetMethod(nameof(InstanceProviderBank.TryGetInstanceProvider))!,
+        typeof(InstanceProviderBank).GetMethod(nameof(InstanceProviderBank.TryGetExportedInstanceProvider))!
+    };
+
+    private static bool CheckCompatibility() => Reviewed() && LoadCompatibility.Unmodified(ProtectedMethods, PerformanceSettings.HarmonyId);
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void Begin()
     {
         if (_depth++ != 0) return;
@@ -122,6 +81,9 @@ internal static partial class ComponentConstructionPlans
         _lists = _plans = _specReads = _specHits = _providerReads = _providerHits = _fallbacks = 0;
         _compatible = CheckCompatibility();
     }
+    [HarmonyFinalizer]
+    [HarmonyPriority(900)]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void End()
     {
         if (--_depth != 0) return;
@@ -155,6 +117,8 @@ internal static partial class ComponentConstructionPlans
         return (InstanceProviderBank)first;
     }
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BaseInstantiator), nameof(BaseInstantiator.InstantiateComponents))]
     private static bool BeforeComponents(BaseInstantiator __instance, Blueprint blueprint, string name,
         IReadOnlyList<object> initializingComponents, ImmutableArray<Type> decoratedComponents,
         IContainer ____container, ComponentCacheService ____componentCacheService, ref List<object> __result)
@@ -171,19 +135,6 @@ internal static partial class ComponentConstructionPlans
         return false;
     }
 
-    private static bool BeforeComponentsV10(BaseInstantiator __instance, Blueprint blueprint,
-        BaseComponent initializingComponent, ImmutableArray<Type> decoratedComponents,
-        IContainer ____container, ComponentCacheService ____componentCacheService, ref List<object> __result)
-    {
-        var owner = GetOwner(__instance, blueprint, decoratedComponents, ____container);
-        if (owner == null) return true;
-        // 1.0 uses the blueprint name for capacity and one optional component.
-        var result = new List<object>(____componentCacheService.GetComponentsCount(blueprint.Name));
-        if (initializingComponent != null) result.Add(initializingComponent);
-        Fill(owner, blueprint, decoratedComponents, result);
-        __result = result;
-        return false;
-    }
 
     private static Owner? GetOwner(BaseInstantiator instantiator, Blueprint blueprint,
         ImmutableArray<Type> decoratedComponents, IContainer container)

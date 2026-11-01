@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -6,12 +6,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using HarmonyLib;
 using System.Runtime.CompilerServices;
 using Timberborn.BaseComponentSystem;
 using Timberborn.EntitySystem;
 using Timberborn.TickSystem;
-using Debug = UnityEngine.Debug;
 
 namespace BeaverBuddies.Performance;
 
@@ -25,12 +24,9 @@ namespace BeaverBuddies.Performance;
 // entity with no enabled tickable component is exactly the case where vanilla
 // reads activeInHierarchy and runs an empty loop, so skipping it changes
 // nothing. Nothing here caches simulation results.
+[HarmonyPatch]
 internal static class TickFrontier
 {
-    private const string Owner = "beaverbuddies.perf.runtime.frontier";
-
-    internal static bool Installed { get; private set; }
-
     // ---- state -------------------------------------------------------------
 
     private sealed class Group
@@ -148,36 +144,20 @@ internal static class TickFrontier
     private static readonly ConditionalWeakTable<BaseComponent, ComponentState> Components = new ConditionalWeakTable<BaseComponent, ComponentState>();
     private static readonly ConditionalWeakTable<ComponentCache, GroupList> Caches = new ConditionalWeakTable<ComponentCache, GroupList>();
 
-    // ---- install -----------------------------------------------------------
-
-    internal static void Install(Type harmonyType, Type harmonyMethodType, MethodInfo patch)
-    {
-        if (Installed) return;
-        RuntimePatches.Apply(Owner, harmonyType, harmonyMethodType, patch, apply =>
-        {
-            var bucket = typeof(TickableEntityBucket);
-            var component = typeof(BaseComponent);
-            var cache = typeof(ComponentCache);
-            apply(RuntimePatches.Find(bucket, "Add", new[] { typeof(TickableEntity) }), null, nameof(AfterAdd), null, null);
-            apply(RuntimePatches.Find(bucket, "Remove", new[] { typeof(TickableEntity) }), null, nameof(AfterRemove), null, null);
-            // Finalizers run on normal and exceptional completion alike.
-            apply(RuntimePatches.Find(component, "EnableComponent", Type.EmptyTypes), nameof(BeforeEnable), null, null, nameof(FinalizeEnable));
-            apply(RuntimePatches.Find(component, "DisableComponent", Type.EmptyTypes), null, null, null, nameof(FinalizeDisable));
-            apply(RuntimePatches.Find(cache, "OnDestroy", Type.EmptyTypes), nameof(BeforeDestroy), null, null, null);
-            apply(RuntimePatches.Find(bucket, "TickAll", Type.EmptyTypes), null, null, nameof(Rewrite), null);
-        }, typeof(TickFrontier));
-        Installed = true;
-        Debug.Log("[BeaverBuddies Perf] Tick frontier installed.");
-    }
+    static bool Prepare() => PerformanceSettings.Enabled;
 
     // ---- bucket membership ---------------------------------------------------
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TickableEntityBucket), nameof(TickableEntityBucket.Add))]
     private static void AfterAdd(TickableEntityBucket __instance, TickableEntity tickableEntity)
     {
         var group = GroupFor(tickableEntity);
         Buckets.GetOrCreateValue(__instance).Add(group.Key, group);
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TickableEntityBucket), nameof(TickableEntityBucket.Remove))]
     private static void AfterRemove(TickableEntityBucket __instance, TickableEntity tickableEntity)
     {
         if (__instance._isTicking) return; // deferred; TickAllFast applies it
@@ -245,6 +225,8 @@ internal static class TickFrontier
     // __state records whether THIS invocation took a pending slot, so the
     // finalizer releases exactly that slot once (Harmony may re-run finalizers
     // on its exception path, and a foreign prefix may throw before this one).
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BaseComponent), nameof(BaseComponent.EnableComponent))]
     private static void BeforeEnable(BaseComponent __instance, out bool __state)
     {
         __state = false;
@@ -262,6 +244,8 @@ internal static class TickFrontier
         Reconcile(state);
     }
 
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(BaseComponent), nameof(BaseComponent.EnableComponent))]
     private static Exception? FinalizeEnable(BaseComponent __instance, ref bool __state, Exception? __exception)
     {
         if (Components.TryGetValue(__instance, out var state))
@@ -274,6 +258,8 @@ internal static class TickFrontier
         return __exception;
     }
 
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(BaseComponent), nameof(BaseComponent.DisableComponent))]
     private static Exception? FinalizeDisable(BaseComponent __instance, Exception? __exception)
     {
         if (Components.TryGetValue(__instance, out var state))
@@ -302,6 +288,8 @@ internal static class TickFrontier
 
     // ---- lifetime --------------------------------------------------------------
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(ComponentCache), nameof(ComponentCache.OnDestroy))]
     private static void BeforeDestroy(ComponentCache __instance)
     {
         if (!Caches.TryGetValue(__instance, out var list)) return;
@@ -314,8 +302,9 @@ internal static class TickFrontier
 
     // ---- traversal -------------------------------------------------------------
 
-    private static IEnumerable<T> Rewrite<T>(IEnumerable<T> instructions) =>
-        RuntimePatches.CallAndReturn<T>(typeof(TickFrontier).GetMethod(nameof(TickAllFast), RuntimePatches.All)!, 1);
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(TickableEntityBucket), nameof(TickableEntityBucket.TickAll))]
+    private static IEnumerable<CodeInstruction> TickAll(IEnumerable<CodeInstruction> instructions) => Replace.With(typeof(TickFrontier), nameof(TickAllFast));
 
     private static void Rebuild(BucketIndex index, SortedList<Guid, TickableEntity> source)
     {

@@ -1,108 +1,70 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
-// Changed for BeaverBuddies: namespace, settings and logging; the
-// optimizations themselves are unchanged.
 
-using System;
 using System.Collections.Generic;
-using System.Reflection;
+using HarmonyLib;
 using Timberborn.InventorySystem;
 using Timberborn.NaturalResourcesLifecycle;
 using Timberborn.Navigation;
 using Timberborn.YielderFinding;
 using Timberborn.Yielding;
-using Debug = UnityEngine.Debug;
 
-namespace BeaverBuddies.Performance;
-
-// YielderFinder projects every candidate yielder through a navigation path
-// query (RegularYielderAsReachable / AccessibleYielderAsReachable) before
-// ClosestYielderFinder decides whether the candidate matters. A candidate that
-// is not yielding contributes only to the "something is in range" flag, and
-// only when that flag is still false and it is a living resource; once the
-// flag is set, or when it is neither yielding nor alive, its path query result
-// is never used. Those queries are skipped. Every path query that can affect
-// the result is still made through the original helpers, in the original
-// candidate order, and the closest-yielder selection is unchanged.
-internal static class YielderReachabilitySkip
+namespace BeaverBuddies.Performance
 {
-    private const string Owner = "beaverbuddies.perf.runtime.yielder-reachability";
-    internal static long Queried, Skipped;
-    internal static bool Installed { get; private set; }
-    // Plain counters for the driver's state report: candidates queried through a
-    // path search and candidates skipped.
-    internal static string Summary() => !Installed ? "disabled" : "queried=" + Queried + ",skipped=" + Skipped;
-
-    internal static void Install(Type harmonyType, Type harmonyMethodType, MethodInfo patch)
+    /**
+     * A yielder search skips the path query for a candidate whose answer
+     * can't change the result: one that isn't yielding, once something is
+     * already known to be in range (or it isn't alive). The first candidate
+     * is always asked, since that query fills the start's flow field the way
+     * the game's own does.
+     */
+    [HarmonyPatch(typeof(YielderFinder))]
+    static class YielderReachabilitySkip
     {
-        if (Installed) return;
-        RuntimePatches.Apply(Owner, harmonyType, harmonyMethodType, patch, apply =>
+        static bool Prepare() => PerformanceSettings.Enabled;
+
+        [HarmonyTranspiler]
+        [HarmonyPatch(nameof(YielderFinder.FindLivingYielderWithoutAccessible))]
+        static IEnumerable<CodeInstruction> Living(IEnumerable<CodeInstruction> instructions) => Replace.With(typeof(YielderReachabilitySkip), nameof(FindLiving));
+
+        [HarmonyTranspiler]
+        [HarmonyPatch(nameof(YielderFinder.FindYielderWithAccessible))]
+        static IEnumerable<CodeInstruction> WithAccessible(IEnumerable<CodeInstruction> instructions) => Replace.With(typeof(YielderReachabilitySkip), nameof(FindAccessible));
+
+        static YielderSearchResult FindLiving(YielderFinder finder, Inventory inventory, Accessible start, int liftingCapacity, IEnumerable<Yielder> yielders) =>
+            Search(finder._closestYielderFinder, inventory, start, liftingCapacity, yielders, living: true, accessible: false);
+
+        static YielderSearchResult FindAccessible(YielderFinder finder, Inventory inventory, Accessible start, int liftingCapacity, IEnumerable<Yielder> yielders) =>
+            Search(finder._closestYielderFinder, inventory, start, liftingCapacity, yielders, living: false, accessible: true);
+
+        // ClosestYielderFinder.FindYielder with the reachability check in its loop
+        static YielderSearchResult Search(ClosestYielderFinder finder, Inventory inventory, Accessible start, int liftingCapacity, IEnumerable<Yielder> yielders, bool living, bool accessible)
         {
-            apply(RuntimePatches.Find(typeof(YielderFinder), "FindLivingYielderWithoutAccessible"), null, null, nameof(RewriteLiving), null);
-            apply(RuntimePatches.Find(typeof(YielderFinder), "FindYielderWithAccessible"), null, null, nameof(RewriteAccessible), null);
-        }, typeof(YielderReachabilitySkip));
-        Installed = true;
-        Debug.Log("[BeaverBuddies Perf] Yielder reachability skip installed.");
-    }
-
-    private static YielderSearchResult FindLivingYielderWithoutAccessible(YielderFinder self, Inventory receivingInventory, Accessible start, int liftingCapacity, IEnumerable<Yielder> yielders) =>
-        Search(self._closestYielderFinder, receivingInventory, start, liftingCapacity, yielders, true, false);
-
-    private static YielderSearchResult FindYielderWithAccessible(YielderFinder self, Inventory receivingInventory, Accessible start, int liftingCapacity, IEnumerable<Yielder> yielders) =>
-        Search(self._closestYielderFinder, receivingInventory, start, liftingCapacity, yielders, false, true);
-
-    // ClosestYielderFinder.FindYielder(inventory, capacity, projected, isLiving)
-    // with the projection fused into the candidate loop.
-    private static YielderSearchResult Search(ClosestYielderFinder finder, Inventory receivingInventory, Accessible start, int liftingCapacity,
-        IEnumerable<Yielder> yielders, bool isLiving, bool accessible)
-    {
-        bool flag = false;
-        bool queried = false;
-        foreach (Yielder candidate in yielders)
-        {
-            bool prechecked = false;
-            bool candidateYielding = false;
-            // The first candidate is always queried: the native query fills the
-            // start node's terrain flow field as a side effect, and one query
-            // leaves that cache in the same state as native's queries.
-            // Lifetime-invalid candidates take the native sequence unchanged.
-            if (queried && (bool)candidate)
+            bool inRange = false, asked = false;
+            foreach (Yielder candidate in yielders)
             {
-                prechecked = true;
-                candidateYielding = candidate.IsYielding;
-                bool contributes;
-                if (candidateYielding) contributes = true;
-                else if (flag || !isLiving) contributes = false;
-                else
+                bool known = asked && candidate;
+                bool yielding = known && candidate.IsYielding;
+                if (known && !yielding)
                 {
-                    // IsAlive() dereferences the component; a candidate without it
-                    // is left to the native sequence (which throws only if reachable).
+                    if (inRange || !living) continue;
                     var resource = candidate.GetComponent<LivingNaturalResource>();
-                    contributes = ReferenceEquals(resource, null) || !resource.IsDead;
+                    if (!ReferenceEquals(resource, null) && resource.IsDead) continue;
                 }
-                if (!contributes) { Skipped++; continue; }
+                asked = true;
+                ReachableYielder reachable = accessible ? YielderFinder.AccessibleYielderAsReachable(start, candidate) : YielderFinder.RegularYielderAsReachable(start, candidate);
+                Yielder yielder = reachable.Yielder;
+                if (!yielder) continue;
+                bool isYielding = known ? yielding : yielder.IsYielding;
+                inRange = inRange || isYielding || living && yielder.IsAlive();
+                if (isYielding) finder.AddCloserYielder(reachable);
             }
-            Queried++;
-            queried = true;
-            ReachableYielder reachableYielder = accessible ? YielderFinder.AccessibleYielderAsReachable(start, candidate) : YielderFinder.RegularYielderAsReachable(start, candidate);
-            Yielder yielder = reachableYielder.Yielder;
-            if ((bool)yielder)
-            {
-                bool isYielding = prechecked ? candidateYielding : yielder.IsYielding;
-                flag = flag || isYielding || (isLiving && yielder.IsAlive());
-                if (isYielding) finder.AddCloserYielder(reachableYielder);
-            }
+            if (!inRange) return YielderSearchResult.CreateNoYielderInRange();
+            YielderSearchResult result = finder.FindYielder(inventory, liftingCapacity);
+            finder._yielders.Clear();
+            finder._orderedYielders.Clear();
+            return result;
         }
-        if (!flag) return YielderSearchResult.CreateNoYielderInRange();
-        YielderSearchResult result = finder.FindYielder(receivingInventory, liftingCapacity);
-        finder._yielders.Clear();
-        finder._orderedYielders.Clear();
-        return result;
     }
-
-    private static IEnumerable<T> RewriteLiving<T>(IEnumerable<T> instructions) =>
-        RuntimePatches.CallAndReturn<T>(typeof(YielderReachabilitySkip).GetMethod(nameof(FindLivingYielderWithoutAccessible), RuntimePatches.All)!, 5);
-    private static IEnumerable<T> RewriteAccessible<T>(IEnumerable<T> instructions) =>
-        RuntimePatches.CallAndReturn<T>(typeof(YielderReachabilitySkip).GetMethod(nameof(FindYielderWithAccessible), RuntimePatches.All)!, 5);
 }

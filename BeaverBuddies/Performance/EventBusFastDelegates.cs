@@ -1,74 +1,50 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
-// Changed for BeaverBuddies: namespace, settings and logging; the
-// optimizations themselves are unchanged.
 
 using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Reflection.Emit;
+using HarmonyLib;
+using Timberborn.SingletonSystem;
 
-using Debug = UnityEngine.Debug;
-
-namespace BeaverBuddies.Performance;
-
-// Preserve RegisterMethod's native validation, closure and registry call.
-// Only substitute the resulting Action<object> before native registration.
-internal static class EventBusFastDelegates
+namespace BeaverBuddies.Performance
 {
-    private const string Owner = "beaverbuddies.perf.runtime.events";
-    private static readonly MethodInfo WrapperFactory = typeof(EventBusFastDelegates)
-        .GetMethod(nameof(CreateWrapper), BindingFlags.Public | BindingFlags.Static)!;
-
-    internal static bool Installed { get; private set; }
-
-    internal static void Install(Type harmonyType, Type harmonyMethodType, MethodInfo patch)
+    /**
+     * [OnEvent] handlers are called through a typed delegate instead of
+     * MethodInfo.Invoke. The event bus only delivers an event to handlers of
+     * its exact type, so the cast always holds.
+     */
+    [HarmonyPatch(typeof(EventBus), nameof(EventBus.RegisterMethod))]
+    [HarmonyPriority(HarmonyLib.Priority.Last)]
+    static class EventBusFastDelegates
     {
-        if (Installed) return;
-        RuntimePatches.Apply(Owner, harmonyType, harmonyMethodType, patch, apply =>
-            apply(RuntimePatches.Find(typeof(Timberborn.SingletonSystem.EventBus), "RegisterMethod", new[] { typeof(object), typeof(MethodInfo) }),
-                null, null, nameof(Rewrite), null), typeof(EventBusFastDelegates));
-        Installed = true;
-        Debug.Log("[BeaverBuddies Perf] EventBus fast delegates installed.");
-    }
+        static readonly MethodInfo Typed = AccessTools.Method(typeof(EventBusFastDelegates), nameof(Create));
 
-    private static IEnumerable<T> Rewrite<T>(IEnumerable<T> instructions)
-    {
-        var list = new List<T>(instructions);
-        var opcode = typeof(T).GetField("opcode", RuntimePatches.All)!;
-        var operand = typeof(T).GetField("operand", RuntimePatches.All)!;
-        var actionConstructors = new List<int>();
-        for (var i = 0; i < list.Count; i++)
+        static bool Prepare() => PerformanceSettings.Enabled;
+
+        // EventBus.RegisterMethod, with the delegate swapped
+        static bool Prefix(EventBus __instance, object subscriber, MethodInfo method)
         {
-            if ((OpCode)opcode.GetValue(list[i])! == OpCodes.Newobj &&
-                operand.GetValue(list[i]) is ConstructorInfo constructor && constructor.DeclaringType == typeof(Action<object>))
-                actionConstructors.Add(i);
+            if (method.ReturnType != typeof(void))
+            {
+                throw new ArgumentException($"Can't register {method} of {subscriber.GetType()}. Listening methods must return void.");
+            }
+            ParameterInfo[] parameters = method.GetParameters();
+            if (parameters.Length != 1)
+            {
+                throw new ArgumentException($"Can't register {method} of {subscriber.GetType()}. Listening methods must have exactly one parameter.");
+            }
+            Type type = parameters[0].ParameterType;
+            var action = (Action<object>)Typed.MakeGenericMethod(type).Invoke(null, new[] { subscriber, method });
+            LoadEventRouter.RememberHandler(action, subscriber, method);
+            __instance._subscriptions.Add(type, subscriber, action);
+            return false;
         }
-        if (actionConstructors.Count != 1)
-            throw new InvalidOperationException("EventBus.RegisterMethod: expected one Action<object> constructor, found " + actionConstructors.Count);
-        // The existing delegate is already on the stack. Keep every original
-        // instruction, label and exception marker at its original instruction.
-        var index = actionConstructors[0] + 1;
-        var replacement = typeof(EventBusFastDelegates).GetMethod(nameof(PreferTyped), RuntimePatches.All)!;
-        T Instruction(OpCode code, object? value = null) => (T)Activator.CreateInstance(typeof(T), code, value)!;
-        list.InsertRange(index, new[] { Instruction(OpCodes.Ldarg_1), Instruction(OpCodes.Ldarg_2), Instruction(OpCodes.Call, replacement) });
-        return list;
-    }
 
-    // EventBus delivers an event only to subscriptions of its exact type, so the
-    // typed delegate replaces the reflection call for every [OnEvent] handler.
-    internal static Action<object> PreferTyped(Action<object> original, object subscriber, MethodInfo method)
-    {
-        var wrapper = (Action<object>)WrapperFactory.MakeGenericMethod(method.GetParameters()[0].ParameterType)
-            .Invoke(null, new object[] { subscriber, method })!;
-        LoadEventRouter.RememberHandler(wrapper, subscriber, method);
-        return wrapper;
-    }
-
-    public static Action<object> CreateWrapper<T>(object subscriber, MethodInfo method)
-    {
-        var typed = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), subscriber, method);
-        return eventObject => typed((T)eventObject);
+        static Action<object> Create<T>(object subscriber, MethodInfo method)
+        {
+            var typed = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), subscriber, method);
+            return e => typed((T)e);
+        }
     }
 }

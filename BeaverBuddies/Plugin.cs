@@ -111,6 +111,7 @@ namespace BeaverBuddies
             if (DevTools.TestHarness.Active) containerDefinition.Bind<DevTools.TestHarness>().AsSingleton();
             containerDefinition.Bind<FirstTimerService>().AsSingleton();
             containerDefinition.Bind<ChangeLogService>().AsSingleton();
+            containerDefinition.Bind<Performance.OtherModsWarning>().AsSingleton();
             containerDefinition.Bind<RegisteredLocalizationService>().AsSingleton();
             containerDefinition.Bind<MultiplayerMapMetadataService>().AsSingleton();
             containerDefinition.Bind<Settings>().AsSingleton();
@@ -172,6 +173,8 @@ namespace BeaverBuddies
             // Co-op first among the game modes for a game with others, before the mods that depend on this one add theirs
             Matchmaking.MatchOptions.AddCoOp();
 
+            Performance.PerformanceSettings.Start();
+
             // apply all harmony patches automatically.
             Harmony harmony = new Harmony(ID);
             PatchAll(harmony);
@@ -183,7 +186,8 @@ namespace BeaverBuddies
 
             // After our own patches, so the optimizations' checks for other
             // patches on the methods they replace see ours
-            BeaverBuddies.Performance.RuntimePatches.Install();
+            if (Performance.PerformanceSettings.Enabled) Performance.DeferredGoodStackModels.Install();
+            else LogWarning("Performance optimizations are off (BeaverBuddies-noperf, or T3MP or Performance Plus installed)");
 
             // The players' colors on the map, when Timber Atlas is installed
             BeaverBuddies.Modding.AtlasHooks.Register();
@@ -201,11 +205,14 @@ namespace BeaverBuddies
         // stopping every patch after it
         private static void PatchAll(Harmony harmony)
         {
+            // The performance patches under their own id: the load optimizations
+            // fall back to the game's code on a method another owner patched
+            Harmony performance = new Harmony(Performance.PerformanceSettings.HarmonyId);
             foreach (Type type in AccessTools.GetTypesFromAssembly(typeof(Plugin).Assembly))
             {
                 try
                 {
-                    if (type.HasHarmonyAttribute()) harmony.CreateClassProcessor(type).Patch();
+                    if (type.HasHarmonyAttribute()) (type.Namespace == typeof(Performance.PerformanceSettings).Namespace ? performance : harmony).CreateClassProcessor(type).Patch();
                 }
                 catch (Exception) when (!Steam.SteamSupport.Installed)
                 {

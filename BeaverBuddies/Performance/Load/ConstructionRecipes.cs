@@ -10,6 +10,8 @@ using System.Reflection;
 using Bindito.Core.Internal;
 using Debug = UnityEngine.Debug;
 
+using HarmonyLib;
+
 namespace BeaverBuddies.Performance;
 
 internal static partial class ConstructionPlans
@@ -56,7 +58,7 @@ internal static partial class ConstructionPlans
             {
                 if (!injection.Prepared)
                 {
-                    injection.Plan = _boundArguments ? Build(injection.Method, (ParameterProvider)_injector._parameterProvider) : GetPlan(injection.Method);
+                    injection.Plan = GetPlan(injection.Method);
                     injection.Prepared = true;
                 }
                 var plan = injection.Plan;
@@ -89,7 +91,7 @@ internal static partial class ConstructionPlans
                 injector._parameterProvider.GetType() != typeof(ParameterProvider))
             { _prepared = true; return; }
             var method = creator._constructorRetriever.GetEligibleConstructor(_type);
-            var plan = method == null ? null : _boundArguments ? Build(method, (ParameterProvider)creator._parameterProvider) : GetPlan(method);
+            var plan = method == null ? null : GetPlan(method);
             _constructor = plan;
             _parameters = (ParameterProvider)creator._parameterProvider;
             _injector = injector;
@@ -98,6 +100,8 @@ internal static partial class ConstructionPlans
         }
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(InstanceProviderFuncFactory), nameof(InstanceProviderFuncFactory.CreateInstanceProviderFunc))]
     private static void AfterProviderFunction(InstanceProviderFuncFactory __instance,
         ProvisionBinding provisionBinding, ref Func<object> __result)
     {
@@ -112,7 +116,6 @@ internal static partial class ConstructionPlans
 
     private static void ReportRecipes()
     {
-        if (!Installed) return;
         Debug.Log($"[BBPerfDIRECIPE] calls={_recipeCalls} builds={_recipeBuilds} fallbacks={_recipeFallbacks}");
         if (_depth == 0) _recipeCalls = _recipeBuilds = _recipeFallbacks = 0;
     }

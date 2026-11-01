@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -17,20 +17,22 @@ using Timberborn.SingletonSystem;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
+using HarmonyLib;
+
 namespace BeaverBuddies.Performance;
 
 // Optional provider for LoadEventRouter. Native PostNow still invokes handlers
 // and owns pending registrations, nesting and exception wrapping.
+[HarmonyPatch]
 internal static class BlockLoadRouting
 {
     private const BindingFlags All = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-    private const string Owner = "beaverbuddies.perf.load.block-routing";
     private sealed class Marker { internal object Subscriber = null!; internal byte Kind; }
     private sealed class Session
     {
         internal SubscriptionRegistry Registry = null!;
         internal readonly Dictionary<Type, Plan> Plans = new Dictionary<Type, Plan>();
-        internal long Events, Rebuilds, IndexBuilds, Skipped, Delivered, Unknown, Validated, FallbackRuns;
+        internal long Events, Rebuilds, IndexBuilds, Skipped, Delivered, Unknown, FallbackRuns;
     }
     private sealed class Plan
     {
@@ -46,86 +48,72 @@ internal static class BlockLoadRouting
         internal Dictionary<long, List<int>>? Columns;
     }
     private static readonly ConditionalWeakTable<Action<object>, Marker> Markers = new ConditionalWeakTable<Action<object>, Marker>();
-    private static Type _water = null!, _harmony = null!;
-    private static MethodInfo[] _waterHandlers = null!, _layeredHandlers = null!, _guardMethods = null!;
-    private static Func<object, Vector3Int> _waterCoordinates = null!;
-    private static Func<Dictionary<object, Action<object>>, int> _version = null!;
     private static int _epoch;
-    private static bool _validate;
-    private static bool _baseline = false;
-    private static Type? Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name)).FirstOrDefault(t => t != null);
     private static int Epoch => Volatile.Read(ref _epoch);
 
-    internal static bool Installed { get; private set; }
     private static bool Reviewed() => LoadCompatibility.Reviewed(LoadBodies.BlockRouting);
 
-    internal static void Install()
+    private static readonly Type Water = typeof(Timberborn.WaterBuildings.WaterInputPipeCoordinates);
+    private static readonly MethodInfo[] WaterHandlers = { Water.GetMethod("OnBlockObjectSetEvent", All)!, Water.GetMethod("OnBlockObjectUnsetEvent", All)! };
+    private static readonly MethodInfo[] LayeredHandlers = { typeof(LayeredBlockObstacle).GetMethod("OnBlockObjectSet", All)!, typeof(LayeredBlockObstacle).GetMethod("OnBlockObjectUnset", All)! };
+    private static readonly Func<Dictionary<object, Action<object>>, int> Version = Getter<Dictionary<object, Action<object>>, int>(typeof(Dictionary<object, Action<object>>), null,
+        typeof(Dictionary<object, Action<object>>).GetField("_version", All) ?? typeof(Dictionary<object, Action<object>>).GetField("version", All)!);
+    // What the routing relies on: anyone else's patch here and loads deliver natively
+    private static readonly MethodInfo[] GuardMethods = WaterHandlers.Concat(LayeredHandlers).Concat(new[] {
+        Water.GetMethod("ShouldUpdate", All)!, Water.GetProperty("Coordinates", All)!.GetMethod!, Water.GetProperty("Coordinates", All)!.SetMethod!,
+        typeof(LayeredBlockObstacle).GetMethod("UpdateMaxOccupancyRangeIfCoordinatesMatch", All, null, new[] { typeof(IEnumerable<Vector3Int>) }, null)!,
+        typeof(LayeredBlockObstacle).GetMethod("UpdateMaxOccupancyRangeIfCoordinatesMatch", All, null, new[] { typeof(Vector2Int) }, null)!,
+        typeof(LayeredBlockObstacle).GetMethod("CreateBlockOccupationLayers", All)!, typeof(LayeredBlockObstacle).GetMethod("RemoveBlockOccupationLayers", All)!,
+        typeof(BlockOccupationLayer).GetMethod("Contains", All)!, typeof(BlockOccupationLayer).GetMethod("AddBlockOccupier", All)!,
+        typeof(BlockOccupier).GetProperty("BlockObject", All)!.GetMethod!, typeof(BlockOccupier).GetProperty("BlockObject", All)!.SetMethod!,
+        typeof(BlockObjectSetEvent).GetProperty("BlockObject", All)!.GetMethod!, typeof(BlockObjectUnsetEvent).GetProperty("BlockObject", All)!.GetMethod!,
+        typeof(BlockObject).GetProperty("Coordinates", All)!.GetMethod!, typeof(BlockObject).GetProperty("Coordinates", All)!.SetMethod!,
+        typeof(BlockObject).GetProperty("PositionedBlocks", All)!.GetMethod!, typeof(BlockObject).GetProperty("PositionedBlocks", All)!.SetMethod!,
+        typeof(PositionedBlocks).GetMethod("GetAllCoordinates", All)!, typeof(PositionedBlocks).GetMethod("GetAllBlocks", All)!,
+        typeof(Block).GetProperty("Coordinates", All)!.GetMethod!,
+    }).Concat(typeof(Timberborn.Common.VectorExtensions).GetMethods(All).Where(m => m.Name == "XY")).Distinct().ToArray();
+
+    // The four hooks are one provider: claimed only as a complete set
+    static bool Prepare()
     {
-        var args = Environment.GetCommandLineArgs();
-        if (Installed || args.Contains("-t3mpTestBlockRoutingBaseline")) return;
-        if (!Reviewed()) { Debug.Log("[BBPerfBLOCKROUTING] native fallback: unreviewed modules"); return; }
-        // The four hooks are one provider; claim them only as a complete set.
-        if (LoadEventRouter.AdditionalRememberHandler != null || LoadEventRouter.AdditionalCreateSession != null ||
-            LoadEventRouter.AdditionalGetSubscriptions != null || LoadEventRouter.AdditionalEndSession != null)
-        { Debug.Log("[BBPerfBLOCKROUTING] native fallback: routing provider already attached"); return; }
-        _harmony = Find("HarmonyLib.Harmony")!; var hm = Find("HarmonyLib.HarmonyMethod")!;
-        var harmony = Activator.CreateInstance(_harmony, Owner);
-        try
-        {
-            _validate = args.Contains("-t3mpTestProductionBlockValidate");
-            _water = Find("Timberborn.WaterBuildings.WaterInputPipeCoordinates") ?? Find("Timberborn.WaterBuildings.WaterInputCoordinates")!;
-            _waterHandlers = new[] { _water.GetMethod("OnBlockObjectSetEvent", All)!, _water.GetMethod("OnBlockObjectUnsetEvent", All)! };
-            _layeredHandlers = new[] { typeof(LayeredBlockObstacle).GetMethod("OnBlockObjectSet", All)!, typeof(LayeredBlockObstacle).GetMethod("OnBlockObjectUnset", All)! };
-            _waterCoordinates = Getter<object, Vector3Int>(_water, _water.GetProperty("Coordinates", All)!.GetMethod, null);
-            var dictionary = typeof(Dictionary<object, Action<object>>);
-            _version = Getter<Dictionary<object, Action<object>>, int>(dictionary, null, dictionary.GetField("_version", All) ?? dictionary.GetField("version", All)!);
-            _guardMethods = _waterHandlers.Concat(_layeredHandlers).Concat(new[] {
-                _water.GetMethod("ShouldUpdate", All)!, _water.GetProperty("Coordinates", All)!.GetMethod!,
-                typeof(LayeredBlockObstacle).GetMethod("UpdateMaxOccupancyRangeIfCoordinatesMatch", All, null, new[] { typeof(IEnumerable<Vector3Int>) }, null)!,
-                typeof(LayeredBlockObstacle).GetMethod("UpdateMaxOccupancyRangeIfCoordinatesMatch", All, null, new[] { typeof(Vector2Int) }, null)!,
-                typeof(BlockOccupationLayer).GetMethod("Contains", All)!, typeof(BlockOccupier).GetProperty("BlockObject", All)!.GetMethod!,
-                typeof(BlockOccupier).GetProperty("BlockObject", All)!.SetMethod!,
-                typeof(BlockObjectSetEvent).GetProperty("BlockObject", All)!.GetMethod!,
-                typeof(BlockObjectUnsetEvent).GetProperty("BlockObject", All)!.GetMethod!,
-                typeof(BlockObject).GetProperty("Coordinates", All)!.GetMethod!, typeof(BlockObject).GetProperty("PositionedBlocks", All)!.GetMethod!,
-                typeof(PositionedBlocks).GetMethod("GetAllCoordinates", All)!, typeof(PositionedBlocks).GetMethod("GetAllBlocks", All)!,
-                typeof(Block).GetProperty("Coordinates", All)!.GetMethod!,
-                _water.GetProperty("Coordinates", All)!.SetMethod!,
-                typeof(BlockOccupier).GetProperty("BlockObject", All)!.SetMethod!,
-                typeof(BlockObject).GetProperty("Coordinates", All)!.SetMethod!,
-                typeof(BlockObject).GetProperty("PositionedBlocks", All)!.SetMethod!,
-                typeof(BlockOccupationLayer).GetMethod("AddBlockOccupier", All)!,
-                typeof(LayeredBlockObstacle).GetMethod("CreateBlockOccupationLayers", All)!,
-                typeof(LayeredBlockObstacle).GetMethod("RemoveBlockOccupationLayers", All)!
-            }).Concat(typeof(Timberborn.Common.VectorExtensions).GetMethods(All).Where(m => m.Name == "XY")).Distinct().ToArray();
-            var patch = _harmony.GetMethods().Single(m => m.Name == "Patch" && m.GetParameters().Length == 5);
-            var hook = Activator.CreateInstance(hm, typeof(BlockLoadRouting).GetMethod(nameof(Changed), All));
-            foreach (var method in new[] {
-                _water.GetProperty("Coordinates", All)!.SetMethod!,
-                typeof(BlockOccupier).GetProperty("BlockObject", All)!.SetMethod!,
-                typeof(BlockObject).GetProperty("Coordinates", All)!.SetMethod!,
-                typeof(BlockObject).GetProperty("PositionedBlocks", All)!.SetMethod!,
-                typeof(BlockOccupationLayer).GetMethod("AddBlockOccupier", All)!
-            }) patch.Invoke(harmony, new object?[] { method, null, hook, null, null });
-            foreach (var name in new[] { "CreateBlockOccupationLayers", "RemoveBlockOccupationLayers" })
-                patch.Invoke(harmony, new object?[] { typeof(LayeredBlockObstacle).GetMethod(name, All), hook, null, null, hook });
-            LoadEventRouter.AdditionalRememberHandler = Remember;
-            LoadEventRouter.AdditionalCreateSession = CreateSession;
-            LoadEventRouter.AdditionalGetSubscriptions = GetSubscriptions;
-            LoadEventRouter.AdditionalEndSession = Report;
-            Installed = true;
-            Debug.Log("[BBPerfBLOCKROUTING] installed validate=" + _validate);
-        }
-        catch (Exception e)
-        {
-            _harmony.GetMethod("UnpatchAll", All)!.Invoke(harmony, new object[] { Owner });
-            LoadEventRouter.AdditionalRememberHandler = null;
-            LoadEventRouter.AdditionalCreateSession = null;
-            LoadEventRouter.AdditionalGetSubscriptions = null;
-            LoadEventRouter.AdditionalEndSession = null;
-            Debug.LogWarning("[BBPerfBLOCKROUTING] disabled: " + e.GetBaseException().Message);
-        }
+        if (!PerformanceSettings.Enabled || !Reviewed() || LoadEventRouter.AdditionalRememberHandler != null || LoadEventRouter.AdditionalCreateSession != null ||
+            LoadEventRouter.AdditionalGetSubscriptions != null || LoadEventRouter.AdditionalEndSession != null) return false;
+        LoadEventRouter.AdditionalRememberHandler = Remember;
+        LoadEventRouter.AdditionalCreateSession = CreateSession;
+        LoadEventRouter.AdditionalGetSubscriptions = GetSubscriptions;
+        LoadEventRouter.AdditionalEndSession = Report;
+        return true;
     }
+
+    // Anything that moves a receiver or changes what it occupies
+    [HarmonyPatch]
+    static class Moves
+    {
+        static bool Prepare() => PerformanceSettings.Enabled && Reviewed();
+
+        static IEnumerable<MethodBase> TargetMethods() => new MethodBase[] {
+            Water.GetProperty("Coordinates", All)!.SetMethod!,
+            typeof(BlockOccupier).GetProperty("BlockObject", All)!.SetMethod!,
+            typeof(BlockObject).GetProperty("Coordinates", All)!.SetMethod!,
+            typeof(BlockObject).GetProperty("PositionedBlocks", All)!.SetMethod!,
+            typeof(BlockOccupationLayer).GetMethod("AddBlockOccupier", All)!,
+        };
+
+        static void Postfix() => Changed();
+    }
+
+    [HarmonyPatch]
+    static class Layers
+    {
+        static bool Prepare() => PerformanceSettings.Enabled && Reviewed();
+
+        static IEnumerable<MethodBase> TargetMethods() =>
+            Replace.Named(typeof(LayeredBlockObstacle), nameof(LayeredBlockObstacle.CreateBlockOccupationLayers), nameof(LayeredBlockObstacle.RemoveBlockOccupationLayers));
+
+        static void Prefix() => Changed();
+        static void Finalizer() => Changed();
+    }
+
     private static Func<T, R> Getter<T, R>(Type owner, MethodInfo? method, FieldInfo? field)
     {
         var dynamic = new DynamicMethod("BBPerfBlockRouteRead", typeof(R), new[] { typeof(T) }, typeof(BlockLoadRouting).Module, true);
@@ -138,14 +126,13 @@ internal static class BlockLoadRouting
     private static void Changed() => Interlocked.Increment(ref _epoch);
     private static void Remember(Action<object> action, object subscriber, MethodInfo method)
     {
-        var kind = subscriber.GetType() == _water && _waterHandlers.Contains(method) ? (byte)1 :
-            subscriber.GetType() == typeof(LayeredBlockObstacle) && _layeredHandlers.Contains(method) ? (byte)2 : (byte)0;
+        var kind = subscriber.GetType() == Water && WaterHandlers.Contains(method) ? (byte)1 :
+            subscriber.GetType() == typeof(LayeredBlockObstacle) && LayeredHandlers.Contains(method) ? (byte)2 : (byte)0;
         if (kind != 0) Markers.Add(action, new Marker { Subscriber = subscriber, Kind = kind });
     }
     private static object? CreateSession(SubscriptionRegistry registry)
     {
-        if (_baseline) return null;
-        if (!Reviewed() || !LoadCompatibility.Unmodified(_guardMethods, Owner)) return null;
+        if (!Reviewed() || !LoadCompatibility.Unmodified(GuardMethods, PerformanceSettings.HarmonyId)) return null;
         return new Session { Registry = registry };
     }
     private static IEnumerable<Subscription>? GetSubscriptions(object context, object eventObject)
@@ -154,7 +141,7 @@ internal static class BlockLoadRouting
         if (type != typeof(BlockObjectSetEvent) && type != typeof(BlockObjectUnsetEvent)) return null;
         var session = (Session)context;
         if (!session.Registry._subscriptions.TryGetValue(type, out var source)) return null;
-        if (!session.Plans.TryGetValue(type, out var plan) || !ReferenceEquals(plan.Dictionary, source) || plan.Version != _version(source))
+        if (!session.Plans.TryGetValue(type, out var plan) || !ReferenceEquals(plan.Dictionary, source) || plan.Version != Version(source))
         { session.Plans[type] = plan = Build(source); session.Rebuilds++; }
         session.Events++;
         return Enumerate(session, plan, eventObject);
@@ -162,7 +149,7 @@ internal static class BlockLoadRouting
     private static Plan Build(Dictionary<object, Action<object>> source)
     {
         var items = source.Select(p => new Subscription(p.Key, p.Value)).ToArray();
-        var plan = new Plan { Dictionary = source, Version = _version(source), Items = items, Kinds = new byte[items.Length], Runs = new Run?[items.Length] };
+        var plan = new Plan { Dictionary = source, Version = Version(source), Items = items, Kinds = new byte[items.Length], Runs = new Run?[items.Length] };
         for (var i = 0; i < items.Length; i++)
             if (Markers.TryGetValue(items[i].Action, out var marker) && ReferenceEquals(marker.Subscriber, items[i].Subscriber)) plan.Kinds[i] = marker.Kind;
         for (var i = 0; i < items.Length;)
@@ -186,7 +173,7 @@ internal static class BlockLoadRouting
         var columns = new Dictionary<long, List<int>>();
         for (var i = run.Start; i < run.End; i++)
         {
-            if (plan.Kinds[i] == 1) { Add(columns, _waterCoordinates(plan.Items[i].Subscriber), i); continue; }
+            if (plan.Kinds[i] == 1) { Add(columns, ((Timberborn.WaterBuildings.WaterInputPipeCoordinates)plan.Items[i].Subscriber).Coordinates, i); continue; }
             var layers = ((LayeredBlockObstacle)plan.Items[i].Subscriber)._blockOccupationLayers;
             if (layers == null || layers.Count == 0 || layers[0] == null || layers[0]._blockOccupiers == null) return null;
             foreach (var occupier in layers[0]._blockOccupiers)
@@ -222,29 +209,7 @@ internal static class BlockLoadRouting
     }
     private static void CheckVersion(Plan plan)
     {
-        if (_version(plan.Dictionary) != plan.Version) throw new InvalidOperationException("Collection was modified; enumeration operation may not execute.");
-    }
-    private static void ValidateSkipped(Session session, Plan plan, object eventObject, int start, int end)
-    {
-        if (!_validate) return;
-        var shape = Shape(eventObject)!;
-        for (var i = start; i < end; i++)
-        {
-            if (plan.Kinds[i] == 1)
-            {
-                var coordinate = _waterCoordinates(plan.Items[i].Subscriber);
-                foreach (var changed in shape.GetAllCoordinates())
-                    if (Key(changed) == Key(coordinate)) throw new Exception("Skipped a water receiver's column");
-            }
-            else
-            {
-                var layered = (LayeredBlockObstacle)plan.Items[i].Subscriber;
-                if (layered.Enabled)
-                    foreach (var changed in shape.GetAllCoordinates())
-                        if (layered._blockOccupationLayers.First().Contains(new Vector2Int(changed.x, changed.y))) throw new Exception("Skipped an intersecting obstacle");
-            }
-            session.Validated++;
-        }
+        if (Version(plan.Dictionary) != plan.Version) throw new InvalidOperationException("Collection was modified; enumeration operation may not execute.");
     }
     private static IEnumerable<Subscription> Enumerate(Session session, Plan plan, object eventObject)
     {
@@ -274,14 +239,12 @@ internal static class BlockLoadRouting
                         if (index < next) continue; // duplicate XY in the source
                         if (Epoch != epoch) break;
                         CheckVersion(plan);
-                        ValidateSkipped(session, plan, eventObject, next, index);
                         session.Skipped += index - next;
                         next = index + 1; session.Delivered++;
                         yield return plan.Items[index];
                     }
                 CheckVersion(plan);
                 if (Epoch != epoch) continue; // a delivered callback moved a receiver
-                ValidateSkipped(session, plan, eventObject, next, run.End);
                 session.Skipped += run.End - next; next = run.End;
             }
             cursor = run.End;
@@ -291,6 +254,6 @@ internal static class BlockLoadRouting
     private static void Report(object context)
     {
         var s = (Session)context;
-        Debug.Log($"[BBPerfBLOCKROUTING] events={s.Events} plans={s.Rebuilds} indexBuilds={s.IndexBuilds} skipped={s.Skipped} delivered={s.Delivered} unknown={s.Unknown} validated={s.Validated} fallbackRuns={s.FallbackRuns}");
+        Debug.Log($"[BBPerfBLOCKROUTING] events={s.Events} plans={s.Rebuilds} indexBuilds={s.IndexBuilds} skipped={s.Skipped} delivered={s.Delivered} unknown={s.Unknown} fallbackRuns={s.FallbackRuns}");
     }
 }

@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -11,110 +11,61 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Bindito.Core.Internal;
 using Binder = Bindito.Core.Internal.Binder;
+using HarmonyLib;
+using Timberborn.SingletonSystem;
 using Debug = UnityEngine.Debug;
 
 namespace BeaverBuddies.Performance;
 
 // Load-only plans. Cache executable metadata, never resolved dependencies
 // or constructed objects. Unity creation and Bindito listener order are intact.
+[HarmonyPatch]
 internal static partial class ConstructionPlans
 {
-    internal static bool Installed { get; private set; }
-    private const string PatchId = "beaverbuddies.perf.load.construction-plans";
     private static bool _compatible;
     private static readonly MethodBase[] ProtectedMethods = typeof(InstanceCreator).Assembly.GetTypes()
         .Where(t => t == typeof(InstanceCreator) || t == typeof(ConstructorRetriever) || t == typeof(MethodInjector) ||
             t == typeof(MethodRetriever) || t == typeof(InstanceProviderFuncFactory) || t == typeof(ParameterProvider))
         .SelectMany(t => t.GetMethods(All | BindingFlags.DeclaredOnly)).Cast<MethodBase>().ToArray();
     internal static bool Reviewed() => LoadCompatibility.Reviewed(LoadBodies.Construction);
-    private static bool CheckCompatibility() => Reviewed() && LoadCompatibility.Unmodified(ProtectedMethods, PatchId,
+    private static bool CheckCompatibility() => Reviewed() && LoadCompatibility.Unmodified(ProtectedMethods, PerformanceSettings.HarmonyId,
         // BeaverBuddies swaps the random generator in some types' arguments; those types never get a plan (see Build)
         (method, owner) => owner == BeaverBuddies.Plugin.ID && method.DeclaringType == typeof(ParameterProvider) && method.Name == nameof(ParameterProvider.GetParameters));
     private const BindingFlags All = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
     [ThreadStatic] private static int _depth;
     [ThreadStatic] private static Dictionary<MethodBase, Plan?>? _plans;
     [ThreadStatic] private static long _constructors, _injections, _fallbacks;
-    [ThreadStatic] private static long _linkedHits, _linkedMisses;
-    private static bool _linkProviders;
-    private static bool _inlineChecks;
     private delegate object? Call(Plan plan, ParameterProvider provider, object? receiver);
     private sealed class Plan
     {
         internal MethodBase Method = null!;
         internal Type[] Types = null!;
         internal Call Invoke = null!;
-        internal ParameterProvider? LinkedProvider;
-        internal InstanceProviderBank? LinkedBank;
-        internal InstanceProvider?[]? Providers;
-        internal Func<object?>[]? Sources;
     }
     private struct Scope { internal long Constructors, Injections, Fallbacks; internal int Plans; }
     private static Type Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name)).First(t => t != null)!;
 
-    internal static void Install()
-    {
-        if (Installed || Environment.GetCommandLineArgs().Contains("-t3mpTestConstructionBaseline")) return;
-        if (!Reviewed()) { Debug.Log("[BBPerfDIRECIPE] native fallback: unreviewed modules"); return; }
-        _linkProviders = _inlineChecks = _boundArguments = false;
-        var ht = Find("HarmonyLib.Harmony"); var hm = Find("HarmonyLib.HarmonyMethod");
-        var harmony = Activator.CreateInstance(ht, PatchId);
-        var patch = ht.GetMethods().Single(m => m.Name == "Patch" && m.GetParameters().Length == 5);
-        try
-        {
-        void Patch(Type type, string name, string prefix, string? finalizer = null)
-        {
-            object? Hook(string? hook)
-            {
-                if (hook == null) return null;
-                var result = Activator.CreateInstance(hm, typeof(ConstructionPlans).GetMethod(hook, All))!;
-                if (hook == nameof(End)) hm.GetField("priority")!.SetValue(result, 900);
-                return result;
-            }
-            patch.Invoke(harmony, new object?[] { type.GetMethod(name, All), Hook(prefix), null, null, Hook(finalizer) });
-        }
-        Patch(Find("Timberborn.SingletonSystem.SingletonLifecycleService"), "LoadAll", nameof(Begin), nameof(End));
-        Patch(typeof(InstanceCreator), "CreateUsingEligibleConstructor", nameof(Construct));
-        Patch(typeof(MethodInjector), "InjectMethod", nameof(Inject));
-        Debug.Log("[BBPerfDI] executable construction plans installed (load only)");
-        if (_linkProviders) Debug.Log("[BBPerfDILINK] installed; lazy provider links, values remain fresh");
-        if (_inlineChecks) Debug.Log("[BBPerfDIINLINE] installed; direct argument and receiver checks");
-        if (_boundArguments) Debug.Log("[BBPerfDIBOUND] installed; context-bound lazy argument sources");
-        {
-            patch.Invoke(harmony, new object?[] { typeof(InstanceProviderFuncFactory).GetMethod("CreateInstanceProviderFunc", All),
-                null, Activator.CreateInstance(hm, typeof(ConstructionPlans).GetMethod(nameof(AfterProviderFunction), All)), null, null });
-            Debug.Log("[BBPerfDIRECIPE] installed; lazy per-provider construction and injection recipes");
-        }
-        Installed = true;
-        }
-        catch (Exception e)
-        {
-            ht.GetMethod("UnpatchAll", All)!.Invoke(harmony, new object[] { PatchId });
-            Debug.LogWarning("[BBPerfDIRECIPE] disabled: " + e.GetBaseException().Message);
-        }
-    }
+    static bool Prepare() => PerformanceSettings.Enabled && Reviewed();
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void Begin(out Scope __state)
     {
         _plans ??= new Dictionary<MethodBase, Plan?>();
-        if (_depth == 0) { _linkedHits = _linkedMisses = 0; _compatible = CheckCompatibility(); }
+        if (_depth == 0) _compatible = CheckCompatibility();
         __state = new Scope { Constructors = _constructors, Injections = _injections, Fallbacks = _fallbacks, Plans = _plans.Count };
         _depth++;
     }
+    [HarmonyFinalizer]
+    [HarmonyPriority(900)]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void End(Scope __state)
     {
         _depth--;
-        Debug.Log($"[BBPerfDI] constructors={_constructors - __state.Constructors} injections={_injections - __state.Injections} fallbacks={_fallbacks - __state.Fallbacks} newPlans={_plans!.Count - __state.Plans} cachedPlans={_plans.Count}");
         ReportRecipes();
-        ReportBoundArguments();
-        if (_depth == 0)
-        {
-            if (_linkProviders) Debug.Log($"[BBPerfDILINK] hits={_linkedHits} misses={_linkedMisses}");
-            // Executable metadata survives loads; resolved providers must not keep
-            // containers or game-world objects alive across scene unloads.
-            foreach (var plan in _plans.Values)
-                if (plan != null) { plan.LinkedProvider = null; plan.LinkedBank = null; plan.Providers = null; }
-        }
     }
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(InstanceCreator), nameof(InstanceCreator.CreateUsingEligibleConstructor))]
     private static bool Construct(InstanceCreator __instance, Type type, ref object __result)
     {
         if (_depth == 0 || !_compatible || __instance._parameterProvider.GetType() != typeof(ParameterProvider) ||
@@ -127,6 +78,8 @@ internal static partial class ConstructionPlans
         __result = plan.Invoke(plan, (ParameterProvider)__instance._parameterProvider, null)!;
         return false;
     }
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MethodInjector), nameof(MethodInjector.InjectMethod))]
     private static bool Inject(MethodInjector __instance, object injectee, MethodBase method)
     {
         if (_depth == 0 || !_compatible || __instance._parameterProvider.GetType() != typeof(ParameterProvider)) return true;
@@ -144,55 +97,19 @@ internal static partial class ConstructionPlans
     private static object? Resolve(Plan plan, ParameterProvider provider, int index)
     {
         var type = plan.Types[index];
-        if (_linkProviders)
-        {
-            if (!ReferenceEquals(plan.LinkedProvider, provider))
-            {
-                plan.LinkedProvider = provider;
-                plan.LinkedBank = LinkableBank(provider);
-                plan.Providers = plan.LinkedBank == null ? null : new InstanceProvider?[plan.Types.Length];
-            }
-            var bank = plan.LinkedBank;
-            if (bank != null)
-            {
-                var linked = plan.Providers![index];
-                if (linked != null) { _linkedHits++; return linked.GetInstance(); }
-                if (!provider._multiBindingService.IsMultiBound(type, out _))
-                {
-                    if (bank.TryGetInstanceProvider(type, out linked))
-                    {
-                        // Link one argument immediately before its original value
-                        // request. Do not eagerly resolve later parameters.
-                        plan.Providers[index] = linked;
-                        _linkedMisses++;
-                        return linked.GetInstance();
-                    }
-                    throw MissingParameter(plan, type);
-                }
-            }
-        }
         if (provider.TryGetParameter(type, out var value)) return value;
         throw MissingParameter(plan, type);
     }
     private static InvalidOperationException MissingParameter(Plan plan, Type type) =>
         new InvalidOperationException("Can't get parameter " + TypeFormatting.Format(type) + " of method " +
             TypeFormatting.Format(plan.Method.DeclaringType!) + "." + plan.Method.Name + ".");
-    private static InstanceProviderBank? LinkableBank(ParameterProvider provider)
-    {
-        if (provider._instanceBank.GetType() != typeof(InstanceBank) ||
-            provider._multiBindingService.GetType() != typeof(MultiBindingService)) return null;
-        var first = ((InstanceBank)provider._instanceBank)._instanceProviderBank;
-        for (var current = first; current != null; current = ((InstanceProviderBank)current)._parent)
-            if (current.GetType() != typeof(InstanceProviderBank)) return null;
-        return (InstanceProviderBank)first;
-    }
     private static bool Fits(Plan plan, int index, object? value) => value == null || plan.Types[index].IsInstanceOfType(value);
     private static T ConvertArgument<T>(object? value) => value == null ? default! : (T)value;
     private static bool ReceiverFits(Plan plan, object? receiver) => plan.Method is ConstructorInfo || plan.Method.IsStatic ||
         receiver != null && plan.Method.DeclaringType!.IsInstanceOfType(receiver);
     private static object? Reflect(Plan plan, object? receiver, object?[] args) => plan.Method is ConstructorInfo c ? c.Invoke(args) : plan.Method.Invoke(receiver, args);
 
-    private static Plan? Build(MethodBase method, ParameterProvider? boundProvider = null)
+    private static Plan? Build(MethodBase method)
     {
         var types = method.GetParameters().Select(p => p.ParameterType).ToArray();
         if (method.ContainsGenericParameters || method.DeclaringType == null || method.DeclaringType.IsValueType ||
@@ -203,17 +120,6 @@ internal static partial class ConstructionPlans
         if (BeaverBuddies.ParameterProviderPatch.Handles(method.DeclaringType)) return null;
 #endif
         var plan = new Plan { Method = method, Types = types };
-        if (boundProvider != null)
-        {
-            var bank = boundProvider._multiBindingService?.GetType() == typeof(MultiBindingService)
-                ? ComponentConstructionPlans.NativeProviderBank(boundProvider._instanceBank) : null;
-            if (bank != null)
-            {
-                plan.Sources = types.Select((_, index) => (Func<object?>)new ArgumentSource(plan, boundProvider, bank, index).First).ToArray();
-                _boundPlans++;
-            }
-            else _unboundPlans++;
-        }
         var dynamic = new DynamicMethod("BBPerfDI_" + method.Name, typeof(object),
             new[] { typeof(Plan), typeof(ParameterProvider), typeof(object) }, typeof(ConstructionPlans).Module, true);
         var il = dynamic.GetILGenerator();
@@ -226,60 +132,21 @@ internal static partial class ConstructionPlans
         // invoking. A fallback reuses these values rather than resolving twice.
         for (var i = 0; i < types.Length; i++)
         {
-            if (plan.Sources != null)
-            {
-                il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldfld, typeof(Plan).GetField(nameof(Plan.Sources), All)!);
-                il.Emit(OpCodes.Ldc_I4, i); il.Emit(OpCodes.Ldelem_Ref);
-                il.Emit(OpCodes.Callvirt, typeof(Func<object>).GetMethod("Invoke")!);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Ldc_I4, i);
-                il.Emit(OpCodes.Call, typeof(ConstructionPlans).GetMethod(nameof(Resolve), All)!);
-            }
+            il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Ldc_I4, i);
+            il.Emit(OpCodes.Call, typeof(ConstructionPlans).GetMethod(nameof(Resolve), All)!);
             il.Emit(OpCodes.Stloc, values[i]);
         }
-        if (_inlineChecks)
-        {
-            if (method is MethodInfo && !method.IsStatic)
-            {
-                il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Isinst, method.DeclaringType);
-                il.Emit(OpCodes.Brfalse, fallback);
-            }
-        }
-        else
-        {
-            il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_2);
-            il.Emit(OpCodes.Call, typeof(ConstructionPlans).GetMethod(nameof(ReceiverFits), All)!);
-            il.Emit(OpCodes.Brfalse, fallback);
-        }
+        il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_2);
+        il.Emit(OpCodes.Call, typeof(ConstructionPlans).GetMethod(nameof(ReceiverFits), All)!);
+        il.Emit(OpCodes.Brfalse, fallback);
         for (var i = 0; i < types.Length; i++)
         {
-            if (_inlineChecks)
-            {
-                var present = il.DefineLabel(); var converted = il.DefineLabel();
-                il.Emit(OpCodes.Ldloc, values[i]); il.Emit(OpCodes.Brtrue, present);
-                // Reflection supplies default(T) for null value-type arguments.
-                // unbox.any on null would instead throw for non-nullable T.
-                il.Emit(OpCodes.Ldloca, typed[i]); il.Emit(OpCodes.Initobj, types[i]);
-                il.Emit(OpCodes.Br, converted);
-                il.MarkLabel(present);
-                il.Emit(OpCodes.Ldloc, values[i]); il.Emit(OpCodes.Isinst, types[i]);
-                il.Emit(OpCodes.Brfalse, fallback);
-                il.Emit(OpCodes.Ldloc, values[i]);
-                il.Emit(types[i].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, types[i]);
-                il.Emit(OpCodes.Stloc, typed[i]);
-                il.MarkLabel(converted);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldc_I4, i); il.Emit(OpCodes.Ldloc, values[i]);
-                il.Emit(OpCodes.Call, typeof(ConstructionPlans).GetMethod(nameof(Fits), All)!);
-                il.Emit(OpCodes.Brfalse, fallback);
-                il.Emit(OpCodes.Ldloc, values[i]);
-                il.Emit(OpCodes.Call, typeof(ConstructionPlans).GetMethod(nameof(ConvertArgument), All)!.MakeGenericMethod(types[i]));
-                il.Emit(OpCodes.Stloc, typed[i]);
-            }
+            il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldc_I4, i); il.Emit(OpCodes.Ldloc, values[i]);
+            il.Emit(OpCodes.Call, typeof(ConstructionPlans).GetMethod(nameof(Fits), All)!);
+            il.Emit(OpCodes.Brfalse, fallback);
+            il.Emit(OpCodes.Ldloc, values[i]);
+            il.Emit(OpCodes.Call, typeof(ConstructionPlans).GetMethod(nameof(ConvertArgument), All)!.MakeGenericMethod(types[i]));
+            il.Emit(OpCodes.Stloc, typed[i]);
         }
         il.BeginExceptionBlock();
         if (method is MethodInfo && !method.IsStatic) { il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Castclass, method.DeclaringType); }

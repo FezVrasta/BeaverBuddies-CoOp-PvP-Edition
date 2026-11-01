@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using HarmonyLib;
 using Timberborn.Navigation;
 using Debug = UnityEngine.Debug;
 
@@ -16,13 +16,12 @@ namespace BeaverBuddies.Performance;
 
 // Only initial append-only queues. Published source nodes and graph lists are
 // ordinary independent native objects; later mutations use the original game.
+[HarmonyPatch]
 internal static class InitialNavigationLoad
 {
-    internal static bool Installed { get; private set; }
-    private const string Owner = "beaverbuddies.perf.load.initial-navigation";
-    private const BindingFlags All = LoadPatchBridge.All;
+    private const BindingFlags All = LoadCompatibility.All;
     [ThreadStatic] private static int _depth;
-    private static bool _compatible, _parallel;
+    private static bool _compatible;
     private static readonly List<Prepared> Plans = new();
     private static readonly Type[] SourceTypes = { typeof(TerrainNavMeshSource), typeof(InstantTerrainNavMeshSource), typeof(PreviewTerrainNavMeshSource),
         typeof(RoadNavMeshSource), typeof(InstantRoadNavMeshSource), typeof(PreviewRoadNavMeshSource) };
@@ -52,51 +51,33 @@ internal static class InitialNavigationLoad
         }
     }
     private static bool Reviewed() => LoadCompatibility.Reviewed(LoadBodies.InitialNavigation);
-    private static bool CheckCompatibility() => Reviewed() && LoadCompatibility.Unmodified(Protected, Owner,
+    private static bool CheckCompatibility() => Reviewed() && LoadCompatibility.Unmodified(Protected, PerformanceSettings.HarmonyId,
         // Timber Empires skips unblocking an edge that isn't blocked; the initial changes only add and block edges
-        (method, owner) => owner == "timberempires" && method.DeclaringType == typeof(NavMeshSource) && method.Name == "UnblockEdge" ||
-        owner == "local.gpupathinginvestigation.benchmarkprobe" && method.DeclaringType == typeof(RoadNavMeshGraph) &&
-            (method.Name == "ConnectNodes" || method.Name == "DisconnectNodes" || method.Name == "Load"));
+        (method, owner) => owner == "timberempires" && method.DeclaringType == typeof(NavMeshSource) && method.Name == "UnblockEdge");
 
-    internal static void Install()
-    {
-        if (Installed || Environment.GetCommandLineArgs().Contains("-t3mpTestInitialNavBaseline")) return;
-        if (!Reviewed()) { Debug.Log("[BBPerfINITIALNAV] native fallback: unreviewed modules"); return; }
-        // Measured parallel fill spent more process CPU without a repeatable
-        // latency improvement. Keep it opt-in for controlled comparisons.
-        _parallel = Environment.GetCommandLineArgs().Contains("-t3mpTestInitialNavParallel") &&
-            !Environment.GetCommandLineArgs().Contains("-t3mpTestInitialNavSequential");
-        var ht = LoadPatchBridge.Find("HarmonyLib.Harmony"); var hm = LoadPatchBridge.Find("HarmonyLib.HarmonyMethod");
-        var harmony = Activator.CreateInstance(ht, Owner)!;
-        var patch = ht.GetMethods().Single(m => m.Name == "Patch" && m.GetParameters().Length == 5);
-        object Hook(string name) => Activator.CreateInstance(hm, typeof(InitialNavigationLoad).GetMethod(name, All))!;
-        try
-        {
-            patch.Invoke(harmony, new object?[] { typeof(NavigationSynchronizer).GetMethod("PostLoad", All), Hook(nameof(Begin)), null, null, Hook(nameof(End)) });
-            patch.Invoke(harmony, new object?[] { typeof(NavMeshUpdater).GetMethod("ProcessInstantChanges", All), Hook(nameof(Instant)), null, null, null });
-            patch.Invoke(harmony, new object?[] { typeof(NavMeshUpdater).GetMethod("ProcessRegularChanges", All), Hook(nameof(Regular)), null, null, null });
-            Installed = true;
-            Debug.Log("[BBPerfINITIALNAV] installed parallel=" + _parallel + "; initial queues; independent native source and graph storage");
-        }
-        catch (Exception e)
-        {
-            ht.GetMethod("UnpatchAll", All)!.Invoke(harmony, new object[] { Owner });
-            Debug.LogWarning("[BBPerfINITIALNAV] disabled: " + e.GetBaseException().Message);
-        }
-    }
+    static bool Prepare() => PerformanceSettings.Enabled && Reviewed();
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(NavigationSynchronizer), nameof(NavigationSynchronizer.PostLoad))]
     private static void Begin(out bool __state)
     {
         __state = true;
         if (_depth++ != 0) return;
         Plans.Clear(); _compatible = CheckCompatibility();
     }
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(NavigationSynchronizer), nameof(NavigationSynchronizer.PostLoad))]
     private static void End(bool __state)
     {
         if (!__state || _depth <= 0 || --_depth != 0) return;
         Debug.Log($"[BBPerfINITIALNAV] end plans={Plans.Count} pairEvaluations={Plans.Sum(p => (long)p.PairCount)} compatible={_compatible}");
         Plans.Clear();
     }
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(NavMeshUpdater), nameof(NavMeshUpdater.ProcessInstantChanges))]
     private static bool Instant(NavMeshUpdater __instance, NavMeshUpdate.Builder navMeshUpdateBuilder) => Live(__instance, navMeshUpdateBuilder, true);
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(NavMeshUpdater), nameof(NavMeshUpdater.ProcessRegularChanges))]
     private static bool Regular(NavMeshUpdater __instance, NavMeshUpdate.Builder navMeshUpdateBuilder) => Live(__instance, navMeshUpdateBuilder, false);
 
     private static bool Live(NavMeshUpdater u, NavMeshUpdate.Builder builder, bool instant)
@@ -114,18 +95,14 @@ internal static class InitialNavigationLoad
         for (var i = 0; i < sources.Length; i++)
         {
             var isRoad = sources[i] is RoadNavMeshSource;
-            var plan = Prepare(inputs[isRoad ? 1 : 0], sources[i]._nodeIdService, isRoad);
+            var plan = PrepareChanges(inputs[isRoad ? 1 : 0], sources[i]._nodeIdService, isRoad);
             if (plan == null || !Eligible(plan, sources[i])) return true;
             prepared[i] = plan; builders[i] = new NavMeshUpdate.Builder(plan.Ids);
         }
         // No source has been changed before every queue and target is checked.
         // Worker code only allocates/fills independent managed lists and value
         // structs. It invokes no Unity objects, game callbacks or native scratch.
-        // v1.2: no runtime graph caches exist any more, so direct writes need no
-        // invalidation step here.
-        if (_parallel) Parallel.For(0, sources.Length, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(sources.Length, Environment.ProcessorCount) },
-            i => Apply(prepared[i], sources[i], builders[i]));
-        else for (var i = 0; i < sources.Length; i++) Apply(prepared[i], sources[i], builders[i]);
+        for (var i = 0; i < sources.Length; i++) Apply(prepared[i], sources[i], builders[i]);
         foreach (var id in builders[0]._terrainNodeIds) builder.AddTerrainNode(id);
         foreach (var id in builders[instant ? 2 : 1]._roadNodeIds) builder.AddRoadNode(id);
         terrain.Clear(); road.Clear();
@@ -147,7 +124,7 @@ internal static class InitialNavigationLoad
         }
         return true;
     }
-    internal static Prepared? Prepare(NavMeshChange[] input, NodeIdService ids, bool road)
+    internal static Prepared? PrepareChanges(NavMeshChange[] input, NodeIdService ids, bool road)
     {
         var prior = Plans.FirstOrDefault(p => Same(p, input, ids, road));
         if (prior != null) return prior;

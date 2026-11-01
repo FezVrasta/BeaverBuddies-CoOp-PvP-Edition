@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -14,6 +14,8 @@ using Timberborn.BaseComponentSystem;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Debug = UnityEngine.Debug;
+
+using HarmonyLib;
 
 namespace BeaverBuddies.Performance;
 
@@ -62,18 +64,12 @@ internal static class DeferredGoodStackModels
             typeof(BaseComponent).GetMethod("GetComponent")!.MakeGenericMethod(type)), typeof(object)), obj).Compile();
     }
     internal static bool Installed { get; private set; }
-    private static bool _production, _compatible;
-    private static string _patchOwner = "";
+    private static bool _compatible;
     private static readonly List<MethodBase> Guarded = new();
     private static readonly Dictionary<Type, bool> ComponentSafety = new();
-    internal static void Install(string patchOwner = "beaverbuddies.perf.test.lazy-good-stack", bool production = false)
+    internal static void Install()
     {
-        var args = Environment.GetCommandLineArgs();
-        if (Installed || LoadCompatibility.MainInstalled(typeof(DeferredGoodStackModels))) return;
-        _production = production; _patchOwner = patchOwner;
-        var lazy = production ? !args.Contains("-t3mpTestLazyGoodStackBaseline") : args.Contains("-t3mpTestLazyGoodStack");
-        if (production && !Reviewed()) { Debug.Log("[BBPerfLAZYSTACK] native fallback: unreviewed game modules"); return; }
-        if (!lazy) return;
+        if (Installed || !PerformanceSettings.Enabled || !Reviewed()) return;
         var factory = Find("Timberborn.GoodStackSystem.GoodStackModelFactory");
         var owner = Find("Timberborn.GoodStackSystem.GoodStack");
         _model = owner.GetField("_goodStackModel", All)!;
@@ -88,24 +84,16 @@ internal static class DeferredGoodStackModels
         var a = Expression.Parameter(typeof(object)); var b = Expression.Parameter(typeof(object));
         _create = Expression.Lambda<Action<object, object>>(Expression.Call(Expression.Convert(a, factory),
             factory.GetMethod("Create", All)!, Expression.Convert(b, owner)), a, b).Compile();
-        var ht = Find("HarmonyLib.Harmony"); var hm = Find("HarmonyLib.HarmonyMethod");
-        var harmony = Activator.CreateInstance(ht, patchOwner);
-        var patch = ht.GetMethods().Single(m => m.Name == "Patch" && m.GetParameters().Length == 5);
+        var harmony = new Harmony(PerformanceSettings.HarmonyId);
         try
         {
-            object? Hook(string? name)
-            {
-                if (name == null) return null;
-                var value = Activator.CreateInstance(hm, typeof(DeferredGoodStackModels).GetMethod(name, All))!;
-                if (name == nameof(EndLoad)) hm.GetField("priority")!.SetValue(value, 900);
-                return value;
-            }
+            HarmonyMethod Hook(string? name) => name == null ? null : new HarmonyMethod(typeof(DeferredGoodStackModels), name) { priority = name == nameof(EndLoad) ? 900 : -1 };
             void Patch(Type type, string name, string? before = null, string? after = null, string? final = null)
             {
                 var method = type.GetMethods(All | BindingFlags.DeclaredOnly).Single(m => m.Name == name &&
                     (before != nameof(BeforeObjectRead) || m.GetParameters().Length > 0 && m.GetParameters()[0].ParameterType == typeof(GameObject)));
                 if (name != "LoadAll") Guarded.Add(method);
-                patch.Invoke(harmony, new object?[] { method, Hook(before), Hook(after), null, Hook(final) });
+                harmony.Patch(method, Hook(before), Hook(after), null, Hook(final));
             }
             Patch(Find("Timberborn.SingletonSystem.SingletonLifecycleService"), "LoadAll", nameof(BeginLoad), final: nameof(EndLoad));
             Patch(factory, "Create", nameof(BeforeCreate), nameof(AfterCreate));
@@ -128,14 +116,13 @@ internal static class DeferredGoodStackModels
         }
         catch (Exception e)
         {
-            ht.GetMethod("UnpatchAll", All)!.Invoke(harmony, new object[] { patchOwner });
+            harmony.UnpatchAll(PerformanceSettings.HarmonyId);
             Debug.LogWarning("[BBPerfLAZYSTACK] disabled: " + e.GetBaseException().Message);
         }
     }
     private static bool Reviewed() => LoadCompatibility.Reviewed(LoadBodies.GoodStacks);
     private static bool SafeOwner(BaseComponent owner)
     {
-        if (!_production) return true;
         var cache = owner.GameObject.GetComponent<ComponentCache>();
         if (!cache) return false;
         foreach (var component in cache.AllComponents)
@@ -146,10 +133,7 @@ internal static class DeferredGoodStackModels
                 safe = type.Assembly.GetName().Name!.StartsWith("Timberborn.", StringComparison.Ordinal) &&
                     LoadCompatibility.Unmodified(type.GetMethods(All | BindingFlags.DeclaredOnly).Where(m =>
                         m.Name == "Awake" || m.Name.Contains("Initialize") || m.Name.Contains("Model") ||
-                        m.Name.Contains("Material") || m.Name.Contains("Bounds")), _patchOwner,
-                        (method, patchOwner) => LoadCompatibility.ReviewedCacheObserver(method, patchOwner) ||
-                            patchOwner == "local.gpupathinginvestigation.benchmarkprobe" &&
-                            method.DeclaringType?.FullName == "Timberborn.BlockObjectModelSystem.BlockObjectModelController" && method.Name == "UpdateModel");
+                        m.Name.Contains("Material") || m.Name.Contains("Bounds")), PerformanceSettings.HarmonyId);
                 ComponentSafety.Add(type, safe);
                 if (!safe) Debug.Log("[BBPerfLAZYSTACK] native component fallback: " + type.FullName);
             }
@@ -161,7 +145,7 @@ internal static class DeferredGoodStackModels
     {
         if (_loadDepth++ != 0) return;
         _deferred = _created = _factoryFallback = _captured = 0; Reasons.Clear(); ComponentSafety.Clear();
-        _compatible = !_production || Reviewed() && LoadCompatibility.Unmodified(Guarded, _patchOwner);
+        _compatible = Reviewed() && LoadCompatibility.Unmodified(Guarded, PerformanceSettings.HarmonyId);
         if (!_compatible) Debug.Log("[BBPerfLAZYSTACK] native fallback: modified model consumers");
     }
     private static void EndLoad()

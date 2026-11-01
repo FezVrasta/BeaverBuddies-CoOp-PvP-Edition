@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -10,7 +10,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using HarmonyLib;
+using Timberborn.Navigation;
 using Timberborn.SingletonSystem;
+using Timberborn.WaterSystem;
+using Timberborn.WorldPersistence;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 
@@ -19,11 +23,10 @@ namespace BeaverBuddies.Performance;
 // Borrow spare memory during a synchronous world load. The full collection is
 // paid before LoadAll returns, including when the load throws. This is a soft
 // phase-boundary budget, not an allocation cap or an out-of-memory guarantee.
+[HarmonyPatch]
 internal static class LoadGcBudget
 {
-    internal static bool Installed { get; private set; }
-    private const BindingFlags All = LoadPatchBridge.All;
-    private const string Owner = "beaverbuddies.perf.load.gc-budget";
+    private const BindingFlags All = LoadCompatibility.All;
     private const long HeapLimit = 12L << 30;
     private const ulong EntryReserve = 24UL << 30, ExitReserve = 8UL << 30;
     private static int _depth, _startGc;
@@ -43,47 +46,25 @@ internal static class LoadGcBudget
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool GlobalMemoryStatusEx(ref MemoryStatus status);
 
-    internal static void Install()
+    static bool Prepare() => PerformanceSettings.Enabled && Environment.OSVersion.Platform == PlatformID.Win32NT &&
+        Reviewed() && ModeListeners != null && ModeMethods.Length == 4;
+
+    // The load's phases, where the budget is checked
+    [HarmonyPatch]
+    static class Checkpoints
     {
-        if (Installed || Environment.GetCommandLineArgs().Contains("-t3mpTestLoadGcBaseline")) return;
-        Type? ht = null; object? harmony = null;
-        try
-        {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT || !Reviewed() || ModeListeners == null || ModeMethods.Length != 4)
-            { Debug.Log("[BBPerfGCBUDGET] native fallback: unreviewed platform/modules"); return; }
-            ht = LoadPatchBridge.Find("HarmonyLib.Harmony");
-            var hm = LoadPatchBridge.Find("HarmonyLib.HarmonyMethod");
-            harmony = Activator.CreateInstance(ht, Owner)!;
-            var patch = ht.GetMethods().Single(m => m.Name == "Patch" && m.GetParameters().Length == 5);
-            object Hook(string name) {
-                var hook = Activator.CreateInstance(hm, typeof(LoadGcBudget).GetMethod(name, All))!;
-                hm.GetField("priority")!.SetValue(hook, 800); return hook;
-            }
-            void Patch(MethodInfo method, string? before = null, string? final = null) =>
-                patch.Invoke(harmony, new object?[] { method, before == null ? null : Hook(before), null, null, final == null ? null : Hook(final) });
-            Patch(typeof(SingletonLifecycleService).GetMethod("LoadAll", All)!, nameof(Begin), nameof(End));
-            // LoadAll has populated the metadata by this point. Do not resolve
-            // any additional services merely to decide whether this is a world.
-            Patch(typeof(SingletonLifecycleService).GetMethod("LoadSingletons", All)!, nameof(BeforeSingletons));
-            foreach (var row in new[] {
-                "Timberborn.SingletonSystem.SingletonLifecycleService|LoadSingletons,LoadNonSingletons,PostLoadSingletons,PostLoadNonSingletons",
-                "Timberborn.WorldPersistence.WorldEntitiesLoader|InstantiateEntities",
-                "Timberborn.WorldPersistence.EntitiesLoader|Load,BatchLoad,PreInitialize,Initialize,PostInitialize",
-                "Timberborn.Navigation.NavigationSynchronizer|PostLoad,ProcessPreviewChanges,ProcessInstantChanges,ProcessRegularChanges,NotifyAllNavmeshChanges",
-                "Timberborn.WaterSystem.WaterSimulator|Load,PostLoad"
-            }) {
-                var parts = row.Split('|');
-                foreach (var method in LoadPatchBridge.Find(parts[0]).GetMethods(All).Where(m => !m.IsStatic && !m.ContainsGenericParameters && parts[1].Split(',').Contains(m.Name)))
-                    Patch(method, final: nameof(Checkpoint));
-            }
-            Installed = true;
-            Debug.Log("[BBPerfGCBUDGET] installed; world loads only; entryFreeGiB=24 heapLimitGiB=12 reserveGiB=8; final GC included");
-        }
-        catch (Exception e)
-        {
-            if (ht != null && harmony != null) ht.GetMethod("UnpatchAll", All)!.Invoke(harmony, new object[] { Owner });
-            Debug.LogWarning("[BBPerfGCBUDGET] disabled: " + e.GetBaseException().Message);
-        }
+        static bool Prepare() => LoadGcBudget.Prepare();
+
+        static IEnumerable<MethodBase> TargetMethods() => new[] {
+            (typeof(SingletonLifecycleService), "LoadSingletons,LoadNonSingletons,PostLoadSingletons,PostLoadNonSingletons"),
+            (typeof(WorldEntitiesLoader), "InstantiateEntities"),
+            (typeof(EntitiesLoader), "Load,BatchLoad,PreInitialize,Initialize,PostInitialize"),
+            (typeof(NavigationSynchronizer), "PostLoad,ProcessPreviewChanges,ProcessInstantChanges,ProcessRegularChanges,NotifyAllNavmeshChanges"),
+            (typeof(WaterSimulator), "Load,PostLoad"),
+        }.SelectMany(row => row.Item1.GetMethods(All).Where(m => !m.IsStatic && !m.ContainsGenericParameters && row.Item2.Split(',').Contains(m.Name)));
+
+        [HarmonyPriority(800)]
+        static void Finalizer() => Checkpoint();
     }
 
     private static bool Reviewed() => LoadCompatibility.Reviewed(LoadBodies.GcBudget);
@@ -96,17 +77,23 @@ internal static class LoadGcBudget
     private static bool CanStart(ulong available, long heap) => available >= EntryReserve && heap < HeapLimit;
     private static bool MustRestore(ulong available, long heap) => available < ExitReserve || heap >= HeapLimit;
 
+    [HarmonyPrefix]
+    [HarmonyPriority(800)]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void Begin(out bool __state)
     {
         __state = true;
         if (_depth++ != 0) return;
         _started = _participated = false; _peak = 0;
     }
+    [HarmonyPrefix]
+    [HarmonyPriority(800)]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadSingletons))]
     private static void BeforeSingletons(SingletonLifecycleService __instance)
     {
         if (_depth != 1 || _started) return;
         foreach (var loader in __instance._nonSingletonLoaders)
-            if (loader.GetType().FullName == "Timberborn.WorldPersistence.WorldEntitiesLoader") { StartBudget(); return; }
+            if (loader.GetType() == typeof(WorldEntitiesLoader)) { StartBudget(); return; }
     }
     private static void StartBudget()
     {
@@ -116,7 +103,7 @@ internal static class LoadGcBudget
         {
             // Respect a GC policy already in use, including mod observers.
             if (GarbageCollector.GCMode != GarbageCollector.Mode.Enabled || ModeListeners.GetValue(null) != null ||
-                !Reviewed() || !LoadCompatibility.Unmodified(ModeMethods, Owner)) return;
+                !Reviewed() || !LoadCompatibility.Unmodified(ModeMethods, PerformanceSettings.HarmonyId)) return;
             _peak = GC.GetTotalMemory(false);
             var available = AvailableMemory();
             if (!CanStart(available, _peak)) { Debug.Log("[BBPerfGCBUDGET] native fallback: insufficient memory headroom"); return; }
@@ -160,6 +147,9 @@ internal static class LoadGcBudget
         }
         catch (Exception e) { Restore(); Debug.LogWarning("[BBPerfGCBUDGET] checkpoint fallback: " + e.GetBaseException().Message); }
     }
+    [HarmonyFinalizer]
+    [HarmonyPriority(800)]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void End(bool __state)
     {
         if (!__state || _depth <= 0 || --_depth != 0) return;

@@ -1,32 +1,32 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
-// Changed for BeaverBuddies: namespace, settings and logging; the
-// optimizations themselves are unchanged.
 
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using Timberborn.BlockSystem;
+using Timberborn.BlockSystemNavigation;
 using Timberborn.Navigation;
+using Timberborn.SingletonSystem;
 using UnityEngine;
 
 namespace BeaverBuddies.Performance;
 
-// Keep native object ownership/queueing and reuse only immutable local shapes.
+// While a game loads, a building's navmesh shape is built once per kind,
+// orientation and footprint, and copied to the others at their position.
+[HarmonyPatch]
 internal static class NavigationShapePlans
 {
-    private const BindingFlags All = LoadPatchBridge.All;
+    private const BindingFlags All = LoadCompatibility.All;
     private sealed class Plan { internal NavMeshChangeSpecification[] Changes = null!; internal Vector3Int[] Restricted = null!; }
-    private struct Scope { internal object Owner; internal (object, object?, object, object, int, GeometryKey) Key; internal Plan? Expected; internal bool Capture; }
+    private struct Scope { internal NavMeshObjectUpdater Owner; internal (object, object?, object, object, int, GeometryKey) Key; internal bool Capture; }
     private static readonly Dictionary<object, Dictionary<(object, object?, object, object, int, GeometryKey), Plan>> Plans = new();
-    private static FieldInfo _groups = null!;
     private static int _depth;
-    private static bool _validate;
-    private static long _hits, _builds, _checks;
-    internal static bool Installed { get; private set; }
+    private static bool _compatible;
 
     // Mods that patch the navigation update for some buildings, by their Harmony id, with
     // which buildings. Those go through the native update and are never cached; everything
@@ -42,67 +42,33 @@ internal static class NavigationShapePlans
     // Placement checks and post-load validation: they take no part in building a shape
     private static readonly string[] UnrelatedMethods = { "IsValid", "AddToServiceAfterLoad" };
 
-    private static bool _production, _compatible;
-    private static string _owner = "";
-    private static Type _updater = null!;
-    internal static void Install(string owner = "beaverbuddies.perf.test.nav-shape-plans", bool production = false)
-    {
-        var args = Environment.GetCommandLineArgs();
-        if (Installed || LoadCompatibility.MainInstalled(typeof(NavigationShapePlans))) return;
-        _production = production; _owner = owner;
-        if (production && (!Reviewed() || args.Contains("-t3mpTestNavShapeBaseline")))
-        { Debug.Log("[BBPerfNAVSHAPE] native fallback: baseline or unreviewed game modules"); return; }
-        _validate = args.Contains("-t3mpTestNavShapeValidate");
-        if (!production && !args.Contains("-t3mpTestNavShapePlans") && !_validate) return;
-        var type = _updater = LoadPatchBridge.Find("Timberborn.BlockSystemNavigation.NavMeshObjectUpdater");
-        _groups = type.GetField("_navMeshGroupService", All)!;
-        var ht = LoadPatchBridge.Find("HarmonyLib.Harmony"); var hm = LoadPatchBridge.Find("HarmonyLib.HarmonyMethod");
-        var h = Activator.CreateInstance(ht, owner);
-        var patch = ht.GetMethods().Single(m => m.Name == "Patch" && m.GetParameters().Length == 5);
-        try
-        {
-            object? Hook(string? name)
-            {
-                if (name == null) return null;
-                var hook = Activator.CreateInstance(hm, typeof(NavigationShapePlans).GetMethod(name, All));
-                if (name == nameof(End)) hm.GetField("priority")!.SetValue(hook, 900);
-                return hook;
-            }
-            patch.Invoke(h, new object?[] { type.GetMethod("Update", All), Hook(nameof(Before)), Hook(nameof(After)), null, null });
-            patch.Invoke(h, new object?[] { LoadPatchBridge.Find("Timberborn.SingletonSystem.SingletonLifecycleService").GetMethod("LoadAll", All), Hook(nameof(Begin)), null, null, Hook(nameof(End)) });
-            Installed = true;
-            Debug.Log("[BBPerfNAVSHAPE] installed validate=" + _validate);
-        }
-        catch (Exception e)
-        {
-            ht.GetMethod("UnpatchAll", All)!.Invoke(h, new object[] { owner });
-            Debug.LogWarning("[BBPerfNAVSHAPE] disabled: " + e.GetBaseException().Message);
-        }
-    }
-    private static int Groups(object owner) => ((NavMeshGroupService)_groups.GetValue(owner)!)._groupIds.Count;
-    private static bool Reviewed() => LoadCompatibility.Reviewed(LoadBodies.NavigationShapes);
+    static bool Prepare() => PerformanceSettings.Enabled && LoadCompatibility.Reviewed(LoadBodies.NavigationShapes);
+
+    private static int Groups(NavMeshObjectUpdater owner) => owner._navMeshGroupService._groupIds.Count;
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
     private static void Begin()
     {
         if (_depth++ != 0) return;
-        Plans.Clear(); _hits = _builds = _checks = 0;
-        _compatible = !_production || Reviewed() && LoadCompatibility.Unmodified(
-            _updater.Assembly.GetTypes().Concat(new[] { typeof(NavMeshObject), typeof(NavMeshGroupService), typeof(BlockObject), typeof(BlockObjectSpec), typeof(Blocks), typeof(Block), typeof(PositionedBlocks), typeof(PositionedEntrance) })
-                .SelectMany(t => t.GetMethods(All | BindingFlags.DeclaredOnly)), _owner,
+        Plans.Clear();
+        _compatible = LoadCompatibility.Unmodified(
+            typeof(NavMeshObjectUpdater).Assembly.GetTypes().Concat(new[] { typeof(NavMeshObject), typeof(NavMeshGroupService), typeof(BlockObject), typeof(BlockObjectSpec), typeof(Blocks), typeof(Block), typeof(PositionedBlocks), typeof(PositionedEntrance) })
+                .SelectMany(t => t.GetMethods(All | BindingFlags.DeclaredOnly)), PerformanceSettings.HarmonyId,
             // BeaverBuddies' desync trace logs a finished building and changes nothing
             (method, owner) => owner == BeaverBuddies.Plugin.ID && method.DeclaringType == typeof(BlockObject) && method.Name == "MarkAsFinished" ||
-                Bypasses.ContainsKey(owner) && (method.DeclaringType == _updater && Array.IndexOf(BypassableMethods, method.Name) >= 0 ||
-                    method.DeclaringType == typeof(BlockObject) && Array.IndexOf(UnrelatedMethods, method.Name) >= 0) ||
-                owner == "beaverbuddies.perf.test.nav-removal-view" &&
-                Environment.GetCommandLineArgs().Contains("-t3mpTestNavRemovalView") && method.DeclaringType == typeof(NavMeshObject) &&
-                new[] { "Reset", "AddEdge", "BlockEdge", "EnqueueRemoveFromRegularNavMesh", "EnqueueRemoveFromPreviewNavMesh", "RemoveFromPreviewNavMesh" }.Contains(method.Name) ||
-                // These observers only increment the receiver-index generation;
-                // they preserve the setter input, result and exception behavior.
-                (owner == "beaverbuddies.perf.load.block-routing" || owner == "beaverbuddies.perf.test.block-event-routing" && Environment.GetCommandLineArgs().Contains("-t3mpTestBlockEventRouting")) &&
-                method.DeclaringType == typeof(BlockObject) && (method.Name == "set_Coordinates" || method.Name == "set_PositionedBlocks"));
+                method.DeclaringType == typeof(BlockObject) && Array.IndexOf(UnrelatedMethods, method.Name) >= 0 ||
+                Bypasses.ContainsKey(owner) && method.DeclaringType == typeof(NavMeshObjectUpdater) && Array.IndexOf(BypassableMethods, method.Name) >= 0);
         if (!_compatible) Debug.Log("[BBPerfNAVSHAPE] native fallback: modified shape methods");
     }
-    private static void End() { if (--_depth == 0) { Debug.Log($"[BBPerfNAVSHAPE] hits={_hits} builds={_builds} checked={_checks}"); Plans.Clear(); } }
+
+    [HarmonyFinalizer]
+    [HarmonyPriority(900)]
+    [HarmonyPatch(typeof(SingletonLifecycleService), nameof(SingletonLifecycleService.LoadAll))]
+    private static void End() { if (--_depth == 0) Plans.Clear(); }
+
     private static NavMeshEdge Shift(NavMeshEdge e, Vector3Int delta) => NavMeshEdge.CreateGrouped(e.Start + delta, e.End + delta, e.GroupId, e.IsRoad, e.Cost);
+
     // Compare the actual immutable positioned blocks directly. Hash collisions
     // still perform full equality; no geometry is identified by a hash alone.
     // This also distinguishes OccupyAllBelow at different absolute heights.
@@ -143,7 +109,9 @@ internal static class NavigationShapePlans
         public override bool Equals(object? other) => other is GeometryKey key && Equals(key);
         public override int GetHashCode() => _hash;
     }
-    private static bool Before(object __instance, BlockObject blockObject, NavMeshObject navMeshObject, object blockObjectNavMeshSettingsSpec, out Scope __state)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(NavMeshObjectUpdater), nameof(NavMeshObjectUpdater.Update))]
+    private static bool Before(NavMeshObjectUpdater __instance, BlockObject blockObject, NavMeshObject navMeshObject, object blockObjectNavMeshSettingsSpec, out Scope __state)
     {
         __state = default;
         if (_depth == 0 || !_compatible || !blockObject.Positioned || Bypassed(blockObject)) return true;
@@ -151,8 +119,6 @@ internal static class NavigationShapePlans
         if (!Plans.TryGetValue(__instance, out var plans)) Plans.Add(__instance, plans = new());
         __state = new Scope { Owner = __instance, Key = key, Capture = true };
         if (!plans.TryGetValue(key, out var plan)) return true;
-        _hits++;
-        if (_validate) { __state.Expected = plan; return true; }
         __state.Capture = false;
         navMeshObject.Reset();
         var restrictionsAdded = false;
@@ -175,6 +141,8 @@ internal static class NavigationShapePlans
             foreach (var coordinates in plan.Restricted) navMeshObject.AddRestrictedCoordinates(coordinates + blockObject.Coordinates);
         return false;
     }
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(NavMeshObjectUpdater), nameof(NavMeshObjectUpdater.Update))]
     private static void After(BlockObject blockObject, NavMeshObject navMeshObject, Scope __state)
     {
         if (!__state.Capture) return;
@@ -182,21 +150,11 @@ internal static class NavigationShapePlans
         var actual = new Plan {
             Changes = navMeshObject._addingChanges.Select(c => new NavMeshChangeSpecification(Shift(c.NavMeshEdge, delta), c.NavMeshChangeType)).ToArray(),
             Restricted = navMeshObject._restrictedCoordinates.Select(c => c + delta).ToArray() };
-        if (__state.Expected != null)
-        {
-            var expected = __state.Expected;
-            if (!actual.Restricted.SequenceEqual(expected.Restricted) || actual.Changes.Length != expected.Changes.Length ||
-                actual.Changes.Where((c, i) => c.NavMeshChangeType != expected.Changes[i].NavMeshChangeType || c.NavMeshEdge != expected.Changes[i].NavMeshEdge).Any())
-                throw new InvalidOperationException("Navigation shape differs from ordered native records: " + blockObject.Name);
-            _checks++;
-        }
-        else
-        {
-            // A group introduced partway through native Update can change
-            // which earlier edges saw that group. Cache only stable inputs.
-            var key = __state.Key;
-            if (key.Item5 != Groups(__state.Owner)) return;
-            Plans[__state.Owner][key] = actual; _builds++;
-        }
+        // A group introduced partway through native Update can change
+        // which earlier edges saw that group. Cache only stable inputs.
+        var key = __state.Key;
+        if (key.Item5 != Groups(__state.Owner)) return;
+        Plans[__state.Owner][key] = actual;
+
     }
 }

@@ -1,46 +1,31 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
-// Changed for BeaverBuddies: namespace, settings and logging; the
-// optimizations themselves are unchanged.
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
+using HarmonyLib;
 using Timberborn.Navigation;
-using Debug = UnityEngine.Debug;
 
-namespace BeaverBuddies.Performance;
-
-// One set lookup for a newly discovered terrain node. No search results or
-// navigation state survive a call. Native output order and float math remain.
-internal static class TerrainNeighborVisits
+namespace BeaverBuddies.Performance
 {
-    private const string Owner = "beaverbuddies.perf.runtime.terrain-visits";
-    internal static bool Installed { get; private set; }
-
-    internal static void Install(Type harmonyType, Type harmonyMethodType, MethodInfo patch)
+    // A terrain node is checked and marked visited with one set lookup instead of two
+    [HarmonyPatch(typeof(TerrainReachabilityService), nameof(TerrainReachabilityService.VisitNeighbors))]
+    [HarmonyPriority(HarmonyLib.Priority.Last)]
+    static class TerrainNeighborVisits
     {
-        if (Installed) return;
-        RuntimePatches.Apply(Owner, harmonyType, harmonyMethodType, patch, apply =>
-            apply(RuntimePatches.Find(typeof(TerrainReachabilityService), "VisitNeighbors"), null, null, nameof(RewriteNeighbors), null),
-            typeof(TerrainNeighborVisits));
-        Installed = true;
-        Debug.Log("[BeaverBuddies Perf] Terrain neighbor single-lookup visits installed.");
-    }
+        static bool Prepare() => PerformanceSettings.Enabled;
 
-    // VisitNeighbors with Contains + VisitNode folded into one HashSet.Add.
-    private static void VisitNeighbors(TerrainReachabilityService instance, TerrainReachabilityService.NodeToVisit current)
-    {
-        var neighbors = instance._terrainNavMeshGraph.GetNeighbors(current.Id);
-        for (var i = 0; i < neighbors.Count; i++)
+        static bool Prefix(TerrainReachabilityService __instance, TerrainReachabilityService.NodeToVisit nodeToVisit)
         {
-            var neighbor = neighbors[i];
-            if (instance._visitedNodes.Add(neighbor.Id))
-                instance._nodesToVisit.Enqueue(new TerrainReachabilityService.NodeToVisit(neighbor.Id, current.Distance + neighbor.Cost));
+            var neighbors = __instance._terrainNavMeshGraph.GetNeighbors(nodeToVisit.Id);
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                var neighbor = neighbors[i];
+                if (__instance._visitedNodes.Add(neighbor.Id))
+                {
+                    __instance._nodesToVisit.Enqueue(new TerrainReachabilityService.NodeToVisit(neighbor.Id, nodeToVisit.Distance + neighbor.Cost));
+                }
+            }
+            return false;
         }
     }
-
-    private static IEnumerable<T> RewriteNeighbors<T>(IEnumerable<T> instructions) =>
-        RuntimePatches.CallAndReturn<T>(typeof(TerrainNeighborVisits).GetMethod(nameof(VisitNeighbors), RuntimePatches.All)!, 2);
 }

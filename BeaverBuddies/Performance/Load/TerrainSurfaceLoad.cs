@@ -1,29 +1,25 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
-// Changed for BeaverBuddies: namespace, settings and logging; the
-// optimizations themselves are unchanged.
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using Timberborn.TerrainSystem;
 using Timberborn.TerrainSystemRendering;
 using Timberborn.MapIndexSystem;
 using Timberborn.MapStateSystem;
 using Timberborn.Common;
 using UnityEngine;
-using Debug=UnityEngine.Debug;
 namespace BeaverBuddies.Performance;
 
 // Build each occupancy layer once; adjacent surface codes reuse its four bits.
 // Native tile construction and all later terrain updates keep their order/code.
+[HarmonyPatch(typeof(TerrainMeshManager), nameof(TerrainMeshManager.InitializeTerrainTiles))]
+[HarmonyPriority(HarmonyLib.Priority.Last)]
 internal static class TerrainSurfaceLoad
 {
-    private const string Owner="beaverbuddies.perf.load.terrain-surface";
-    private const BindingFlags All=LoadPatchBridge.All;
-    internal static bool Installed {get;private set;}
+    private const BindingFlags All=LoadCompatibility.All;
     private static readonly MethodBase[] Protected = new[]{
         typeof(TerrainMeshManager).GetMethod("InitializeTerrainTiles",All)!,
         typeof(TerrainMeshManager).GetMethod("UpdateCodeForCoords",All)!,
@@ -41,23 +37,10 @@ internal static class TerrainSurfaceLoad
     }.Concat(typeof(Sizing).GetMethods(All).Where(m=>m.Name=="SizeContains"))
         .Concat(typeof(VectorExtensions).GetMethods(All).Where(m=>m.Name=="Below"||m.Name=="XY")).ToArray();
     private static bool Reviewed()=>LoadCompatibility.Reviewed(LoadBodies.TerrainSurface);
-    internal static void Install()
-    {
-        if(Installed||Environment.GetCommandLineArgs().Contains("-t3mpTestServiceTerrainBaseline"))return;
-        if(!Reviewed()){Debug.Log("[BBPerfTERRAINSURFACE] native fallback: unreviewed modules");return;}
-        var ht=LoadPatchBridge.Find("HarmonyLib.Harmony");var hm=LoadPatchBridge.Find("HarmonyLib.HarmonyMethod");
-        var h=Activator.CreateInstance(ht,Owner)!;
-        try
-        {
-            ht.GetMethods().Single(m=>m.Name=="Patch"&&m.GetParameters().Length==5).Invoke(h,new object?[]{
-                typeof(TerrainMeshManager).GetMethod("InitializeTerrainTiles",All),Activator.CreateInstance(hm,typeof(TerrainSurfaceLoad).GetMethod(nameof(Initialize),All)),null,null,null});
-            Installed=true;Debug.Log("[BBPerfTERRAINSURFACE] installed");
-        }
-        catch(Exception e){ht.GetMethod("UnpatchAll",All)!.Invoke(h,new object[]{Owner});Debug.LogWarning("[BBPerfTERRAINSURFACE] disabled: "+e.GetBaseException().Message);}
-    }
+    static bool Prepare()=>PerformanceSettings.Enabled&&Reviewed();
     private static bool Eligible(TerrainMeshManager manager)
     {
-        if(!Reviewed()||!LoadCompatibility.Unmodified(Protected,Owner)||manager.GetType()!=typeof(TerrainMeshManager)||manager._terrainService.GetType()!=typeof(TerrainService))return false;
+        if(!Reviewed()||!LoadCompatibility.Unmodified(Protected,PerformanceSettings.HarmonyId)||manager.GetType()!=typeof(TerrainMeshManager)||manager._terrainService.GetType()!=typeof(TerrainService))return false;
         var service=(TerrainService)manager._terrainService;
         var map=service._terrainMap;var size=service.Size;var ids=manager._mapIndexService;
         if(map.GetType()!=typeof(TerrainMap)||ids.GetType()!=typeof(MapIndexService)||map._mapSize.GetType()!=typeof(MapSize)||
@@ -71,7 +54,7 @@ internal static class TerrainSurfaceLoad
         return offsets.Length==4&&offsets[0]==new Vector3Int(0,0,0)&&offsets[1]==new Vector3Int(0,1,0)&&
             offsets[2]==new Vector3Int(1,0,0)&&offsets[3]==new Vector3Int(1,1,0);
     }
-    private static bool Initialize(TerrainMeshManager __instance)
+    private static bool Prefix(TerrainMeshManager __instance)
     {
         if(!Eligible(__instance))return true;
         var size=__instance._terrainService.Size;
@@ -81,7 +64,6 @@ internal static class TerrainSurfaceLoad
             __instance.InstantiateTile(new Vector3Int(x,y,z));
         for(var z=0;z<count.z;z++)for(var y=0;y<count.y;y++)for(var x=0;x<count.x;x++)
             __instance.UpdateTile(new Vector3Int(x,y,z));
-        Debug.Log($"[BBPerfTERRAINSURFACE] applied cells={size.x*size.y*size.z} codes={__instance._surfaceShapeCodes.Length}");
         return false;
     }
     private static void Fill(TerrainMeshManager manager)

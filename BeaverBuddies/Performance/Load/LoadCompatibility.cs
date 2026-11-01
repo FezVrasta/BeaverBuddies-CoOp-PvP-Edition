@@ -13,6 +13,8 @@ namespace BeaverBuddies.Performance;
 
 internal static class LoadCompatibility
 {
+    internal const BindingFlags All = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+
     private static readonly Dictionary<LoadBodies.Set, bool> Results = new Dictionary<LoadBodies.Set, bool>();
 
     // True when the game bodies a feature relies on are a reviewed version
@@ -45,28 +47,24 @@ internal static class LoadCompatibility
         return null;
     }
 
-    // Frontier's reviewed postfix only invalidates its own tracked tick groups
-    // when a cache is initialized again. It does not change components, models,
-    // activation or the native Initialize call. Keep this exemption method-local.
-    internal static bool ReviewedCacheObserver(MethodBase method, string owner) =>
-        owner == "beaverbuddies.perf.runtime.frontier" &&
-        method.DeclaringType == typeof(Timberborn.BaseComponentSystem.ComponentCache) &&
-        method.Name == "Initialize";
-
-    // BeaverBuddies numbers an entity's template from its own ID rather than a shared counter, so
-    // when a model is created and awakened doesn't change the number, and the load shortcuts that
-    // reorder or defer that work stay exact.
     internal static bool ReviewedEverywhere(MethodBase method, string owner) =>
-        owner == BeaverBuddies.Plugin.ID && method.DeclaringType == typeof(Timberborn.TemplateSystem.InstantiatedTemplate) && method.Name == "Awake";
+        // BeaverBuddies' performance patches only watch for changes or give the game's own answers sooner
+        owner.StartsWith(PerformanceSettings.HarmonyId, StringComparison.Ordinal) ||
+        // BeaverBuddies numbers an entity's template from its own ID, so when a model is created doesn't change it
+        owner == BeaverBuddies.Plugin.ID && method.DeclaringType == typeof(Timberborn.TemplateSystem.InstantiatedTemplate) && method.Name == "Awake" ||
+        // and rolls a plant's dying delays from its own ID as it wakes up, touching nothing of its model
+        owner == BeaverBuddies.Plugin.ID && method.Name == "Awake" && (method.DeclaringType == typeof(Timberborn.NaturalResourcesMoisture.WateredNaturalResource) ||
+            method.DeclaringType == typeof(Timberborn.NaturalResourcesMoisture.AridNaturalResource) || method.DeclaringType == typeof(Timberborn.NaturalResourcesMoisture.LivingWaterNaturalResource) ||
+            method.DeclaringType == typeof(Timberborn.NaturalResourcesContamination.ContaminatedNaturalResource)) ||
+        // Archipelago's postfixes keep a shipyard's refused ghost drawn and tell its cameras a building moved
+        owner == "archipelago" && method.DeclaringType == typeof(Timberborn.BlockSystem.BlockObject) && method.Name is "IsAlmostValid" or "Reposition";
 
     internal static bool Unmodified(IEnumerable<MethodBase> methods, string owner, Func<MethodBase, string, bool>? reviewed = null)
     {
-        var getInfo = LoadPatchBridge.Find("HarmonyLib.Harmony").GetMethod("GetPatchInfo", LoadPatchBridge.All)!;
         foreach (var method in methods)
         {
-            var info = getInfo.Invoke(null, new object[] { method });
-            if (info == null) continue;
-            var owners = (IEnumerable<string>)info.GetType().GetProperty("Owners", LoadPatchBridge.All)!.GetValue(info)!;
+            var owners = HarmonyLib.Harmony.GetPatchInfo(method)?.Owners;
+            if (owners == null) continue;
             var foreign = owners.FirstOrDefault(o => o != owner && !ReviewedEverywhere(method, o) && !(reviewed?.Invoke(method, o) ?? false));
             if (foreign != null)
             {
@@ -75,12 +73,5 @@ internal static class LoadCompatibility
             }
         }
         return true;
-    }
-
-    internal static bool MainInstalled(Type localType)
-    {
-        var main = AppDomain.CurrentDomain.GetAssemblies().Where(a => a != localType.Assembly)
-            .Select(a => a.GetType(localType.FullName!)).FirstOrDefault(t => t != null);
-        return main != null && (bool)(main.GetProperty("Installed", LoadPatchBridge.All)?.GetValue(null) ?? false);
     }
 }

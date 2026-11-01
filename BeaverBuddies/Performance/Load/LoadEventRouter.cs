@@ -1,4 +1,4 @@
-// Ported from T3MP (More More More Performance!) by toropippi,
+// From T3MP (More More More Performance!) by toropippi,
 // https://github.com/toropippi/Timberborn-More-More-More-Performance-Mod
 // Licensed under the Apache License 2.0 (see LICENSE-T3MP.txt).
 // Changed for BeaverBuddies: namespace, settings and logging; the
@@ -17,12 +17,15 @@ using Timberborn.SingletonSystem;
 using Timberborn.TubeSystem;
 using Debug = UnityEngine.Debug;
 
+using HarmonyLib;
+
 namespace BeaverBuddies.Performance;
 
 // EventBus still owns delivery, pending registrations, nesting and exceptions.
 // Only its subscription enumeration changes, only while draining early events.
 // A run of unchanged TubeTracker callbacks on a non-tube entity is a no-op.
 // Check at each run's original position, not before unrelated handlers execute.
+[HarmonyPatch]
 internal static class LoadEventRouter
 {
     private const string Owner = "beaverbuddies.perf.load.event-routing";
@@ -31,7 +34,6 @@ internal static class LoadEventRouter
     private static readonly ConditionalWeakTable<Action<object>, Marker> KnownHandlers = new();
     private static readonly ConditionalWeakTable<SubscriptionRegistry, RegistryVersion> Versions = new();
     private static readonly Marker Known = new();
-    private static Type? _harmonyType;
     private static bool _installed;
     [ThreadStatic] private static Session? _session;
     [ThreadStatic] private static DispatchContext _dispatch;
@@ -92,41 +94,7 @@ internal static class LoadEventRouter
             KnownHandlers.Add(action, Known);
     }
 
-    internal static void Install(Type harmonyType, Type harmonyMethodType, MethodInfo patchMethod)
-    {
-        if (!LoadSettings.EnableEventBusFastDelegates ||
-            !LoadSettings.EnableLoadEventRouting) return;
-        _harmonyType = harmonyType;
-        object? harmony = null;
-        try
-        {
-            if (!LoadCompatibility.Reviewed(LoadBodies.EventRouting))
-            {
-                Debug.Log("[BeaverBuddies Perf] Load event routing: unrecognized event or tube bodies; using original delivery.");
-                return;
-            }
-            harmony = Activator.CreateInstance(harmonyType, Owner)!;
-            void Patch(Type targetType, string targetName, string? prefix, string? finalizer, string? postfix = null)
-            {
-                object? Hook(string? name) => name == null ? null : Activator.CreateInstance(harmonyMethodType,
-                    typeof(LoadEventRouter).GetMethod(name, All));
-                patchMethod.Invoke(harmony, new[] { (object)targetType.GetMethod(targetName, All)!, Hook(prefix), Hook(postfix), null, Hook(finalizer) });
-            }
-            Patch(typeof(EventBus), "PostLoad", nameof(BeginLoad), nameof(EndLoad));
-            Patch(typeof(EventBus), "PostNow", nameof(BeginDispatch), nameof(EndDispatch));
-            Patch(typeof(SubscriptionRegistry), "Get", nameof(GetSubscriptions), null);
-            Patch(typeof(SubscriptionRegistry), "Add", null, null, nameof(AfterAdd));
-            Patch(typeof(SubscriptionRegistry), "RemoveAll", nameof(BeforeRemove), null, nameof(AfterRemove));
-            _installed = true;
-            Debug.Log("[BeaverBuddies Perf] Load event routing installed.");
-        }
-        catch (Exception exception)
-        {
-            _installed = false;
-            if (harmony != null) harmonyType.GetMethod("UnpatchAll", All)!.Invoke(harmony, new object[] { Owner });
-            Debug.LogWarning("[BeaverBuddies Perf] Load event routing disabled: " + exception.GetBaseException().Message);
-        }
-    }
+    static bool Prepare() => _installed = PerformanceSettings.Enabled && LoadCompatibility.Reviewed(LoadBodies.EventRouting);
 
     // Checked at each load, after all mods have had a chance to install hooks.
     // Arbitrary changes to the predicate/lookup/delivery invalidate the proof.
@@ -135,28 +103,20 @@ internal static class LoadEventRouter
         var methods = new List<MethodBase> { TubeHandler };
         foreach (var type in new[] { typeof(EventBus), typeof(SubscriptionRegistry), typeof(BaseComponent), typeof(ComponentCache) })
             methods.AddRange(type.GetMethods(All | BindingFlags.DeclaredOnly));
-        var getInfo = _harmonyType!.GetMethod("GetPatchInfo", All)!;
         foreach (var method in methods)
         {
-            var info = getInfo.Invoke(null, new object[] { method });
-            if (info == null) continue;
-            var owners = (IEnumerable<string>)info.GetType().GetProperty("Owners", All)!.GetValue(info)!;
-            // The progress prefix/finalizer only observes the enclosing load;
-            // it neither alters delivery nor touches the subscription registry.
-            // The typed-delegate registration prefix is this mod's own reviewed
-            // RegisterMethod replacement (same registry call, same order).
-            // The tick frontier only observes EnableComponent/DisableComponent and
-            // ComponentCache.OnDestroy (counts, no change to Enabled or lookups).
-            if (owners.Any(owner => owner != Owner &&
-                !(owner == "beaverbuddies.perf.load.progress" && method.DeclaringType == typeof(EventBus) && method.Name == "PostLoad") &&
-                !(owner == "beaverbuddies.perf.runtime.events" && method.DeclaringType == typeof(EventBus) && method.Name == "RegisterMethod") &&
-                !(owner == "beaverbuddies.perf.runtime.frontier" && (method.DeclaringType == typeof(BaseComponent) && method.Name is "EnableComponent" or "DisableComponent" ||
-                                                        method.DeclaringType == typeof(ComponentCache) && method.Name is "OnDestroy" or "Initialize"))))
+            var owners = Harmony.GetPatchInfo(method)?.Owners;
+            if (owners == null) continue;
+            // The progress prefix/finalizer only observes the enclosing load.
+            if (owners.Any(owner => owner != Owner && !LoadCompatibility.ReviewedEverywhere(method, owner) &&
+                !(owner == "beaverbuddies.perf.load.progress" && method.DeclaringType == typeof(EventBus) && method.Name == "PostLoad")))
                 return false;
         }
         return true;
     }
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(EventBus), nameof(EventBus.PostLoad))]
     private static void BeginLoad(EventBus __instance, out LoadScope __state)
     {
         Session? current = null;
@@ -176,11 +136,13 @@ internal static class LoadEventRouter
         _session = current;
     }
 
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(EventBus), nameof(EventBus.PostLoad))]
     private static Exception? EndLoad(Exception? __exception, LoadScope __state)
     {
         _session = __state.Previous;
         var elapsed = (Stopwatch.GetTimestamp() - __state.Started) * 1000.0 / Stopwatch.Frequency;
-        if (__state.Started != 0 && elapsed >= LoadSettings.LoadSlowCallThresholdMilliseconds)
+        if (__state.Started != 0 && elapsed >= 250f)
             Debug.Log(string.Format(CultureInfo.InvariantCulture,
                 "[BeaverBuddies Perf] LoadStage SingletonSystem.EventBus.PostLoad ms={0:F2}, frame={1}", elapsed, UnityEngine.Time.frameCount));
         if (__state.Current is { } session)
@@ -191,6 +153,8 @@ internal static class LoadEventRouter
         return __exception;
     }
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(EventBus), nameof(EventBus.PostNow))]
     private static void BeginDispatch(EventBus __instance, object eventObject, out DispatchContext __state)
     {
         __state = _dispatch;
@@ -200,6 +164,8 @@ internal static class LoadEventRouter
                 eventObject) : default;
     }
 
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(EventBus), nameof(EventBus.PostNow))]
     private static Exception? EndDispatch(Exception? __exception, DispatchContext __state)
     {
         _dispatch = __state;
@@ -225,6 +191,8 @@ internal static class LoadEventRouter
         if (Versions.TryGetValue(__instance, out var version)) version.Value++;
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(SubscriptionRegistry), nameof(SubscriptionRegistry.Add))]
     private static void AfterAdd(SubscriptionRegistry __instance, Type eventType)
     {
         // Failed duplicate registration and changes to a different event's
@@ -232,17 +200,23 @@ internal static class LoadEventRouter
         if (eventType == typeof(EntityInitializedEvent)) Invalidate(__instance);
     }
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SubscriptionRegistry), nameof(SubscriptionRegistry.RemoveAll))]
     private static void BeforeRemove(SubscriptionRegistry __instance, object subscriber, out bool __state)
     {
         __state = Versions.TryGetValue(__instance, out _) &&
                   __instance._subscriptions.TryGetValue(typeof(EntityInitializedEvent), out var subscriptions) && subscriptions.ContainsKey(subscriber);
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(SubscriptionRegistry), nameof(SubscriptionRegistry.RemoveAll))]
     private static void AfterRemove(SubscriptionRegistry __instance, bool __state)
     {
         if (__state) Invalidate(__instance);
     }
 
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SubscriptionRegistry), nameof(SubscriptionRegistry.Get))]
     private static bool GetSubscriptions(SubscriptionRegistry __instance, Type eventType, ref IEnumerable<Subscription> __result)
     {
         var session = _dispatch.Session;
