@@ -57,15 +57,17 @@ namespace BeaverBuddies.Power
      * The game mirrors every reservation between the inventories of a linked
      * pair, which is right for construction materials but not for the
      * exchange: each half's payment inventory is its own, and mirroring
-     * fails once the other half is full.
+     * fails once the other half is full. A half with no other half yet (or
+     * any more) has nothing to mirror to: the game would throw.
      */
     [HarmonyPatch(typeof(LinkedInventories), "OnInventoryCapacityReservationChanged")]
     public static class LinkedInventoriesReservationPatch
     {
-        static bool Prefix(object sender)
+        static bool Prefix(LinkedInventories __instance, object sender)
         {
             string name = (sender as Inventory)?.ComponentName;
-            return name != PowerExchangeInventoryInitializer.InventoryComponentName
+            return __instance._linked?._inventories != null
+                && name != PowerExchangeInventoryInitializer.InventoryComponentName
                 && name != Trading.DistrictTradeInventoryInitializer.InventoryComponentName;
         }
     }
