@@ -282,7 +282,6 @@ namespace BeaverBuddies.Modding
         // A beaver's or bot's faction is its district's; a building's is its template's, else its district's
         public static string FactionOf(Timberborn.BaseComponentSystem.BaseComponent entity) => Factions.FactionRules.Of(entity);
         public static bool NeedAllowed(string faction, string needId) => Factions.FactionRules.NeedAllowed(faction, needId);
-        public static bool GoodAllowed(string faction, string goodId) => Factions.FactionRules.GoodAllowed(faction, goodId);
         public static bool GoodAllowedIn(Timberborn.BaseComponentSystem.BaseComponent building, string goodId) => Factions.FactionRules.GoodAllowedIn(building, goodId);
         // Announces the faction of whoever is acting (an AI opponent, under ActAs)
         public static void AnnounceFaction(string faction) => Factions.PlayerFactionService.Announce(faction);

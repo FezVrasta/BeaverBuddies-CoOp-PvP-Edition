@@ -191,7 +191,7 @@ Every game mixes factions: each player builds with their own, alone too. A guest
 
 A faction mod made of content alone (blueprints, models, textures) works as it is, as long as every player has it. BeaverBuddies notes every faction the game loads and warns a player who joins without one the host has. Matchmaking only pairs players with the same factions.
 
-Ask about factions with `LocalFaction()`, `PlayerFaction(playerID)`, `TemplateFaction(templateName)`, `FactionHas(templateName, faction)` and `FactionOf(entity)`: a beaver's or bot's is its district's, a building's is its template's, else its district's. `NeedAllowed` and `GoodAllowed` say whether a faction's beavers have a need or keep a good. A mod that adds buildings to a faction (Timber Empires does) lists them in a blueprint of its own, which the game only reads with BeaverBuddies there:
+Ask about factions with `LocalFaction()`, `PlayerFaction(playerID)`, `TemplateFaction(templateName)`, `FactionHas(templateName, faction)` and `FactionOf(entity)`: a beaver's or bot's is its district's, a building's is its template's, else its district's. `NeedAllowed` says whether a faction's beavers have a need, and `GoodAllowedIn` whether a building keeps a good. A mod that adds buildings to a faction (Timber Empires does) lists them in a blueprint of its own, which the game only reads with BeaverBuddies there:
 
 ```json
 {

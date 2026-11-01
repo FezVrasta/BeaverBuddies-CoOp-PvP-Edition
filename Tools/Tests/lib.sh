@@ -263,6 +263,12 @@ bb_mod_flags() {
     done <<< "${BB_MOD_FLAGS:-}"
 }
 
+# bb_mods_off <folders>: the local builds of these mods (a regex of their folder names, "TimberEmpires|Archipelago")
+# off for the copies this scenario launches. A scenario runs in its own subshell, so the next one has them back
+bb_mods_off() {
+    BB_MOD_FLAGS=$(echo "$BB_MOD_FLAGS" | sed -E "s/^(ModEnabled\.Local\.($1)\.[a-z]+)=1$/\1=0/")
+}
+
 # ---- Running the game until something happens ------------------------------------
 
 # The last tick each copy logged, "<host tick> <client tick>"
