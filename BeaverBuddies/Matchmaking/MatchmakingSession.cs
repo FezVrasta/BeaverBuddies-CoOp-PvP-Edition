@@ -120,6 +120,7 @@ namespace BeaverBuddies.Matchmaking
 
         public static void Start(MatchPicks picks, NewGameConfiguration configuration)
         {
+            readyServer = 0;
             Prepare(picks, configuration);
             State = MatchState.Searching;
             Plugin.Log($"[Match] Looking for an opponent: {picks.MapKey}, difficulty {picks.ModeKey}, {picks.faction}");
@@ -507,8 +508,13 @@ namespace BeaverBuddies.Matchmaking
         {
             if (State != MatchState.Starting || !IsHost) return;
             State = MatchState.Hosting;
+            if (readyServer != 0) ServerReady(readyServer);
             Changed?.Invoke();
         }
+
+        // A game hosted in place makes its Steam lobby while it loads, and a
+        // slow load has it before Hosting: kept for then
+        private static ulong readyServer;
 
         /**
          * The hosted game's Steam lobby: anyone can join it by its ID, which
@@ -518,6 +524,7 @@ namespace BeaverBuddies.Matchmaking
          */
         public static void ServerReady(ulong server)
         {
+            readyServer = server;
             if (State != MatchState.Hosting || lobby == null) return;
             Lobbies.Steam?.MakePublic(server);
             lobby.SetMemberData(CodeKey, WebRtc.JoinCode.Current ?? "");

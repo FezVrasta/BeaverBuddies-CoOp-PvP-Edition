@@ -391,13 +391,14 @@ bb_open() {
     local inst=$1
     rm -f "$BB_CMD_PREFIX-$inst"
     bb_keep_log "$inst"
-    prefs_windowed
+    # BB_REAL_DISPLAY=1 plays with the player's own display settings, not the test's windowed ones
+    [ -n "${BB_REAL_DISPLAY:-}" ] || prefs_windowed
     bb_home_prepare
-    open -g -n -a "$BB_GAME" --env SteamAppId=1062090 --env SteamGameId=1062090 --env BB_INSTANCE="$inst" --env HOME="$BB_HOME" \
+    open $([ -n "${BB_FRONT:-}" ] || echo -g) -n -a "$BB_GAME" --env SteamAppId=1062090 --env SteamGameId=1062090 --env BB_INSTANCE="$inst" --env HOME="$BB_HOME" \
         ${BB_RTC_CODE:+--env BB_RTC_CODE="$BB_RTC_CODE"} \
         ${BB_HITCH_MS:+--env BB_HITCH_MS="$BB_HITCH_MS"} ${BB_HITCH_TRACE:+--env BB_HITCH_TRACE=1} ${BB_HITCH_GARBAGE:+--env BB_HITCH_GARBAGE=1} \
         ${BB_LEAK_ROOTS:+--env BB_LEAK_ROOTS="$BB_LEAK_ROOTS"} ${BB_LEAK_SIZES:+--env BB_LEAK_SIZES=1} ${BB_LEAK_WALK:+--env BB_LEAK_WALK=1} \
-        --args -skipModManager -logFile "$(bb_log "$inst")" -screen-fullscreen 0 -screen-width ${BB_RES_W:-1400} -screen-height ${BB_RES_H:-880}
+        --args -skipModManager -logFile "$(bb_log "$inst")" $([ -n "${BB_REAL_DISPLAY:-}" ] || echo "-screen-fullscreen 0 -screen-width ${BB_RES_W:-1400} -screen-height ${BB_RES_H:-880}")
 }
 
 # Whether the player's own Timberborn is running (not one of the test copies)

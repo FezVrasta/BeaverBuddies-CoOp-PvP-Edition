@@ -12,6 +12,11 @@ wait_for_watch host "Load time" 300 || { fail "the save loads" "never loaded"; r
 sleep 10
 send host dismiss
 send host "speed 0"
+# PERF_FRONT=1 brings the copy to the front, as a game being played is: a window nobody can see isn't composited
+if [ -n "${PERF_FRONT:-}" ]; then
+    pid=$(bb_pid host)
+    osascript -e "tell application \"System Events\" to set frontmost of (first process whose unix id is $pid) to true" >/dev/null 2>&1
+fi
 sleep "$secs"
 
 report() {
@@ -25,6 +30,7 @@ report() {
         "$(echo "$time" | sed -E 's/.*(cpu main [0-9.]+ ms, render thread [0-9.]+ ms, gpu [0-9.]+ ms).*/\1/')"
 }
 report "single player, paused"
+shot "single-paused" host
 echo "    where the paused time goes:"
 grep -a '\[Pace\] time' "$(bb_log host)" | tail -1 | sed 's/.*totals: //' | tr ',;' '\n\n' | head -14 | sed 's/^/      /'
 send host "speed 3"
