@@ -13,6 +13,8 @@ namespace BeaverBuddies.Performance
      * sight: a renderer is visible when any camera drew it last frame,
      * shadows included. A model coming into view shows last frame's pose
      * for one frame.
+     *
+     * Models seen on screen are asked again only every few frames.
      */
     [HarmonyPatch(typeof(AnimatorRegistry), nameof(AnimatorRegistry.UpdateSingleton))]
     [HarmonyPriority(HarmonyLib.Priority.Last)]
@@ -20,51 +22,122 @@ namespace BeaverBuddies.Performance
     {
         class Model
         {
+            public TimbermeshAnimator Animator;
             public Renderer[] Renderers;
-            // Its time moved on since it was last posed
+            // Its time moved on since it was last posed, out of sight
             public bool Owed;
+            // What the last look said, and the frame it is good until
+            public bool Visible;
+            public int CheckAt;
+            // What it was last posed at: paused, a model still at it has nothing to redo
+            public float PosedTime;
+            public object PosedAnimation;
         }
 
-        static readonly ConditionalWeakTable<TimbermeshAnimator, Model> Models = new();
+        const int CheckEvery = 4;
+        static readonly ConditionalWeakTable<TimbermeshAnimator, Model> ByAnimator = new();
+        static readonly ConditionalWeakTable<AnimatorRegistry, System.Collections.Generic.List<Model>> ByRegistry = new();
 
         static Model Of(TimbermeshAnimator animator) =>
-            Models.GetValue(animator, a => new Model { Renderers = a.GetComponentsInChildren<Renderer>(true) });
+            ByAnimator.GetValue(animator, a => new Model { Animator = a });
 
-        internal static bool InSight(TimbermeshAnimator animator)
+        // The registry's animators as our models, kept by Add and Remove and checked against its count
+        static System.Collections.Generic.List<Model> Models(AnimatorRegistry registry)
         {
-            Renderer[] renderers = Of(animator).Renderers;
-            if (renderers.Length == 0) return true;
-            foreach (Renderer renderer in renderers)
+            var models = ByRegistry.GetValue(registry, _ => new System.Collections.Generic.List<Model>());
+            if (models.Count != registry._animators.Count)
+            {
+                models.Clear();
+                foreach (TimbermeshAnimator animator in registry._animators) models.Add(Of(animator));
+            }
+            return models;
+        }
+
+        static bool Look(Model model)
+        {
+            model.Renderers ??= model.Animator.GetComponentsInChildren<Renderer>(true);
+            if (model.Renderers.Length == 0) return true;
+            foreach (Renderer renderer in model.Renderers)
             {
                 if (renderer && renderer.isVisible) return true;
             }
             return false;
         }
 
+        internal static bool InSight(TimbermeshAnimator animator) => Look(Of(animator));
+
         static bool Prepare() => PerformanceSettings.Enabled;
 
         static bool Prefix(AnimatorRegistry __instance)
         {
             float deltaTime = Time.deltaTime;
-            foreach (TimbermeshAnimator animator in __instance._animators)
+            int frame = Time.frameCount;
+            bool profiling = HitchWatch.Profiling;
+            var models = Models(__instance);
+            for (int i = 0; i < models.Count; i++)
             {
-                if (!animator || !animator.isActiveAndEnabled) continue;
-                Model model = Of(animator);
+                Model model = models[i];
+                TimbermeshAnimator animator = model.Animator;
                 bool playing = animator.Enabled && animator._speed != 0f && animator._currentAnimation != null && !animator.PlayingFinished;
                 if (!playing && !model.Owed) continue;
+                if (!animator || !animator.isActiveAndEnabled) continue;
+                if (deltaTime == 0f && !model.Owed && AtPose(animator, model)) continue;
+                long t = profiling ? HitchWatch.Now : 0, heap = HitchWatch.Heap;
                 if (playing) animator.UpdateTime(deltaTime);
-                model.Owed = !InSight(animator);
-                if (!model.Owed && animator._currentAnimation != null) animator.UpdateAnimationUpdaters();
+                if (t != 0) { HitchWatch.Spent("time", "anim", t); HitchWatch.Garbaged("time", "anim", heap); t = HitchWatch.Now; heap = HitchWatch.Heap; }
+                bool wasOwed = model.Owed;
+                if (wasOwed || frame >= model.CheckAt)
+                {
+                    model.Visible = Look(model);
+                    if (model.Visible) model.CheckAt = frame + CheckEvery;
+                }
+                model.Owed = !model.Visible;
+                if (t != 0) { HitchWatch.Spent("sight", "anim", t); HitchWatch.Garbaged("sight", "anim", heap); t = HitchWatch.Now; heap = HitchWatch.Heap; }
+                if (!model.Owed && animator._currentAnimation != null)
+                {
+                    Posed(animator, model);
+                    if (t != 0) { HitchWatch.Spent("pose", "anim", t); HitchWatch.Garbaged("pose", "anim", heap); }
+                }
             }
             return false;
+        }
+
+        static bool AtPose(TimbermeshAnimator animator, Model model) =>
+            model.PosedAnimation != null
+            && ReferenceEquals(animator._currentAnimation, model.PosedAnimation)
+            && animator.Time == model.PosedTime;
+
+        static void Posed(TimbermeshAnimator animator, Model model)
+        {
+            animator.UpdateAnimationUpdaters();
+            model.PosedTime = animator.Time;
+            model.PosedAnimation = animator._currentAnimation;
         }
 
         // Before anything reads a skipped model's pose
         internal static void Pose(TimbermeshAnimator animator)
         {
-            if (!animator || !Models.TryGetValue(animator, out Model model) || !model.Owed) return;
+            if (!animator || !ByAnimator.TryGetValue(animator, out Model model) || !model.Owed) return;
             model.Owed = false;
-            if (animator._currentAnimation != null) animator.UpdateAnimationUpdaters();
+            if (animator._currentAnimation != null) Posed(animator, model);
+        }
+
+        [HarmonyPatch(typeof(AnimatorRegistry), nameof(AnimatorRegistry.Add))]
+        [HarmonyPriority(HarmonyLib.Priority.Last)]
+        static class OnAdd
+        {
+            static bool Prepare() => PerformanceSettings.Enabled;
+            static void Postfix(AnimatorRegistry __instance, TimbermeshAnimator timbermeshAnimator) =>
+                Models(__instance).Add(Of(timbermeshAnimator));
+        }
+
+        [HarmonyPatch(typeof(AnimatorRegistry), nameof(AnimatorRegistry.Remove))]
+        [HarmonyPriority(HarmonyLib.Priority.Last)]
+        static class OnRemove
+        {
+            static bool Prepare() => PerformanceSettings.Enabled;
+            static void Postfix(AnimatorRegistry __instance, TimbermeshAnimator timbermeshAnimator) =>
+                Models(__instance).Remove(Of(timbermeshAnimator));
         }
 
         [HarmonyPatch(typeof(TimbermeshAnimator), nameof(TimbermeshAnimator.Stop))]
