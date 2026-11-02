@@ -479,6 +479,34 @@ namespace BeaverBuddies.DevTools
                 case "snap":
                     ScreenCapture.CaptureScreenshot(a[1]);
                     break;
+                case "vsync":
+                    // vsync off|on: whether frames wait for the display, so a paused game's frame time shows what drawing costs
+                    QualitySettings.vSyncCount = a[1] == "off" ? 0 : 1;
+                    Application.targetFrameRate = a[1] == "off" ? -1 : 0;
+                    Plugin.LogWarning($"[Sun] vsync {a[1]}");
+                    break;
+                case "sun":
+                    Plugin.LogWarning($"[Sun] {RenderToggles.Sun(a)}");
+                    break;
+                case "lights":
+                    RenderToggles.DumpLights();
+                    break;
+                case "tonight":
+                {
+                    var clock = BeaverBuddies.Performance.DayNightProbe.Current;
+                    if (clock != null && !clock.IsNighttime) clock.JumpTimeInHours(clock.HoursToNextStartOf(Timberborn.TimeSystem.TimeOfDay.Nighttime) + 0.5f);
+                    break;
+                }
+                case "jumptime":
+                    BeaverBuddies.Performance.DayNightProbe.Current?.JumpTimeInHours(float.Parse(a[1], CultureInfo.InvariantCulture));
+                    break;
+                case "bench":
+                    RenderToggles.Bench();
+                    break;
+                case "render":
+                    // render shadows|post|ui|animated|cull|res off|on [width height]
+                    Plugin.LogWarning($"[Render] {a[1]} {a[2]}: {RenderToggles.Apply(a[1], a[2] == "off", a)}");
+                    break;
                 case "joinmatch":
                 {
                     MatchHooks.RaiseStarting(a[1]);
