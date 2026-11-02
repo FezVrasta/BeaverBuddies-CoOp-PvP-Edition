@@ -155,7 +155,8 @@ namespace BeaverBuddies.Performance
             int gc = GC.CollectionCount(0);
             // The frames that loaded a game don't count. Nor do the ones of
             // a game in the background, which may be throttled
-            bool inGame = !EventIO.IsNull;
+            // A game played alone has no event IO: profiling counts the frames of the game's own scene (index 2) too
+            bool inGame = !EventIO.IsNull || Profiling && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 2;
             if (inGame && _wasInGame && frame == _frame + 1 && (Profiling || UnityEngine.Application.isFocused))
             {
                 double ms = Ms(now - _frameStart);
