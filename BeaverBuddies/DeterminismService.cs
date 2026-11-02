@@ -987,6 +987,23 @@ namespace BeaverBuddies
         public static int EntityUpdateHash { get; private set; }
         public static int PositionHash { get; private set; }
 
+        // The components that make an entity move, found once for the entity
+        class Movers
+        {
+            public readonly Walker Walker;
+            public readonly MovementAnimator MovementAnimator;
+            public readonly CharacterRotator Rotator;
+
+            public Movers(EntityComponent entity)
+            {
+                Walker = entity.GetComponent<Walker>();
+                MovementAnimator = entity.GetComponent<MovementAnimator>();
+                Rotator = entity.GetComponent<CharacterRotator>();
+            }
+        }
+
+        static readonly System.Runtime.CompilerServices.ConditionalWeakTable<TickableEntity, Movers> Kinds = new();
+
         public static void SetHashes(int entityUpdateHash, int positionHash)
         {
             EntityUpdateHash = entityUpdateHash;
@@ -1004,8 +1021,10 @@ namespace BeaverBuddies
                 bool recorded = false;
 
                 var entityComponent = entity._entityComponent;
-                var pathFollower = entityComponent.GetComponent<Walker>()?.PathFollower;
-                MovementAnimator movementAnimator = entityComponent.GetComponent<MovementAnimator>();
+                // Almost every entity in a bucket is a tree, a crop or a building: what it is is asked once
+                Movers mover = Kinds.GetValue(entity, e => new Movers(e._entityComponent));
+                var pathFollower = mover.Walker?.PathFollower;
+                MovementAnimator movementAnimator = mover.MovementAnimator;
                 var animatedPathFollower = movementAnimator?._animatedPathFollower;
                 if (pathFollower != null && animatedPathFollower != null)
                 {
@@ -1042,7 +1061,7 @@ namespace BeaverBuddies
                 // Make sure it updates the model's position as well
                 try
                 {
-                    CharacterRotator rotator = entityComponent.GetComponent<CharacterRotator>();
+                    CharacterRotator rotator = mover.Rotator;
                     // The CharacterRotator seems to sometimes not be initialized when this is caused, and
                     // therefore something is null, likely _animatedPathFollower.
                     if (movementAnimator != null && rotator != null && rotator._animatedPathFollower != null)
