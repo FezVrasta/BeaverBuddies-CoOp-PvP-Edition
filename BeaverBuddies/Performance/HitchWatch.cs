@@ -35,7 +35,9 @@ namespace BeaverBuddies.Performance
         private static int _framesStalled;
         private static int _frames, _framesNoTick, _framesSlow, _gcsAtStart;
         private static long _heapAtStart;
-        private static double _maxFrame, _sumFrame, _sumTicking;
+        private static double _maxFrame, _sumFrame, _sumTicking, _sumFps;
+        // The window's frame times, for the spread the average hides
+        private static readonly System.Collections.Generic.List<double> _frameTimes = new();
 
         private static readonly double MsPerTimestamp = 1000.0 / Stopwatch.Frequency;
 
@@ -92,15 +94,18 @@ namespace BeaverBuddies.Performance
         }
 
         // Profiling only: the time each kind of work took over the window, and how often it ran
-        private static readonly System.Collections.Generic.Dictionary<string, (long Time, int Calls)> _spent = new();
+        private static readonly System.Collections.Generic.Dictionary<(string Kind, object Who), (long Time, int Calls)> _spent = new();
 
         internal static void Spent(object who, string kind, long start)
         {
             if (!Profiling) return;
-            string key = kind + " " + (who as string ?? who?.GetType().Name);
+            // By the name or the type, so no string is built per call
+            var key = (kind, who is string || who is Type ? who : who?.GetType());
             _spent.TryGetValue(key, out var sum);
             _spent[key] = (sum.Time + Now - start, sum.Calls + 1);
         }
+
+        private static string NameOf(object who) => who as string ?? (who as Type)?.Name;
 
         // Profiling only: a component whose tick took this long is named at once, with the entity it's on
         internal static void SlowComponent(object component, long start)
@@ -117,14 +122,14 @@ namespace BeaverBuddies.Performance
             foreach (var g in _spent)
             {
                 all += g.Value.Time;
-                if (g.Key.StartsWith("update ")) updates += g.Value.Time;
-                else if (g.Key.StartsWith("late ")) lates += g.Value.Time;
-                else if (g.Key.StartsWith("tick ")) ticks += g.Value.Time;
-                else if (g.Key.StartsWith("component ")) comps += g.Value.Time;
+                if (g.Key.Kind == "update") updates += g.Value.Time;
+                else if (g.Key.Kind == "late") lates += g.Value.Time;
+                else if (g.Key.Kind == "tick") ticks += g.Value.Time;
+                else if (g.Key.Kind == "component") comps += g.Value.Time;
             }
             string totals = $"totals: updates {Ms(updates):F0} ms, late {Ms(lates):F0} ms, singleton ticks {Ms(ticks):F0} ms, components {Ms(comps):F0} ms; ";
-            string top = totals + string.Join(", ", _spent.OrderByDescending(g => g.Value.Time).Take(30)
-                .Select(g => $"{g.Key} {Ms(g.Value.Time):F0} ms/{g.Value.Calls}"));
+            string top = totals + string.Join(", ", _spent.OrderByDescending(g => g.Value.Time).Take(45)
+                .Select(g => $"{g.Key.Kind} {NameOf(g.Key.Who)} {Ms(g.Value.Time):F0} ms/{g.Value.Calls}"));
             _spent.Clear();
             return top;
         }
@@ -206,10 +211,64 @@ namespace BeaverBuddies.Performance
                 $", outside ticking {ms - Ms(_ticking):F0} ms");
         }
 
+        // Profiling only: one line a second, with what the game's own FPS label says beside the frames behind it.
+        // The label averages each frame's 1 / unscaledDeltaTime over 3 s, so it follows how uneven the frames are,
+        // not how many there are: the spread is logged next to it
+        private static readonly bool TraceEverySecond = Environment.GetEnvironmentVariable("BB_HITCH_TRACE") != null;
+        private static long _traceStart;
+        private static int _traceFrames, _traceGcs, _traceSeconds;
+        private static double _traceSum, _traceMax, _traceTicking, _traceInverseUnity;
+        private static readonly int[] _traceBins = new int[6];
+        private static string _traceLabel = "?";
+        private static int _traceShadowed;
+
+        private static void Trace(double ms, long now)
+        {
+            if (_traceStart == 0) { _traceStart = now; _traceGcs = GC.CollectionCount(0); }
+            _traceFrames++;
+            _traceSum += ms;
+            _traceTicking += Ms(_ticking);
+            if (ms > _traceMax) _traceMax = ms;
+            float unity = UnityEngine.Time.unscaledDeltaTime;
+            _traceInverseUnity += 1 / Math.Max(unity, 0.0001f);
+            _traceBins[unity < 0.010f ? 0 : unity < 0.020f ? 1 : unity < 0.040f ? 2 : unity < 0.060f ? 3 : unity < 0.100f ? 4 : 5]++;
+            if (Ms(now - _traceStart) < 1000) return;
+            // The scene is searched every few seconds, not every one: it costs frames of its own
+            if (_traceSeconds++ % 5 == 0)
+            {
+                try
+                {
+                    _traceLabel = "?";
+                    foreach (var document in UnityEngine.Object.FindObjectsOfType<UnityEngine.UIElements.UIDocument>())
+                    {
+                        var found = document.rootVisualElement == null ? null : UnityEngine.UIElements.UQueryExtensions.Q<UnityEngine.UIElements.Label>(document.rootVisualElement, "FPS");
+                        if (found != null) { _traceLabel = found.text; break; }
+                    }
+                    _traceShadowed = 0;
+                    foreach (var light in UnityEngine.Object.FindObjectsOfType<UnityEngine.Light>())
+                        if (light.enabled && light.shadows != UnityEngine.LightShadows.None && light.gameObject.activeInHierarchy) _traceShadowed++;
+                }
+                catch (Exception e) { _traceLabel = "error " + e.Message; }
+            }
+            var replay = SingletonManager.GetSingleton<ReplayService>();
+            Plugin.LogWarning($"[Trace] {_traceFrames} frames, {1000 * _traceFrames / Ms(now - _traceStart):F1} fps, avg {_traceSum / _traceFrames:F1} ms, max {_traceMax:F0} ms, " +
+                $"ticking {_traceTicking / _traceFrames:F1} ms, {GC.CollectionCount(0) - _traceGcs} GC, mean of 1/unity dt {_traceInverseUnity / _traceFrames:F1}, " +
+                $"unity dt bins <10/<20/<40/<60/<100/more ms {string.Join("/", _traceBins)}, game label '{_traceLabel}', {_traceShadowed} shadow lights, " +
+                $"tick {replay?.TicksSinceLoad} speed {replay?.TargetSpeed} timescale {UnityEngine.Time.timeScale:F2}");
+            _traceStart = now;
+            _traceGcs = GC.CollectionCount(0);
+            _traceFrames = 0;
+            _traceSum = _traceMax = _traceTicking = _traceInverseUnity = 0;
+            Array.Clear(_traceBins, 0, _traceBins.Length);
+        }
+
         private static void Pace(double ms, long now)
         {
+            if (TraceEverySecond) Trace(ms, now);
             _frames++;
             _sumFrame += ms;
+            _sumFps += 1000 / Math.Max(ms, 0.1);
+            _frameTimes.Add(ms);
             _sumTicking += Ms(_ticking);
             if (ms > _maxFrame) _maxFrame = ms;
             if (ms > 33) _framesSlow++;
@@ -218,6 +277,13 @@ namespace BeaverBuddies.Performance
             if (_statsStart == 0) { _statsStart = now; _heapAtStart = GC.GetTotalMemory(false); _gcsAtStart = GC.CollectionCount(0); }
             if (Ms(now - _statsStart) < 10000) return;
             var replay = SingletonManager.GetSingleton<ReplayService>();
+            // What the game's own FPS counter says (it averages each frame's 1 / time over 3 s, which reads
+            // higher than frames over seconds when frame times are uneven), and the same average over this window
+            var counter = SingletonManager.GetSingleton<Timberborn.Diagnostics.FramesPerSecondCounter>();
+            _frameTimes.Sort();
+            string spread = $"frame ms p50 {_frameTimes[_frameTimes.Count / 2]:F0} p90 {_frameTimes[_frameTimes.Count * 9 / 10]:F0} p99 {_frameTimes[_frameTimes.Count * 99 / 100]:F0}, " +
+                $"mean of 1/frame {_sumFps / _frames:F1} fps, game counter {counter?.AverageFramesPerSecond:F0} / {counter?.MinFramesPerSecond:F0}";
+            Plugin.LogWarning($"[Pace] fps: {1000 * _frames / Ms(now - _statsStart):F1} frames per second, {spread}");
             Plugin.LogWarning($"[Pace] tick {replay?.TicksSinceLoad} speed {replay?.TargetSpeed} timescale {UnityEngine.Time.timeScale:F1}: {_frames} frames, " +
                 $"avg {_sumFrame / _frames:F1} ms, max {_maxFrame:F0} ms, {_framesSlow} over 33 ms, " +
                 $"{_framesNoTick} with no bucket ticked, {_framesStalled} stalled for the host, margin {replay?.Margin * 1000:F0} ms, pace {replay?.BucketBoost:F2}, ticking avg {_sumTicking / _frames:F1} ms, " +
@@ -229,10 +295,11 @@ namespace BeaverBuddies.Performance
             Plugin.LogWarning($"[Pace] time: {cpu}{TakeSpent()}");
             Plugin.LogWarning($"[Pace] garbage: {TakeGarbage()}");
             _statsStart = now;
+            _frameTimes.Clear();
             _heapAtStart = GC.GetTotalMemory(false);
             _gcsAtStart = GC.CollectionCount(0);
             _frames = _framesNoTick = _framesSlow = _framesStalled = 0;
-            _maxFrame = _sumFrame = _sumTicking = 0;
+            _maxFrame = _sumFrame = _sumTicking = _sumFps = 0;
         }
 
         internal static void Stalled() => _stalled = true;
@@ -250,7 +317,11 @@ namespace BeaverBuddies.Performance
             _slowestBucketIndex = index;
         }
 
-        internal static void WaitedForParallelTick(long start) => _parallelWait += Now - start;
+        internal static void WaitedForParallelTick(long start)
+        {
+            _parallelWait += Now - start;
+            Spent("parallel tick", "wait", start);
+        }
 
         internal static void TickedSingleton(object singleton, long start)
         {

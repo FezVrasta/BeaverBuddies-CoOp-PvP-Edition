@@ -1017,7 +1017,7 @@ namespace BeaverBuddies
             __instance.TickNextBucket();
             HitchWatch.TickedBucket(bucket, start);
             HitchWatch.Garbaged("entities", "bucket", heap);
-            HitchWatch.Spent("entities", "bucket", start);
+            HitchWatch.Spent(bucket == 0 ? "singleton bucket" : "entity buckets", "bucket", start);
             NextBucket = __instance._nextBucketIndex;
             return false;
         }
