@@ -1,4 +1,4 @@
-using BeaverBuddies.Connect;
+﻿using BeaverBuddies.Connect;
 using BeaverBuddies.Events;
 using BeaverBuddies.Matchmaking;
 using BeaverBuddies.MultiStart;
@@ -67,24 +67,19 @@ namespace BeaverBuddies.DevTools
 
         private static string Flag => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Library", "Caches", "BeaverBuddies-test-" + Instance);
 
-        private readonly GameModeSpecService _gameModeSpecService;
-        private readonly GameSceneLoader _gameSceneLoader;
-        private readonly ClientConnectionService _clientConnectionService;
-        private readonly PanelStack _panelStack;
-        private readonly VisualElementLoader _visualElementLoader;
+        // Looked up when a command needs them: the map editor has none of the menu's and the game's services
+        private GameModeSpecService _gameModeSpecService => _container.GetInstance<GameModeSpecService>();
+        private GameSceneLoader _gameSceneLoader => _container.GetInstance<GameSceneLoader>();
+        private ClientConnectionService _clientConnectionService => _container.GetInstance<ClientConnectionService>();
+        private PanelStack _panelStack => _container.GetInstance<PanelStack>();
+        private VisualElementLoader _visualElementLoader => _container.GetInstance<VisualElementLoader>();
         private readonly Bindito.Core.IContainer _container;
         private float _nextPoll;
         private Timberborn.BlockObjectTools.PreviewPlacer _previewPlacer;
 
-        public TestHarness(GameModeSpecService gameModeSpecService, GameSceneLoader gameSceneLoader, ClientConnectionService clientConnectionService, PanelStack panelStack,
-            VisualElementLoader visualElementLoader, Bindito.Core.IContainer container)
+        public TestHarness(Bindito.Core.IContainer container)
         {
             _container = container;
-            _visualElementLoader = visualElementLoader;
-            _panelStack = panelStack;
-            _gameModeSpecService = gameModeSpecService;
-            _gameSceneLoader = gameSceneLoader;
-            _clientConnectionService = clientConnectionService;
         }
 
         // A desync is kept as it is, not resynced, to look at what differs
@@ -576,6 +571,10 @@ namespace BeaverBuddies.DevTools
                 case "mapeditor":
                     // A new map in the map editor, this many tiles a side
                     Get<Timberborn.MapEditorSceneLoading.MapEditorSceneLoader>().StartNewMapInstantly(new Vector2Int(I(a[1]), I(a[1])));
+                    break;
+                case "editmap":
+                    // editmap Map: that map open in the map editor (user:Name for one in the Maps folder)
+                    Get<Timberborn.MapEditorSceneLoading.MapEditorSceneLoader>().LoadMapInstantly(Map(a[1]));
                     break;
                 case "newgame":
                     // newgame Map Faction [game mode id]: alone in that mode, as the New Game screens' Start would start it
