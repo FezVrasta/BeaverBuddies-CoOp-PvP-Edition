@@ -155,8 +155,8 @@ namespace BeaverBuddies.Performance
             int gc = GC.CollectionCount(0);
             // The frames that loaded a game don't count. Nor do the ones of
             // a game in the background, which may be throttled
-            // A game played alone has no event IO: profiling counts the frames of the game's own scene (index 2) too
-            bool inGame = !EventIO.IsNull || Profiling && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 2;
+            // A game played alone has no event IO: profiling counts the frames of the game's own scene (index 2) and the map editor's too
+            bool inGame = !EventIO.IsNull || Profiling && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex >= 2;
             if (inGame && _wasInGame && frame == _frame + 1 && (Profiling || UnityEngine.Application.isFocused))
             {
                 double ms = Ms(now - _frameStart);
@@ -288,7 +288,8 @@ namespace BeaverBuddies.Performance
             Plugin.LogWarning($"[Pace] tick {replay?.TicksSinceLoad} speed {replay?.TargetSpeed} timescale {UnityEngine.Time.timeScale:F1}: {_frames} frames, " +
                 $"avg {_sumFrame / _frames:F1} ms, max {_maxFrame:F0} ms, {_framesSlow} over 33 ms, " +
                 $"{_framesNoTick} with no bucket ticked, {_framesStalled} stalled for the host, margin {replay?.Margin * 1000:F0} ms, pace {replay?.BucketBoost:F2}, ticking avg {_sumTicking / _frames:F1} ms, " +
-                (GC.CollectionCount(0) == _gcsAtStart ? $"allocated {(GC.GetTotalMemory(false) - _heapAtStart) >> 20} MB" : "a GC ran"));
+                (GC.CollectionCount(0) == _gcsAtStart ? $"allocated {(GC.GetTotalMemory(false) - _heapAtStart) >> 20} MB" : "a GC ran") +
+                $", heap {GC.GetTotalMemory(false) >> 20} MB");
             var timing = new UnityEngine.FrameTiming[1];
             UnityEngine.FrameTimingManager.CaptureFrameTimings();
             string cpu = UnityEngine.FrameTimingManager.GetLatestTimings(1, timing) > 0
