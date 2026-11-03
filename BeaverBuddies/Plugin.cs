@@ -176,8 +176,6 @@ namespace BeaverBuddies
             // Co-op first among the game modes for a game with others, before the mods that depend on this one add theirs
             Matchmaking.MatchOptions.AddCoOp();
 
-            Performance.PerformanceSettings.Start();
-
             // apply all harmony patches automatically.
             Harmony harmony = new Harmony(ID);
             PatchAll(harmony);
@@ -187,10 +185,8 @@ namespace BeaverBuddies
             GameSaverSavePatcher.Install();
             TimeTimePatcher.Install();
 
-            // After our own patches, so the optimizations' checks for other
-            // patches on the methods they replace see ours
-            if (Performance.PerformanceSettings.Enabled) Performance.DeferredGoodStackModels.Install();
-            else LogWarning("Performance optimizations are off (BeaverBuddies-noperf, or T3MP or Performance Plus installed)");
+            // The optimizations in TimberPerf, shipped next to this DLL: which tick is drawn, and what to leave alone
+            BeaverBuddies.Modding.PerfHooks.Register();
 
             // The players' colors on the map, when Timber Atlas is installed
             BeaverBuddies.Modding.AtlasHooks.Register();

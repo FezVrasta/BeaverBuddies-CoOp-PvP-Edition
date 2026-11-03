@@ -247,7 +247,7 @@ namespace BeaverBuddies.Modding
         // A mod that patches how some buildings join the navigation mesh says which, so the
         // load-time shortcut that reuses the shapes the game builds skips those buildings
         public static void AddNavigationShapeBypass(string harmonyId, Func<Timberborn.BlockSystem.BlockObject, bool> buildings) =>
-            Performance.NavigationShapePlans.AddBypass(harmonyId, buildings);
+            PerfHooks.AddNavigationShapeBypass(harmonyId, buildings);
 
         // ---- Buildings ----
 

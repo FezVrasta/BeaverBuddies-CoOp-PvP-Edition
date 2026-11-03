@@ -162,6 +162,19 @@
     <Delete Files="@(WebRtcDll)" />
   </Target>
 
+  <!-- The optimizations, in a DLL of their own that Archipelago ships too (github.com/FezVrasta/timberperf, next to this
+       repo or at TimberPerfProject): built and put next to this one, never referenced, so either mod's copy can run -->
+  <PropertyGroup>
+    <TimberPerfProject Condition="'$(TimberPerfProject)' == ''">$(MSBuildProjectDirectory)/../../TimberPerf/TimberPerf/TimberPerf.csproj</TimberPerfProject>
+  </PropertyGroup>
+  <Target Name="BuildTimberPerf" BeforeTargets="PostBuildEvent">
+    <Error Text="TimberPerf not found at $(TimberPerfProject): clone it next to this repo or set TimberPerfProject" Condition="!Exists('$(TimberPerfProject)')" />
+    <MSBuild Projects="$(TimberPerfProject)" Properties="Configuration=Release;InstallMod=false" Targets="Restore;Build">
+      <Output TaskParameter="TargetOutputs" ItemName="TimberPerfDll" />
+    </MSBuild>
+    <Copy SourceFiles="@(TimberPerfDll)" DestinationFolder="$(ProjectDir)$(OutDir)" />
+  </Target>
+
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
     <!-- Empty -->
   </Target>

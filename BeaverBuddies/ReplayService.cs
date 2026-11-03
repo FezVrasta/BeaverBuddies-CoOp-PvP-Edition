@@ -1057,7 +1057,7 @@ namespace BeaverBuddies
                 // No whole tick left in this frame after this one: it's the one drawn
                 if (IsAtStartOfTick(__instance))
                 {
-                    Performance.FrameTicks.LastOfFrame = ShouldCompleteFullTick || numberOfBucketsToTick < __instance.TotalNumberOfBuckets;
+                    Modding.PerfHooks.SetLastOfFrame(ShouldCompleteFullTick || numberOfBucketsToTick < __instance.TotalNumberOfBuckets);
                 }
                 if (TickReplayServiceOrNextBucket(__instance))
                 {

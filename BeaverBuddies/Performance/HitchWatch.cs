@@ -81,6 +81,7 @@ namespace BeaverBuddies.Performance
         private static readonly System.Collections.Generic.Dictionary<string, long> _garbage = new();
         // Reading the heap costs enough to show in the times, so garbage is only followed with BB_HITCH_GARBAGE set
         private static readonly bool FollowGarbage = Profiling && Environment.GetEnvironmentVariable("BB_HITCH_GARBAGE") != null;
+        internal static bool FollowsGarbage => FollowGarbage;
         internal static long Heap => FollowGarbage ? UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong() : 0;
 
         internal static void Garbaged(object who, string kind, long before)
