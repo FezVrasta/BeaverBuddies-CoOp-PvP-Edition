@@ -6,10 +6,13 @@ bb_launch host || { fail "the game starts" "no main menu"; return 1; }
 send host "editmap user:${PERF_MAP:-PerfEditor512}"
 wait_for_watch host "Load time" 300 || { fail "the map loads" "never loaded"; return 1; }
 sleep 10
+# PERF_LOOK="x y z zoom" points the camera there first, to measure drawing what's there
+[ -n "${PERF_LOOK:-}" ] && { send host "look $PERF_LOOK"; sleep 5; shot editor-look host; }
 for speed in 0 ${PERF_SPEEDS:-3}; do
     send host "speed $speed"
     sleep "$secs"
     echo "  == speed $speed"
+    grep -a '\[Pace\] fps' "$(bb_log host)" | tail -1 | sed 's/^/    /'
     grep -a '\[Pace\] tick' "$(bb_log host)" | tail -1 | sed 's/^/    /'
     grep -a '\[Pace\] time' "$(bb_log host)" | tail -1 | sed 's/.*totals: //' | tr ',;' '\n\n' | head -20 | sed 's/^/      /'
     shot "editor-speed-$speed" host
