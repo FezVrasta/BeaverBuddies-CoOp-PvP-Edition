@@ -16,21 +16,24 @@ play() {
     wait_for_watch host "Load time" 300 || { fail "the save loads ($1)" "never loaded"; return 1; }
     sleep 10
     send host dismiss
-    send host "speed 3"
-    # Halfway: the game's own FPS counter (bottom right) as the window shows it
-    sleep $((${PERF_MINUTES:-2} * 30))
-    shot "perf-fps-${1// /-}" host
-    sleep $((${PERF_MINUTES:-2} * 30))
-    send host "speed 0"
-    local log; log=$(bb_log host)
-    # The first window has the load's leftovers in it
-    local paces; paces=$(grep -a '\[Pace\] tick' "$log" | tail -n +2)
+    local log speed; log=$(bb_log host)
     echo "  $1: $(grep -a 'Load time' "$log" | tail -1 | sed 's/.*Load time/load time/')"
-    echo "  $1: $(echo "$paces" | grep -c .) windows of 10 s"
-    echo "$paces" | sed 's/^/    /' | tail -6
-    grep -a '\[Pace\] time' "$log" | tail -2 | sed 's/^/    /'
-    echo "$paces" | awk -v what="$1" '{for (i = 1; i <= NF; i++) { if ($i == "avg" && $(i-1) ~ /frames,/) { s += $(i+1); n++ } if ($i == "ticking") t += $(i+2) } }
-        END { if (n) printf "  %s: avg frame %.1f ms (%.0f fps), ticking %.1f ms\n", what, s / n, 1000 / (s / n), t / n }'
+    # PERF_SPEEDS="0 1 3" plays each speed in turn (3 if unset), each for PERF_MINUTES
+    for speed in ${PERF_SPEEDS:-3}; do
+        local before; before=$(grep -ac '\[Pace\] tick' "$log")
+        send host "speed $speed"
+        # Halfway: the game's own FPS counter (bottom right) as the window shows it
+        sleep $((${PERF_MINUTES:-2} * 30))
+        shot "perf-fps-${1// /-}-speed-$speed" host
+        sleep $((${PERF_MINUTES:-2} * 30))
+        # The first window after a change has the last speed (or the load) in it
+        local paces; paces=$(grep -a '\[Pace\] tick' "$log" | tail -n +$((before + 2)))
+        echo "  $1, speed $speed: $(echo "$paces" | grep -c .) windows of 10 s"
+        echo "$paces" | sed 's/^/    /' | tail -3
+        echo "$paces" | awk -v what="$1, speed $speed" '{for (i = 1; i <= NF; i++) { if ($i == "avg" && $(i-1) ~ /frames,/) { s += $(i+1); n++ } if ($i == "ticking") t += $(i+2) } }
+            END { if (n) printf "  %s: avg frame %.1f ms (%.0f fps), ticking %.1f ms\n", what, s / n, 1000 / (s / n), t / n }'
+    done
+    send host "speed 0"
     expect_no_errors "no errors ($1)"
 }
 
