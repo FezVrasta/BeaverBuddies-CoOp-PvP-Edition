@@ -25,6 +25,7 @@ play() {
     local log; log=$(bb_log host)
     # The first window has the load's leftovers in it
     local paces; paces=$(grep -a '\[Pace\] tick' "$log" | tail -n +2)
+    echo "  $1: $(grep -a 'Load time' "$log" | tail -1 | sed 's/.*Load time/load time/')"
     echo "  $1: $(echo "$paces" | grep -c .) windows of 10 s"
     echo "$paces" | sed 's/^/    /' | tail -6
     grep -a '\[Pace\] time' "$log" | tail -2 | sed 's/^/    /'
