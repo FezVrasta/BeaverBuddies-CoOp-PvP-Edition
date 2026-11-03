@@ -1,3 +1,12 @@
+v1.1.0-1.12.0
+1.1.0-1.12.0
+* Every game mixes factions, and each guest picks theirs in the lobby.
+* The lobby and the My faction tooltip are translated into every language.
+* Faster games on big colonies, and the performance work now ships as TimberPerf next to BeaverBuddies.
+* FPS counter in the map editor.
+* Waterfalls no longer lose their textures on high quality water.
+* A hosted game's Steam lobby survives a slow load.
+
 v1.1.0-1.11.0
 1.1.0-1.11.0
 * Big colonies run smoother: many of the Performance Plus optimizations are now built in, made safe for multiplayer.
