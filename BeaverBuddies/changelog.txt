@@ -1,3 +1,7 @@
+v1.1.0-1.12.1
+1.1.0-1.12.1
+* A solo game on a map with several starts gets one district, not one on every start.
+
 v1.1.0-1.12.0
 1.1.0-1.12.0
 * Every game mixes factions, and each guest picks theirs in the lobby.
