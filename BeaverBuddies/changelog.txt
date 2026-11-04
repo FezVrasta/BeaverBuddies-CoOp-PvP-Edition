@@ -1,3 +1,7 @@
+v1.1.0-1.12.2
+1.1.0-1.12.2
+* Comes with TimberPerf 1.1.0-1.0.5: plants hide properly with the layer tool, berries show on bushes, and the layer tool lags less.
+
 v1.1.0-1.12.1
 1.1.0-1.12.1
 * A solo game on a map with several starts gets one district, not one on every start.
