@@ -30,6 +30,8 @@ namespace BeaverBuddies.MultiStart
 
         public int MaxStartLocations()
         {
+            // A game played alone, with nobody to host and no players a mod runs here, has one start
+            if (IO.EventIO.IsNull && !Modding.ModBridge.AboutToHost()) return 1;
             GameModeSpec newGameMode = _sceneLoader.GetSceneParameters<GameSceneParameters>().NewGameConfiguration.GameMode;
             if (newGameMode is MultiplayerNewGameModeSpec multiplayerNewGameMode)
             {
