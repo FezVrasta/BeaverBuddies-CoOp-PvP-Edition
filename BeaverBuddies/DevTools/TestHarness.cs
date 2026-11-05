@@ -576,6 +576,10 @@ namespace BeaverBuddies.DevTools
                     // editmap Map: that map open in the map editor (user:Name for one in the Maps folder)
                     Get<Timberborn.MapEditorSceneLoading.MapEditorSceneLoader>().LoadMapInstantly(Map(a[1]));
                     break;
+                case "savemap":
+                    // savemap Name: the map open in the map editor saved to the Maps folder under that name
+                    Get<Timberborn.MapEditorPersistenceUI.MapPersistenceController>().SaveAs(a[1], () => Plugin.Log($"[Test] savemap {a[1]} saved"));
+                    break;
                 case "newgame":
                     // newgame Map Faction [game mode id]: alone in that mode, as the New Game screens' Start would start it
                     if (a.Length > 3 && a[3] != "")
