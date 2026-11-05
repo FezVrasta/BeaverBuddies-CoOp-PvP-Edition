@@ -1,3 +1,7 @@
+v1.1.0-1.12.3
+1.1.0-1.12.3
+* Maps made for more than one player also open without BeaverBuddies, with one start. Save them again in the editor to get this.
+
 v1.1.0-1.12.2
 1.1.0-1.12.2
 * Comes with TimberPerf 1.1.0-1.0.5: plants hide properly with the layer tool, berries show on bushes, and the layer tool lags less.
