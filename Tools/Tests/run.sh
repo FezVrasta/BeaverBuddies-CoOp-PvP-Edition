@@ -139,15 +139,16 @@ build_current() {
 }
 # The run's home, which the build installs into
 bb_home_prepare
-# Before building: the build reinstalls the mods under a game that may be loading them
-if player_game_running; then
-    echo "Timberborn is running: close it first, the tests need the game to themselves."
-    exit 1
-fi
 if [ $BUILD -eq 1 ] && [ -n "${BB_BUILD:-}" ]; then
     if build_current; then
         echo "Nothing changed since the last build: not building."
     else
+        # Before building: the build reinstalls the mods under a game that may be loading them. With nothing to build the
+        # copies play in their own home and leave the player's game alone
+        if player_game_running; then
+            echo "Timberborn is running: close it first, the build reinstalls mods it loads."
+            exit 1
+        fi
         echo "Building..."
         ( export BB_HOLDS_LOCK=1; set -o pipefail; eval "$BB_BUILD" ) || { echo "The build failed."; :; exit 1; }
         [ -n "${BB_BUILD_SOURCES:-}" ] && echo "$BB_BUILD_SOURCES" > "$BB_TEST_DIR/.build-stamp"
