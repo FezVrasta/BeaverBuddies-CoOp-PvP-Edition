@@ -82,6 +82,9 @@ while true; do
     sleep 2
 done
 echo $$ > "$LOCK/pid"
+# Builds outside the run skip installing only when the run plays the player's own Mods folder (BB_HOME=$HOME);
+# in its own home the player's Mods folder is free
+[ "$(cd "$BB_HOME" && pwd -P)" != "$(cd "$HOME" && pwd -P)" ] || touch "$LOCK/home-mods"
 rm -f "$TICKET"
 # The saves this run's games make (the harness names them "Test ..." and "Harness ...") go once it ends
 RUN_START="$BB_TEST_DIR/.run-start"
