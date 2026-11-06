@@ -1,3 +1,8 @@
+v1.1.0-1.12.4
+1.1.0-1.12.4
+* Fixed a crash loading games with Leaf Coats or other faction mods.
+* Dev mode shows only your faction's buildings. The dev panel has buttons to switch to another faction or show them all.
+
 v1.1.0-1.12.3
 1.1.0-1.12.3
 * Maps made for more than one player also open without BeaverBuddies, with one start. Save them again in the editor to get this.
