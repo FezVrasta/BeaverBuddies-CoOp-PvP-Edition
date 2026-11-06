@@ -5,9 +5,8 @@
 #   Tools/Package/upload.sh [--dry-run]
 #
 # Goes through the Mod Uploader mod (~/Developer/TimberbornModUploader, it has
-# to be in Mods): it starts Timberborn if it isn't running, waits for the
-# upload at the main menu and closes the game again if it was the one to start
-# it. Steam has to be running and signed in. The same request uploads the
+# to be in Mods): it starts a copy of Timberborn of its own, next to any that's
+# already open, waits for the upload at the main menu and closes that copy. Steam has to be running and signed in. The same request uploads the
 # release zip to mod.io when there's a token for it. It refuses when the
 # installed version (version.txt, the manifest only has x.y.0) isn't the one the
 # changelog's newest entry is for: run
@@ -60,18 +59,22 @@ if zip:
     request["modio"] = {"game": int(game), "mod": int(modio), "zip": zip, "version": version}
 json.dump(request, open(flag, "w"))
 PY
-started=0
+pid=""
 cleanup() {
     rm -f "$flag"
-    [ "$started" = 0 ] || pkill -x Timberborn 2>/dev/null || true
+    [ -z "$pid" ] || kill "$pid" 2>/dev/null || true
 }
 trap cleanup EXIT
-if ! pgrep -x Timberborn >/dev/null; then
-    pgrep -x steam_osx >/dev/null || die "Steam isn't running"
-    echo "starting Timberborn..."
-    open -a "$HOME/Library/Application Support/Steam/steamapps/common/Timberborn/Timberborn.app" --env SteamAppId=1062090 --env SteamGameId=1062090 --args -skipModManager
-    started=1
-fi
+pgrep -x steam_osx >/dev/null || die "Steam isn't running"
+before=$(pgrep -x Timberborn | sort || true)
+echo "starting a copy of Timberborn..."
+open -n -a "$HOME/Library/Application Support/Steam/steamapps/common/Timberborn/Timberborn.app" --env SteamAppId=1062090 --env SteamGameId=1062090 --args -skipModManager
+for _ in $(seq 30); do
+    pid=$(comm -13 <(echo "$before") <(pgrep -x Timberborn | sort) | head -1)
+    [ -z "$pid" ] || break
+    sleep 1
+done
+[ -n "$pid" ] || die "Timberborn didn't start"
 waited=0
 until [ -f "$result" ]; do
     [ "$waited" -lt 300 ] || die "no answer from Timberborn after 5 minutes: is Mod Uploader enabled in it?"
