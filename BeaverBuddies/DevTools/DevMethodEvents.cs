@@ -80,6 +80,8 @@ namespace BeaverBuddies.DevTools
             "Stopwatch: ",
             "Test ",
             "Multithreading: ",
+            // Which faction's tools this player's toolbar shows
+            Factions.FactionToolbarDev.Prefix,
         };
 
         /**

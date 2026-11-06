@@ -13,6 +13,7 @@ namespace BeaverBuddies.Factions
             containerDefinition.Bind<PlayerFactionService>().AsSingleton();
             containerDefinition.Bind<FactionToolbar>().AsSingleton();
             containerDefinition.MultiBind<Timberborn.ToolSystem.IToolDisabler>().ToExisting<FactionToolbar>();
+            containerDefinition.MultiBind<Timberborn.Debugging.IDevModule>().To<FactionToolbarDev>().AsSingleton();
             // After the game's own, which give the current faction's (see ExtraCollectionIds)
             containerDefinition.MultiBind<Timberborn.TemplateCollectionSystem.ITemplateCollectionIdProvider>().To<ExtraTemplateCollectionIds>().AsSingleton();
             containerDefinition.MultiBind<Timberborn.GoodCollectionSystem.IGoodCollectionIdsProvider>().To<ExtraGoodCollectionIds>().AsSingleton();

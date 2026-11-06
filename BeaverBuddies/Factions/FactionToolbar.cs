@@ -9,6 +9,8 @@ using Timberborn.TemplateSystem;
 using Timberborn.ToolButtonSystem;
 using Timberborn.ToolSystem;
 using Timberborn.CoreUI;
+using Timberborn.FactionSystem;
+using Timberborn.GameFactionSystem;
 
 namespace BeaverBuddies.Factions
 {
@@ -25,12 +27,23 @@ namespace BeaverBuddies.Factions
 
         public FactionToolbar(ToolButtonService toolButtonService) => _toolButtonService = toolButtonService;
 
-        public void Load() => _instance = this;
-
-        public bool IsEnabled(ITool tool) => tool switch
+        public void Load()
         {
-            BlockObjectTool building => LocalFaction.CanBuild(building.Template),
-            PlantingTool planting => LocalFaction.CanBuild(planting.PlantableSpec),
+            _instance = this;
+            DevFaction = null;
+            DevAll = false;
+        }
+
+        // In dev mode: the faction whose tools show (null for this player's), or every faction's
+        internal static string DevFaction;
+        internal static bool DevAll;
+
+        public bool IsEnabled(ITool tool) => IsEnabled(tool, LocalFaction.Id);
+
+        internal static bool IsEnabled(ITool tool, string faction) => tool switch
+        {
+            BlockObjectTool building => MixedFactionsService.FactionHas(Specs.Name(building.Template), faction),
+            PlantingTool planting => MixedFactionsService.FactionHas(Specs.Name(planting.PlantableSpec), faction),
             _ => true,
         };
 
@@ -41,6 +54,49 @@ namespace BeaverBuddies.Factions
             if (service == null) return;
             foreach (ToolButton button in service._toolButtons) button.UpdateToolVisibility();
             foreach (ToolGroupButton group in service._toolGroupButtons) group._toolGroupButtonWrapper.ToggleDisplayStyle(group.IsVisible);
+        }
+    }
+
+    /**
+     * Dev mode shows every tool, so every faction's buildings at once:
+     * keep it to one faction's, this player's unless the dev panel picks
+     * another (FactionToolbarDev).
+     */
+    [HarmonyPatch(typeof(ToolButton), nameof(ToolButton.ToolEnabled), MethodType.Getter)]
+    class DevModeToolbarPatcher
+    {
+        static void Postfix(ToolButton __instance, ref bool __result)
+        {
+            if (!__result || FactionToolbar.DevAll || __instance._mapEditorMode.IsMapEditor || !__instance._devModeManager.Enabled) return;
+            __result = FactionToolbar.IsEnabled(__instance.Tool, FactionToolbar.DevFaction ?? LocalFaction.Id);
+        }
+    }
+
+    // The dev panel's picks of the faction whose tools show in dev mode
+    public class FactionToolbarDev : Timberborn.Debugging.IDevModule
+    {
+        internal const string Prefix = "Toolbar: ";
+        private readonly FactionService _factionService;
+
+        public FactionToolbarDev(FactionService factionService) => _factionService = factionService;
+
+        public Timberborn.Debugging.DevModuleDefinition GetDefinition()
+        {
+            var builder = new Timberborn.Debugging.DevModuleDefinition.Builder();
+            foreach (FactionSpec faction in FactionRules.Ordered(_factionService._factionSpecService.Factions))
+            {
+                string id = faction.Id;
+                builder.AddMethod(Timberborn.Debugging.DevMethod.Create(Prefix + faction.DisplayName.Value, () => Show(id, false)));
+            }
+            builder.AddMethod(Timberborn.Debugging.DevMethod.Create(Prefix + "every faction", () => Show(null, true)));
+            return builder.Build();
+        }
+
+        private static void Show(string faction, bool all)
+        {
+            FactionToolbar.DevFaction = faction;
+            FactionToolbar.DevAll = all;
+            FactionToolbar.Refresh();
         }
     }
 
