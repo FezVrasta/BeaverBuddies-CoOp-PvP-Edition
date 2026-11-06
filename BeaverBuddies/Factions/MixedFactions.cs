@@ -233,6 +233,38 @@ namespace BeaverBuddies.Factions
         }
     }
 
+    /**
+     * Every faction's goods, whatever filter decides what loads: a mod that
+     * replaces the game's (one made for a single faction, like Leaf Coats')
+     * leaves out the other factions' goods, and their buildings then crash
+     * the load (Iron Teeth's Explosives in a Folktails game).
+     */
+    [HarmonyPatch(typeof(Timberborn.Goods.GoodService), "LoadGoods")]
+    class GoodServiceLoadGoodsPatcher
+    {
+        static void Postfix(Timberborn.Goods.GoodService __instance)
+        {
+            FactionService factionService = MixedFactionsService.FactionService;
+            if (factionService == null) return;
+            var wanted = new HashSet<string>(MixedFactionsService.Union(factionService, f => f.GoodCollectionIds));
+            var ids = new HashSet<string>();
+            foreach (var collection in __instance._specService.GetSpecs<GoodCollectionSpec>())
+            {
+                if (wanted.Contains(collection.CollectionId)) ids.UnionWith(collection.Goods);
+            }
+            var missing = __instance._specService.GetSpecs<Timberborn.Goods.GoodSpec>()
+                .Where(g => ids.Contains(g.Id) && !__instance._goodSpecsById.ContainsKey(g.Id))
+                .OrderBy(g => g.GoodOrder).ThenBy(g => g.Id, System.StringComparer.Ordinal).ToList();
+            foreach (var good in missing)
+            {
+                __instance._goods.Add(good.Id);
+                __instance._goodSpecsById[good.Id] = good;
+                foreach (string old in good.BackwardCompatibleIds) __instance._goodSpecsById.TryAdd(old, good);
+            }
+            if (missing.Count > 0) Plugin.Log($"[Factions] Goods another mod's filter left out: {string.Join(", ", missing.Select(g => g.Id))}");
+        }
+    }
+
     // The game's faction, for everything here that needs it before anything else loads
     [HarmonyPatch(typeof(FactionService), nameof(FactionService.Load))]
     class FactionServiceLoadPatcher
