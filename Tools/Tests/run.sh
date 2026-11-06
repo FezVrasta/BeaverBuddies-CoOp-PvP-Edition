@@ -231,8 +231,10 @@ for f in $FILES; do
             echo; echo "STOPPED: A COPY CRASHED ($(basename "$crashed")): $why"
             break
         fi
-        # A copy that logs "[Test] FATAL: ..." (a beaver starved, say) can't pass: stopped there
-        fatal=$(grep -ah "\[Test\] FATAL: " "$(bb_log host)" "$(bb_log client)" 2>/dev/null | head -1 | sed -E 's/.*\[Test\] FATAL: //')
+        # A copy that logs "[Test] FATAL: ..." (a beaver starved, say) can't pass: stopped there. A scenario that plays a whole game,
+        # deaths and all, says so with a BB_ALLOW_FATAL comment
+        fatal=
+        grep -q "BB_ALLOW_FATAL" "$f" || fatal=$(grep -ah "\[Test\] FATAL: " "$(bb_log host)" "$(bb_log client)" 2>/dev/null | head -1 | sed -E 's/.*\[Test\] FATAL: //')
         if [ -n "$fatal" ]; then
             pkill -9 -P $spid 2>/dev/null; kill -9 $spid 2>/dev/null; killed=1
             BB_SCENARIO="$name" fail "nothing fatal happens" "$fatal"
