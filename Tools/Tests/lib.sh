@@ -6,20 +6,133 @@
 # macOS bash (3.2).
 
 BB_GAME=${BB_GAME:-"$HOME/Library/Application Support/Steam/steamapps/common/Timberborn/Timberborn.app"}
-BB_TEST_DIR=${BB_TEST_DIR:-"${TMPDIR:-/tmp}/bb-tests"}
-BB_RESULTS=${BB_RESULTS:-"$BB_TEST_DIR/results.tsv"}
-BB_PREFS_SAVED="$BB_TEST_DIR/prefs.saved"
 BB_PREFS_DOMAIN=com.mechanistry.timberborn
-# The harness reads <this>-<instance> twice a second
-BB_CMD_PREFIX="$HOME/Library/Caches/BeaverBuddies-test"
-# The home the copies play in, a checkout's own (BB_HOME_NAME, its folder's name): everything in it links
-# to the player's home but Documents/Timberborn/Mods, so a run builds its mods there and plays them,
-# whatever the player's Mods folder holds, and another checkout's run never swaps them. The game finds
-# its user folder from HOME. BB_HOME=$HOME plays from the player's own Mods folder as before
-export BB_HOME=${BB_HOME:-"$HOME/Library/Caches/TimberbornHomes/${BB_HOME_NAME:-BeaverBuddies}"}
 # How fast the copies play while a scenario waits on the game: 30x, as fast as two copies keep up on one Mac
 BB_SPEED=${BB_SPEED:-30}
-mkdir -p "$BB_TEST_DIR/shots"
+
+# ---- Runs at once ---------------------------------------------------------------
+# Any number of test runs play at the same time, from one checkout or several, next to the player's own game:
+# each is a run of its own, BB_RUN ("" for the first, then 2, 3... or any name), with its own lock, test folder,
+# harness command files, multiplayer port (BB_PORT) and home with its own Mods folder. Its copies are started with
+# BB_RUN, so every helper here finds, waits on and closes only its own, never another run's or the player's game.
+# run.sh, ai-lab.sh and hold.sh take the first free run (bb_pick_run); set BB_RUN to name it. Shared by all of
+# them: the game's preferences (the player's own are put back once the last run ends) and the Saves folder
+# (each run's settlements carry its name, and its cleanup takes only those). A run that plays from the player's
+# own Mods folder (BB_HOME=$HOME) is always the first, and waits for it.
+BB_LOCKS="${TMPDIR:-/tmp}"; BB_LOCKS=${BB_LOCKS%/}
+# What the caller gave, before this file filled them in
+_BB_TEST_DIR_GIVEN=${BB_TEST_DIR:-}; _BB_HOME_GIVEN=${BB_HOME:-}; _BB_PORT_GIVEN=${BB_PORT:-}; _BB_RESULTS_GIVEN=${BB_RESULTS:-}
+
+# bb_run_lock [run]: the folder a run holds while it plays (its pid inside)
+bb_run_lock() { echo "$BB_LOCKS/bb-run-lock${1:+-$1}"; }
+
+# bb_run_live [run]: whether that run is playing (a lock made in the last minute counts, its pid still to come)
+bb_run_live() {
+    local lock pid
+    lock=$(bb_run_lock "$1")
+    [ -d "$lock" ] || return 1
+    pid=$(cat "$lock/pid" 2>/dev/null)
+    if [ -n "$pid" ]; then kill -0 "$pid" 2>/dev/null; else [ -z "$(find "$lock" -maxdepth 0 -mmin +1)" ]; fi
+}
+
+# bb_others_live: whether another run is playing now
+bb_others_live() {
+    local lock run
+    for lock in "$BB_LOCKS"/bb-run-lock "$BB_LOCKS"/bb-run-lock-*; do
+        [ -d "$lock" ] || continue
+        run=${lock#"$BB_LOCKS"/bb-run-lock}; run=${run#-}
+        [ "$run" == "${BB_RUN:-}" ] && continue
+        bb_run_live "$run" && return 0
+    done
+    return 1
+}
+
+# bb_pick_run: BB_RUN set to the first run nobody is playing, unless it's set already, then the paths it names.
+# The run's lock is taken as it's picked, so two runs starting at once never pick the same one: run.sh takes it
+# over (BB_RUN_RESERVED)
+bb_pick_run() {
+    if [ -z "${BB_RUN+x}" ]; then
+        local i=1 run="" lock
+        # The player's own Mods folder has room for one run: always the first, waited for in run.sh
+        if [ -n "$_BB_HOME_GIVEN" ] && [ "$(cd "$_BB_HOME_GIVEN" 2>/dev/null && pwd -P)" == "$(cd "$HOME" && pwd -P)" ]; then :
+        else
+            while :; do
+                lock=$(bb_run_lock "$run")
+                if mkdir "$lock" 2>/dev/null; then echo $$ > "$lock/pid"; export BB_RUN_RESERVED=$lock; break; fi
+                if bb_run_live "$run"; then i=$((i + 1)); run=$i; else rm -rf "$lock"; fi
+            done
+        fi
+        export BB_RUN=$run
+    fi
+    bb_run_paths
+}
+
+# bb_run_paths: everything a run keeps to itself, named after BB_RUN
+bb_run_paths() {
+    local sfx=${BB_RUN:+-$BB_RUN}
+    BB_TEST_DIR=${_BB_TEST_DIR_GIVEN:-"$BB_LOCKS/bb-tests$sfx"}
+    BB_RESULTS=${_BB_RESULTS_GIVEN:-"$BB_TEST_DIR/results.tsv"}
+    # The harness reads <this>-<instance> twice a second (DevTools/TestHarness.cs)
+    BB_CMD_PREFIX="$HOME/Library/Caches/BeaverBuddies-test$sfx"
+    # The home the copies play in, a checkout's own (BB_HOME_NAME, its folder's name), and the run's: everything in
+    # it links to the player's home but Documents/Timberborn/Mods, so a run builds its mods there and plays them,
+    # whatever the player's Mods folder or another run holds. The game finds its user folder from HOME.
+    # BB_HOME=$HOME plays from the player's own Mods folder
+    BB_HOME=${_BB_HOME_GIVEN:-"$HOME/Library/Caches/TimberbornHomes/${BB_HOME_NAME:-BeaverBuddies}$sfx"}
+    # The first run hosts on the port the game is set to; the others each on their own
+    if [ -n "$_BB_PORT_GIVEN" ]; then BB_PORT=$_BB_PORT_GIVEN
+    elif [ -n "${BB_RUN:-}" ]; then BB_PORT=$((25600 + $(printf '%s' "$BB_RUN" | cksum | cut -d' ' -f1) % 400))
+    else BB_PORT=""; fi
+    # The player's own preferences, kept while any run plays (one copy for all of them, see prefs_save)
+    BB_PREFS_SAVED="$BB_LOCKS/bb-player-prefs.saved"
+    BB_GAME_SETTINGS_SAVED="$BB_LOCKS/bb-player-game-settings.saved"
+    BB_PREFS_OVERRIDES="$BB_TEST_DIR/prefs.overrides"
+    export BB_TEST_DIR BB_HOME BB_PORT
+    mkdir -p "$BB_TEST_DIR/shots" "$BB_HOME"
+}
+bb_run_paths
+
+# bb_ours <pid> [instance]: whether that game is one of this run's copies (that instance, or any)
+bb_ours() {
+    local env
+    env=" $(ps eww -o command= -p "$1" 2>/dev/null) "
+    [[ "$env" == *" BB_INSTANCE="* ]] || return 1
+    if [ -n "${BB_RUN:-}" ]; then [[ "$env" == *" BB_RUN=$BB_RUN "* ]] || return 1
+    else [[ "$env" == *" BB_RUN="* ]] && return 1; fi
+    [ -z "${2:-}" ] || [[ "$env" == *" BB_INSTANCE=$2 "* ]]
+}
+
+# _bb_mine <name>: whether a settlement or save named so is this run's (Test, Harness and Co-op games, and Test save,
+# carry the run's name after an @: Settlement in DevTools/TestHarness.cs)
+_bb_mine() {
+    case "$1" in "Test "*|"Harness "*|"Co-op "*) ;; *) return 1 ;; esac
+    if [ -n "${BB_RUN:-}" ]; then [[ "$1" == *" @$BB_RUN "* ]]; else [[ "$1" != *" @"* ]]; fi
+}
+
+# bb_newest_save [settlement...]: the newest save this run's copies made, as its path: in a settlement of this run's
+# own games, or a "save" anywhere; and anything in the settlements named. Never another run's, the AI lab's or the player's
+bb_newest_save() {
+    local d n f extra ok
+    local -a files=()
+    for d in "$HOME/Documents/Timberborn/Saves"/*/; do
+        d=${d%/}; n=$(basename "$d"); ok=
+        _bb_mine "$n" && ok=1
+        for extra in "$@"; do [ "$n" == "$extra" ] && ok=1; done
+        for f in "$d"/*.timber; do
+            [ -f "$f" ] || continue
+            if [ -n "$ok" ] || _bb_mine "$(basename "$f" .timber)"; then files+=("$f"); fi
+        done
+    done
+    [ ${#files[@]} -gt 0 ] && ls -t "${files[@]}" | head -1
+    return 0
+}
+
+# bb_copies: this run's copies, by pid
+bb_copies() {
+    local p
+    for p in $(pgrep -x Timberborn); do bb_ours "$p" && echo "$p"; done
+    return 0
+}
 
 # The game's display settings: windowed for the run, then the player's own back
 # (and any other preference a mod's scenario changes: BB_PREF_KEYS_EXTRA, a space-free list separated by '|')
@@ -29,8 +142,11 @@ BB_PREF_KEYS=("FullScreen" "ResolutionWidth" "ResolutionHeight" "Screenmanager F
 if [ -n "${BB_PREF_KEYS_EXTRA:-}" ]; then IFS='|' read -ra _extra <<< "$BB_PREF_KEYS_EXTRA"; BB_PREF_KEYS+=("${_extra[@]}"); fi
 
 prefs_save() {
-    # A run that didn't finish left the player's own in the file: keep them
+    # A run that didn't finish, or one still playing, left the player's own in the file: keep them
     [ -f "$BB_PREFS_SAVED" ] && return
+    # A run started before runs shared it keeps them in its own folder
+    local old
+    for old in "$BB_LOCKS"/bb-tests*/prefs.saved; do [ -f "$old" ] && { cp "$old" "$BB_PREFS_SAVED"; return; }; done
     local k v
     for k in "${BB_PREF_KEYS[@]}"; do
         v=$(defaults read $BB_PREFS_DOMAIN "$k" 2>/dev/null) && echo "$k|$v" || echo "$k|"
@@ -52,6 +168,8 @@ prefs_windowed() {
 
 prefs_restore() {
     [ -f "$BB_PREFS_SAVED" ] || return 0
+    # Another run playing still has the test's own in place: the last one to end puts the player's back
+    bb_others_live && return 0
     local k v
     while IFS='|' read -r k v; do
         if [ -z "$v" ]; then defaults delete $BB_PREFS_DOMAIN "$k" 2>/dev/null
@@ -64,13 +182,14 @@ prefs_restore() {
 # The picks a new game starts from (BeaverBuddies.GameSetting.*, Timber Empires' among them): a scenario's
 # gamesetting commands change them for the player's own games too. Saved with the rest, and put back after
 # every scenario, so none leaks into the next one or into the player's games
-BB_GAME_SETTINGS_SAVED="$BB_TEST_DIR/game-settings.saved"
 game_settings() {
     defaults read $BB_PREFS_DOMAIN 2>/dev/null | sed -nE 's/^ *"?(BeaverBuddies\.GameSetting\.[^"= ]+)"? = .*/\1/p'
 }
 
 game_settings_save() {
     [ -f "$BB_GAME_SETTINGS_SAVED" ] && return
+    local old
+    for old in "$BB_LOCKS"/bb-tests*/game-settings.saved; do [ -f "$old" ] && { cp "$old" "$BB_GAME_SETTINGS_SAVED"; return; }; done
     local k
     for k in $(game_settings); do
         echo "$k|$(defaults read-type $BB_PREFS_DOMAIN "$k" | sed 's/^Type is //')|$(defaults read $BB_PREFS_DOMAIN "$k")"
@@ -89,13 +208,12 @@ game_settings_restore() {
             *) defaults write $BB_PREFS_DOMAIN "$k" -string "$v" ;;
         esac
     done < "$BB_GAME_SETTINGS_SAVED"
-    [ "${1:-}" == keep ] || rm -f "$BB_GAME_SETTINGS_SAVED"
+    [ "${1:-}" == keep ] || bb_others_live || rm -f "$BB_GAME_SETTINGS_SAVED"
 }
 
 # pref_set <key> <int>: a game preference for this scenario only (a mod's setting, say), the player's
 # own put back when the scenario is over. BeaverBuddies' "always trace" is the one that matters:
 # a scenario that is about logging being off, or on, sets it, whatever this Mac has it at.
-BB_PREFS_OVERRIDES="$BB_TEST_DIR/prefs.overrides"
 pref_set() {
     local k=$1 v=$2 old
     old=$(defaults read $BB_PREFS_DOMAIN "$k" 2>/dev/null) || old=""
@@ -117,7 +235,8 @@ prefs_restore_overrides() {
 
 # ---- Mods: switching one off for a scenario, and always back on --------------
 
-bb_mods_dir() { (cd "$BB_HOME/Documents/Timberborn/Mods" && pwd -P); }
+# (its path as it will be, for a run's new home not laid out yet)
+bb_mods_dir() { (cd "$BB_HOME/Documents/Timberborn/Mods" 2>/dev/null && pwd -P) || echo "$BB_HOME/Documents/Timberborn/Mods"; }
 
 # The mods a run builds itself, kept in its home's Mods folder; the player's others are linked in
 BB_OWN_MODS="GameModes BeaverBuddies TimberEmpires"
@@ -356,11 +475,11 @@ bb_launch() {
     wait_for_watch "$1" "Registering Main Menu Services" 120
 }
 
-# The pid of a test copy
+# The pid of one of this run's copies
 bb_pid() {
     local p
     for p in $(pgrep -x Timberborn); do
-        ps eww -p "$p" 2>/dev/null | grep -q "BB_INSTANCE=$1\b" && { echo "$p"; return; }
+        bb_ours "$p" "$1" && { echo "$p"; return; }
     done
 }
 
@@ -394,7 +513,7 @@ bb_open() {
     # BB_REAL_DISPLAY=1 plays with the player's own display settings, not the test's windowed ones
     [ -n "${BB_REAL_DISPLAY:-}" ] || prefs_windowed
     bb_home_prepare
-    open $([ -n "${BB_FRONT:-}" ] || echo -g) -n -a "$BB_GAME" --env SteamAppId=1062090 --env SteamGameId=1062090 --env BB_INSTANCE="$inst" --env HOME="$BB_HOME" \
+    open $([ -n "${BB_FRONT:-}" ] || echo -g) -n -a "$BB_GAME" --env SteamAppId=1062090 --env SteamGameId=1062090 --env BB_INSTANCE="$inst" --env HOME="$BB_HOME" ${BB_RUN:+--env BB_RUN="$BB_RUN"} ${BB_PORT:+--env BB_PORT="$BB_PORT"} \
         ${BB_RTC_CODE:+--env BB_RTC_CODE="$BB_RTC_CODE"} \
         ${BB_HITCH_MS:+--env BB_HITCH_MS="$BB_HITCH_MS"} ${BB_HITCH_TRACE:+--env BB_HITCH_TRACE=1} ${BB_HITCH_GARBAGE:+--env BB_HITCH_GARBAGE=1} \
         ${BB_LEAK_ROOTS:+--env BB_LEAK_ROOTS="$BB_LEAK_ROOTS"} ${BB_LEAK_SIZES:+--env BB_LEAK_SIZES=1} ${BB_LEAK_WALK:+--env BB_LEAK_WALK=1} \
@@ -410,23 +529,21 @@ player_game_running() {
     return 1
 }
 
-# Closes the test copies, and only them: the player's own game isn't touched
+# Closes this run's copies, and only them: another run's and the player's own game aren't touched
 bb_close() {
     local p
-    for p in $(pgrep -x Timberborn); do
-        ps eww -p "$p" 2>/dev/null | grep -q "BB_INSTANCE=" && kill -9 "$p" 2>/dev/null
-    done
+    for p in $(bb_copies); do kill -9 "$p" 2>/dev/null; done
     rm -f "$BB_CMD_PREFIX-host" "$BB_CMD_PREFIX-client" "$BB_CMD_PREFIX-third" "$BB_TEST_DIR/.parked"
+    # Until its port is free for the next host
     local n=0
-    while lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null | grep -qi timberborn && [ $n -lt 40 ]; do sleep 1; n=$((n + 1)); done
+    while lsof -nP -iTCP:"${BB_PORT:-25565}" -sTCP:LISTEN 2>/dev/null | grep -qi timberborn && [ $n -lt 40 ]; do sleep 1; n=$((n + 1)); done
 }
 
-# bb_kill <instance>: closes one test copy
+# bb_kill <instance>: closes one of this run's copies
 bb_kill() {
     local p
-    for p in $(pgrep -x Timberborn); do
-        ps eww -p "$p" 2>/dev/null | grep -q "BB_INSTANCE=$1 " && kill -9 "$p" 2>/dev/null
-    done
+    p=$(bb_pid "$1")
+    [ -n "$p" ] && kill -9 "$p" 2>/dev/null
     sleep 3
 }
 

@@ -55,7 +55,7 @@ namespace BeaverBuddies.Connect
                 Plugin.Log("Joining by code: " + code);
                 return TryToConnect(new WebRtc.WebRtcSocket(code));
             }
-            int port = _settings.DefaultPort.Value;
+            int port = Settings.Port;
             Plugin.Log("Try to resolve address: " + address);
             // Parse address and port
             if (TryParseHostAndPort(address, out string parsedAddress, out int? parsedPort))

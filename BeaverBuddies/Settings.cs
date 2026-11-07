@@ -124,7 +124,8 @@ namespace BeaverBuddies
         public static bool Debug => TemporarilyDebug || (instance?.AlwaysTrace.Value ?? false);
 
         public static bool VerboseLogging => !(instance?.SilenceLogging.Value == true);
-        public static int Port => instance?.DefaultPort.Value ?? 25565;
+        // BB_PORT, for test copies: several test runs play at once, each hosting on a port of its own (Tools/Tests/lib.sh)
+        public static int Port => int.TryParse(System.Environment.GetEnvironmentVariable("BB_PORT"), out int port) ? port : instance?.DefaultPort.Value ?? 25565;
         public static bool EnableSteam => instance?.EnableSteamConnection.Value ?? true;
         public static bool LobbyJoinable => instance?.FriendsCanJoinSteamGame.Value ?? true;
         public static bool ShouldShowFirstTimerMessage => instance?.ShowFirstTimerMessage.Value ?? true;

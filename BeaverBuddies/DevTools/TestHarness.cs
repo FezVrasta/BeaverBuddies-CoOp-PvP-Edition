@@ -26,7 +26,9 @@ namespace BeaverBuddies.DevTools
      * to its own name, which also gives each its own player ID. Each reads
      * its commands from ~/Library/Caches/BeaverBuddies-test-<name> (out of
      * iCloud, which brings deleted files back),
-     * one per line, and deletes the file once it ran them.
+     * one per line, and deletes the file once it ran them. Several test runs
+     * play at once, each started with its own BB_RUN: its copies read
+     * BeaverBuddies-test-<run>-<name> and name their settlements after it.
      *
      * At the main menu: "hostmatch Map Faction" starts a new game as a
      * match's host would (mixed factions, each player places their own
@@ -62,10 +64,16 @@ namespace BeaverBuddies.DevTools
 #endif
         public static readonly string Instance = Environment.GetEnvironmentVariable("BB_INSTANCE");
         public static bool Active => !string.IsNullOrEmpty(Instance);
+        // The test run these copies belong to, when several play at once (Tools/Tests/lib.sh); null for the first
+        public static readonly string TestRun = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BB_RUN")) ? null : Environment.GetEnvironmentVariable("BB_RUN");
         // This machine hosts a match's new game, started here rather than by matchmaking
         public static bool HostsMatch { get; private set; }
 
-        private static string Flag => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Library", "Caches", "BeaverBuddies-test-" + Instance);
+        private static string Flag => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Library", "Caches", "BeaverBuddies-test-" + (TestRun != null ? TestRun + "-" : "") + Instance);
+
+        // A settlement this run's games are saved under: the run's name in it, so a run's cleanup takes only its own saves
+        private static string Settlement(string kind, string format) =>
+            kind + " " + (TestRun != null ? "@" + TestRun + " " : "") + DateTime.Now.ToString(format, CultureInfo.InvariantCulture);
 
         // Looked up when a command needs them: the map editor has none of the menu's and the game's services
         private GameModeSpecService _gameModeSpecService => _container.GetInstance<GameModeSpecService>();
@@ -282,7 +290,7 @@ namespace BeaverBuddies.DevTools
                     HostsMatch = true;
                     MatchHooks.RaiseStarting(faction);
                     var mode = new MultiplayerNewGameModeSpec(PickedMode(modes), 2);
-                    string settlement = "Test " + DateTime.Now.ToString("yyyy-MM-dd HH'h'mm", CultureInfo.InvariantCulture);
+                    string settlement = Settlement("Test", "yyyy-MM-dd HH'h'mm");
                     NewGameHosting.Pending = true;
                     // hostmatch Map Faction [game mode id], as the Game mode dropdown would pick it
                     Matchmaking.MatchOptions.StartGameWith(a.Length > 3 && a[3] != ""
@@ -298,7 +306,7 @@ namespace BeaverBuddies.DevTools
                     var modes = _gameModeSpecService ?? throw new Exception("not at the main menu");
                     var options = Matchmaking.MatchOptions.Current();
                     if (a.Length > 3 && a[3] != "") options[Matchmaking.MatchOptions.GameModeId] = a[3];
-                    string settlement = "Co-op " + DateTime.Now.ToString("yyyy-MM-dd HH'h'mm", CultureInfo.InvariantCulture);
+                    string settlement = Settlement("Co-op", "yyyy-MM-dd HH'h'mm");
                     NewGameHosting.Start(_gameSceneLoader, new NewGameConfiguration(a[2], Map(a[1]),
                         new MultiplayerNewGameModeSpec(modes.GetDefaultSpec(), Editor.StartingLocationPlayer.MAX_PLAYERS), settlement), options);
                     break;
@@ -587,7 +595,7 @@ namespace BeaverBuddies.DevTools
                         GameModes.Modes.Pick(a[3], alone: true);
                         GameModes.Modes.StartWith(a[3], alone: true);
                     }
-                    _gameSceneLoader.StartNewGameInstantly(a[2], Map(a[1]), "Harness " + DateTime.Now.ToString("HH'h'mm", CultureInfo.InvariantCulture));
+                    _gameSceneLoader.StartNewGameInstantly(a[2], Map(a[1]), Settlement("Harness", "HH'h'mm"));
                     break;
                 case "buildnow":
                 {
@@ -1088,7 +1096,7 @@ namespace BeaverBuddies.DevTools
                 case "save":
                     // A save of the match, as the Save game screen makes one
                     Get<Timberborn.GameSaveRuntimeSystem.GameSaver>().QueueSaveSkippingNameValidation(
-                        new Timberborn.GameSaveRepositorySystem.SaveReference("Test save " + DateTime.Now.ToString("HH'h'mm'm'ss", CultureInfo.InvariantCulture),
+                        new Timberborn.GameSaveRepositorySystem.SaveReference(Settlement("Test save", "HH'h'mm'm'ss"),
                             Get<Timberborn.SettlementNameSystem.SettlementReferenceService>().SettlementReference), () => Plugin.Log("[Test] saved"));
                     break;
                 case "exitmenu":

@@ -14,6 +14,23 @@ Checks that every translation has English's keys, once each and in order (`trans
 
 Builds BeaverBuddies first (skipped when nothing changed since the last build), then runs each script in `scenarios/` (and in the folders of `BB_SCENARIOS`, a colon-separated list) on two windowed copies of Timberborn, a host and a guest, driven through the test harness (`BeaverBuddies/DevTools/TestHarness.cs`, only active with the `BB_INSTANCE` environment variable): each copy takes commands from a file and logs what it did. With names, only the scenarios whose file name contains one. The report is `report.md` in `$BB_TEST_DIR` (`$TMPDIR/bb-tests` by default), with the copies' logs and the scenarios' screenshots. The exit code is 1 if a check failed.
 
+### Runs at once
+
+Start as many runs as you like, from one checkout or several, next to each other, next to the AI lab and next to your own game: nothing waits and nothing needs closing. Each run takes the first free name (`BB_RUN`: the first is unnamed, then `2`, `3`...; set it to pick one) and everything it touches is its own:
+
+| | first run | run `2` |
+|---|---|---|
+| lock | `$TMPDIR/bb-run-lock` | `$TMPDIR/bb-run-lock-2` |
+| logs, report, results | `$TMPDIR/bb-tests` | `$TMPDIR/bb-tests-2` |
+| home and Mods folder | `~/Library/Caches/TimberbornHomes/<checkout>` | `~/Library/Caches/TimberbornHomes/<checkout>-2` |
+| harness command files | `~/Library/Caches/BeaverBuddies-test-host` | `~/Library/Caches/BeaverBuddies-test-2-host` |
+| multiplayer port | the game's setting (25565) | its own (`BB_PORT`) |
+| settlements it saves | `Test ...`, `Harness ...` | `Test @2 ...`, `Harness @2 ...` |
+
+The copies are started with `BB_RUN` and `BB_PORT`, and every helper in `lib.sh` (`bb_pid`, `bb_copies`, `bb_close`, `bb_kill`, the runner's "is a copy still up" watch) only ever sees this run's own copies: a run never closes, waits on or reads another run's copies or your game. `run.sh` prints which run it is when it starts. A script that starts runs picks the name first with `bb_pick_run`, which also takes the run's lock, so two runs started at the same moment never get the same one.
+
+Shared by every run: the game's preferences (one copy of yours is kept while any run plays, and the last run to end puts it back) and the Saves folder (each run cleans up only its own settlements). A run with `BB_HOME=$HOME` plays from your own Mods folder, which has room for one: it's always the first run, and waits for it.
+
 - `bb-only`: with Timber Empires switched off, the New Game page has no mode column, and a hosted game starts as Co-op and stays in sync.
 A scenario past `BB_SCENARIO_TIMEOUT` (600 s) fails and is stopped, and the whole run has a limit too, `BB_RUN_TIMEOUT` (1800 s, 0 for none): past it everything is killed, the copies closed, and it says so and posts a notification.
 
@@ -38,4 +55,4 @@ Writing a scenario: see `lib.sh` (`start_match`, `send`, `wait_for`, `layout_of`
 
 What a run does to your Mac: it refuses to start while your own Timberborn is running; the copies are windowed, so the game's display settings go windowed for the run and are put back after it (the next run restores them if one was killed); a scenario that switches a mod off moves its folder out of Mods and always puts it back. The two copies share a Steam account, so a matchmade game can't be played through: scenarios stop at the two finding each other.
 
-Footguns the runner guards against (a run refuses to start when a mod's code changed after its installed DLL, so it never tests an older build than the code, `--no-build` included; one lock at `$TMPDIR/bb-run-lock` with a first-in first-out queue, builds that skip the Mods install only while a run with `BB_HOME=$HOME` plays from it (`$TMPDIR/bb-run-lock/home-mods`) unless `BB_HOLDS_LOCK=1`, a per-run results folder `$BB_TEST_DIR/runs/`, `BB_SCENARIO_TIMEOUT`, load errors that fail `start_match` at once): see the Footguns section of Timber Empires' `Tools/Tests/README.md`.
+Footguns the runner guards against (a run refuses to start when a mod's code changed after its installed DLL, so it never tests an older build than the code, `--no-build` included; a lock per run (see Runs at once), with a first-in first-out queue only for runs given the same `BB_RUN`, builds that skip the Mods install only while a run with `BB_HOME=$HOME` plays from it (`$TMPDIR/bb-run-lock/home-mods`) unless `BB_HOLDS_LOCK=1`, a per-run results folder `$BB_TEST_DIR/runs/`, `BB_SCENARIO_TIMEOUT`, load errors that fail `start_match` at once): see the Footguns section of Timber Empires' `Tools/Tests/README.md`.

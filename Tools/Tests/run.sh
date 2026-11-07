@@ -10,6 +10,8 @@
 # is 1 if any check failed.
 HERE="$(cd "$(dirname "$0")" && pwd)"
 source "$HERE/lib.sh"
+# This run's own lock, folder, port and home, beside any other run playing (see "Runs at once" in lib.sh)
+bb_pick_run
 
 # A worktree lacks the main checkout's untracked env.props, so its build fails
 ROOT="$(cd "$HERE/../.." && pwd)"
@@ -46,19 +48,21 @@ FILES=$(scenario_files)
 if [ $LIST -eq 1 ]; then echo "$FILES"; exit 0; fi
 [ -n "$FILES" ] || { echo "No scenario matches."; exit 1; }
 
-# One run at a time, first in first out: runs share the test folder, the Mods
-# folder and the player's data. The lock is at one fixed path whatever BB_TEST_DIR
-# is (the mod builds look for it there too, to keep out of the Mods folder while
-# it's held). Waiting runs queue with a ticket each, named by time; only the
-# oldest live ticket takes the lock, tickets and locks of dead runs are cleaned.
-LOCK="${TMPDIR:-/tmp}/bb-run-lock"
-QUEUE="${TMPDIR:-/tmp}/bb-run-queue"
+# Runs play side by side, each under its own BB_RUN (bb_pick_run took a free one): its lock is only in the way
+# of another run started under the same name, which waits for it, first in first out, with a ticket each named by
+# time; only the oldest live ticket takes the lock, tickets and locks of dead runs are cleaned. The first run's
+# lock is at the path the mod builds look for (its home-mods file keeps them out of the player's Mods folder
+# while a run plays from it)
+LOCK="$(bb_run_lock "$BB_RUN")"
+QUEUE="$BB_LOCKS/bb-run-queue${BB_RUN:+-$BB_RUN}"
 mkdir -p "$BB_TEST_DIR" "$QUEUE"
 TICKET="$QUEUE/$(perl -MTime::HiRes=time -e 'printf "%016.0f", time*1000')-$$"
 echo $$ > "$TICKET"
 trap 'rm -f "$TICKET"' EXIT
 trap 'exit 130' INT TERM
-while true; do
+# Picked and taken for this run a moment ago (bb_pick_run, here or in the script that started it): no one to wait for
+[ "${BB_RUN_RESERVED:-}" == "$LOCK" ] && [ -d "$LOCK" ] && TOOK=1
+while [ -z "${TOOK:-}" ]; do
     for t in "$QUEUE"/*; do
         [ -f "$t" ] || continue
         kill -0 "$(cat "$t" 2>/dev/null)" 2>/dev/null || rm -f "$t"
@@ -73,7 +77,7 @@ while true; do
     fi
     first=$(ls "$QUEUE" | head -1)
     if [ "$first" == "$(basename "$TICKET")" ] && mkdir "$LOCK" 2>/dev/null; then break; fi
-    [ -n "${WAITED:-}" ] || { echo "Another test run is going or ahead of this one: waiting for it."; WAITED=1; WAIT_START=$(date +%s); }
+    [ -n "${WAITED:-}" ] || { echo "Another test run named \"${BB_RUN:-1}\" is going or ahead of this one: waiting for it (leave BB_RUN unset to play beside it)."; WAITED=1; WAIT_START=$(date +%s); }
     # Waiting this long, nothing is running of this one: said again every 2 minutes, with a notification
     if [ -n "${WAIT_START:-}" ] && [ $(( $(date +%s) - WAIT_START )) -ge "${WAIT_NEXT:-120}" ]; then
         echo "STILL WAITING for another test run ($(( $(date +%s) - WAIT_START )) s): no game of this run is up. Held by pid ${owner:-none}, queue: $(ls "$QUEUE" | tr '\n' ' ')"
@@ -82,6 +86,8 @@ while true; do
     sleep 2
 done
 echo $$ > "$LOCK/pid"
+unset BB_RUN_RESERVED
+echo "Test run ${BB_RUN:-1}: folder $BB_TEST_DIR, home $BB_HOME${BB_PORT:+, port $BB_PORT}"
 # Builds outside the run skip installing only when the run plays the player's own Mods folder (BB_HOME=$HOME);
 # in its own home the player's Mods folder is free
 [ "$(cd "$BB_HOME" && pwd -P)" != "$(cd "$HOME" && pwd -P)" ] || touch "$LOCK/home-mods"
@@ -94,8 +100,14 @@ cleanup() {
     [ -n "${WATCHDOG:-}" ] && kill $WATCHDOG 2>/dev/null
     [ -n "${spid:-}" ] && kill -9 $spid 2>/dev/null
     bb_close
-    find "$HOME/Documents/Timberborn/Saves/" -mindepth 1 -maxdepth 1 -type d \( -name 'Test *' -o -name 'Harness *' \) \
-        -newer "$RUN_START" -exec rm -rf {} + 2>/dev/null
+    # Only this run's: another run's settlements carry its name (Settlement in DevTools/TestHarness.cs)
+    if [ -n "${BB_RUN:-}" ]; then
+        find "$HOME/Documents/Timberborn/Saves/" -mindepth 1 -maxdepth 1 -type d \( -name "Test @$BB_RUN *" -o -name "Harness @$BB_RUN *" \) \
+            -newer "$RUN_START" -exec rm -rf {} + 2>/dev/null
+    else
+        find "$HOME/Documents/Timberborn/Saves/" -mindepth 1 -maxdepth 1 -type d \( -name 'Test *' -o -name 'Harness *' \) ! -name '* @*' \
+            -newer "$RUN_START" -exec rm -rf {} + 2>/dev/null
+    fi
     mod_enable_all
     prefs_restore_overrides
     prefs_restore
@@ -143,9 +155,9 @@ if [ $BUILD -eq 1 ] && [ -n "${BB_BUILD:-}" ]; then
     if build_current; then
         echo "Nothing changed since the last build: not building."
     else
-        # Before building: the build reinstalls the mods under a game that may be loading them. With nothing to build the
-        # copies play in their own home and leave the player's game alone
-        if player_game_running; then
+        # Before building into the player's own Mods folder (BB_HOME=$HOME): the build reinstalls the mods under a game that
+        # may be loading them. A run's own home is a Mods folder the player's game never reads
+        if [ "$(cd "$BB_HOME" && pwd -P)" == "$(cd "$HOME" && pwd -P)" ] && player_game_running; then
             echo "Timberborn is running: close it first, the build reinstalls mods it loads."
             exit 1
         fi
@@ -210,12 +222,12 @@ for f in $FILES; do
         fi
         # No copy of the game left (the player closed it, or it crashed or never opened): nothing
         # will come of waiting on it. Scenarios that restart copies are given time to
-        if [ -n "$(pgrep -x Timberborn)" ] && ps eww -p $(pgrep -x Timberborn | paste -sd, -) 2>/dev/null | grep -q "BB_INSTANCE="; then gone_since=
+        if [ -n "$(bb_copies)" ]; then gone_since=
         else
             [ -n "$gone_since" ] || gone_since=$(date +%s)
             if [ $(( $(date +%s) - gone_since )) -ge "${BB_GONE_SECONDS:-30}" ]; then
                 pkill -9 -P $spid 2>/dev/null; kill -9 $spid 2>/dev/null; killed=1
-                BB_SCENARIO="$name" fail "the game stays open" "no test copy of Timberborn has been running for ${BB_GONE_SECONDS:-30} s (closed, crashed or never started)"
+                BB_SCENARIO="$name" fail "the game stays open" "no test copy of this run has been running for ${BB_GONE_SECONDS:-30} s (closed, crashed or never started)"
                 echo; echo "STOPPED: NO GAME IS RUNNING. $name was cut short: no test copy of Timberborn has been up for ${BB_GONE_SECONDS:-30} s."
                 break
             fi
