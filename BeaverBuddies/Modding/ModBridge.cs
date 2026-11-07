@@ -265,10 +265,6 @@ namespace BeaverBuddies.Modding
         public static void PlaceFor(BlockObjectPlacerService placers, BuildingSpec spec, Placement placement, string playerID) =>
             PlacementHooks.PlaceFor(placers, spec, placement, playerID);
 
-        // Whether this is a toll station, which anyone can place on another district's roads
-        public static bool IsTollStation(Timberborn.BaseComponentSystem.BaseComponent component) =>
-            component && component.GetComponent<Ziplines.TollStation>();
-
         // The tiles of other districts' ziplines and tubeways ridden through an open toll station, and who rides them
         public static IEnumerable<(Vector3Int Tile, Timberborn.GameDistricts.DistrictCenter Rider)> RiddenTiles() =>
             Enumerable.Concat(Ziplines.ShadowZiplines.RiddenTiles, Ziplines.ShadowTubeways.RiddenTiles);
