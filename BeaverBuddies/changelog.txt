@@ -1,3 +1,8 @@
+v1.1.0-1.12.5
+1.1.0-1.12.5
+* Players with different versions of a mod's buildings or goods are told before joining, not only when the mod's code differs.
+* Toll stations, the Trading Post and the Power Exchange show up in each faction's toolbar the same way as the game's own buildings.
+
 v1.1.0-1.12.4
 1.1.0-1.12.4
 * Fixed a crash loading games with Leaf Coats or other faction mods.
