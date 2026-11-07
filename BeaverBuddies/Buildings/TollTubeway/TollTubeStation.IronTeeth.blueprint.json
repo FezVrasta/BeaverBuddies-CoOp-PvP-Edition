@@ -706,7 +706,19 @@
     "WorkerOutfit": "Hauler"
   },
   "TollStationSpec": {},
-  "TollTubeStationSpec": {},
+  "TollTubeStationSpec": {
+    "Ports": [
+      { "Station": { "X": 2, "Y": 0, "Z": 1 }, "Outside": { "X": 3, "Y": 0, "Z": 1 } },
+      { "Station": { "X": 2, "Y": 1, "Z": 1 }, "Outside": { "X": 3, "Y": 1, "Z": 1 } },
+      { "Station": { "X": 0, "Y": 0, "Z": 1 }, "Outside": { "X": -1, "Y": 0, "Z": 1 } },
+      { "Station": { "X": 0, "Y": 1, "Z": 1 }, "Outside": { "X": -1, "Y": 1, "Z": 1 } },
+      { "Station": { "X": 0, "Y": 1, "Z": 1 }, "Outside": { "X": 0, "Y": 2, "Z": 1 } },
+      { "Station": { "X": 1, "Y": 1, "Z": 1 }, "Outside": { "X": 1, "Y": 2, "Z": 1 } },
+      { "Station": { "X": 2, "Y": 1, "Z": 1 }, "Outside": { "X": 2, "Y": 2, "Z": 1 } },
+      { "Station": { "X": 0, "Y": 0, "Z": 1 }, "Outside": { "X": 0, "Y": -1, "Z": 1 } },
+      { "Station": { "X": 2, "Y": 0, "Z": 1 }, "Outside": { "X": 2, "Y": -1, "Z": 1 } }
+    ]
+  },
   "NamedEntitySpec": {
     "IsEditable": true
   }

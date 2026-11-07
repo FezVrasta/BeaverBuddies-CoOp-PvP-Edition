@@ -19,8 +19,20 @@ using BeaverBuddies.Util;
 
 namespace BeaverBuddies.Ziplines
 {
+    /**
+     * A toll tube station. Ports are where a tube can connect to it: a tile of
+     * the station and the tile outside it, like the game's tubeway station's
+     * but on the upper floor (the warehouse is below).
+     */
     public record TollTubeStationSpec : ComponentSpec
     {
+        [Serialize] public System.Collections.Immutable.ImmutableArray<TubePortSpec> Ports { get; init; }
+    }
+
+    public record TubePortSpec
+    {
+        [Serialize] public Vector3Int Station { get; init; }
+        [Serialize] public Vector3Int Outside { get; init; }
     }
 
     /**
@@ -38,29 +50,14 @@ namespace BeaverBuddies.Ziplines
      */
     public class ShadowTubeways : ITickableSingleton, IPostLoadableSingleton
     {
-        // Station tile -> the tile outside it a tube can connect to, like
-        // the game's tubeway station but on the upper floor (the warehouse
-        // is below)
-        private static readonly (Vector3Int station, Vector3Int outside)[] Ports =
-        {
-            (new Vector3Int(2, 0, 1), new Vector3Int(3, 0, 1)),
-            (new Vector3Int(2, 1, 1), new Vector3Int(3, 1, 1)),
-            (new Vector3Int(0, 0, 1), new Vector3Int(-1, 0, 1)),
-            (new Vector3Int(0, 1, 1), new Vector3Int(-1, 1, 1)),
-            (new Vector3Int(0, 1, 1), new Vector3Int(0, 2, 1)),
-            (new Vector3Int(1, 1, 1), new Vector3Int(1, 2, 1)),
-            (new Vector3Int(2, 1, 1), new Vector3Int(2, 2, 1)),
-            (new Vector3Int(0, 0, 1), new Vector3Int(0, -1, 1)),
-            (new Vector3Int(2, 0, 1), new Vector3Int(2, -1, 1)),
-        };
-
         private static readonly Vector3Int[] Neighbors =
         {
             Vector3Int.right, Vector3Int.left, new Vector3Int(0, 1, 0), new Vector3Int(0, -1, 0),
             new Vector3Int(0, 0, 1), new Vector3Int(0, 0, -1),
         };
 
-        private const float TubeCost = 0.25f;
+        // What a step through a tube costs, as the real tubes' blueprint says: the hidden ones stand for them
+        private float _tubeCost;
 
         private readonly EntityComponentRegistry _entityComponentRegistry;
         private readonly TubeMap _tubeMap;
@@ -158,6 +155,10 @@ namespace BeaverBuddies.Ziplines
             public DistrictCenter Rider;
         }
 
+        private static float CostOf(Tube tube) =>
+            tube.GetComponent<Timberborn.BlockSystemNavigation.BlockObjectNavMeshSettingsSpec>()?.EdgeGroups
+                .Select(g => g.Cost).FirstOrDefault(c => c > 0) ?? 1;
+
         private int Top => _top = _mapSize.TotalSize.z - 1;
 
         private Vector3Int Hidden(Vector3Int tube) => new Vector3Int(tube.x, tube.y, Top);
@@ -180,12 +181,13 @@ namespace BeaverBuddies.Ziplines
                 toll.NetworkDistrict = null;
                 Vector3? ownerAccess = null;
                 BlockObject blockObject = toll.GetComponent<BlockObject>();
-                foreach (var (stationTile, outsideTile) in Ports)
+                foreach (TubePortSpec portSpec in toll.GetComponent<TollTubeStationSpec>().Ports)
                 {
-                    Vector3Int port = blockObject.TransformCoordinates(stationTile);
-                    Vector3Int outside = blockObject.TransformCoordinates(outsideTile);
+                    Vector3Int port = blockObject.TransformCoordinates(portSpec.Station);
+                    Vector3Int outside = blockObject.TransformCoordinates(portSpec.Outside);
                     Tube tube = _tubeMap.GetTubeAt(outside);
                     if (!tube || !tube.CanBeVisited) continue;
+                    if (_tubeCost == 0) _tubeCost = CostOf(tube);
                     Network network = GetNetwork(outside, networks);
                     // Only certain it's its own district's tubes: connecting
                     // for real to another district's would join the two
@@ -224,7 +226,7 @@ namespace BeaverBuddies.Ziplines
             void Want(Vector3Int from, Vector3Int to, int group)
             {
                 if (from == to) return;
-                wanted[(from, to)] = NavMeshEdge.CreateGrouped(from, to, group, isRoad: true, TubeCost);
+                wanted[(from, to)] = NavMeshEdge.CreateGrouped(from, to, group, isRoad: true, _tubeCost);
             }
 
             HiddenTubes.Clear();
