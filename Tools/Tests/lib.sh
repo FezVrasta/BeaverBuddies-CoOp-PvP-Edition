@@ -97,8 +97,9 @@ bb_ours() {
     local env
     env=" $(ps eww -o command= -p "$1" 2>/dev/null) "
     [[ "$env" == *" BB_INSTANCE="* ]] || return 1
+    # The first run's copies have no BB_RUN, or an empty one: macOS hands open's own environment on
     if [ -n "${BB_RUN:-}" ]; then [[ "$env" == *" BB_RUN=$BB_RUN "* ]] || return 1
-    else [[ "$env" == *" BB_RUN="* ]] && return 1; fi
+    else [[ "$env" =~ \ BB_RUN=[^\ ] ]] && return 1; fi
     [ -z "${2:-}" ] || [[ "$env" == *" BB_INSTANCE=$2 "* ]]
 }
 
@@ -505,9 +506,46 @@ bb_stack_windows() {
     osascript -e "tell application \"System Events\" to tell (first process whose unix id is $client) to set position of window 1 to {$x, $((y - h))}" >/dev/null 2>&1 || true
 }
 
-# bb_open <instance>: starts a copy without waiting for it, so two can load side by side. BB_GAME_ARGS go on its command line
+# Test copies of the game playing at once, every run's, hold.sh's and the AI lab's together (BB_MAX_COPIES, 4):
+# more than that and they load too slowly to start
+BB_MAX_COPIES=${BB_MAX_COPIES:-4}
+
+# bb_test_copies [run]: how many test copies of the game are playing, of every run or of this one
+bb_test_copies() {
+    local p n=0
+    for p in $(pgrep -x Timberborn); do
+        if [ -n "${1:-}" ]; then bb_ours "$p" && n=$((n + 1))
+        else [[ " $(ps eww -o command= -p "$p" 2>/dev/null) " == *" BB_INSTANCE="* ]] && n=$((n + 1)); fi
+    done
+    echo $n
+}
+
+# bb_wait_for_room: waits for room for one more copy, then holds the launch lock ($BB_LOCKS/bb-launch-lock) until
+# bb_open has started it, so two runs never take the last place at once. A run's first copy waits until there's
+# room for its guest too, so runs that each hold a host can always start their guests
+bb_wait_for_room() {
+    local lock="$BB_LOCKS/bb-launch-lock" said="" need total
+    while :; do
+        need=$BB_MAX_COPIES
+        [ "$(bb_test_copies mine)" -eq 0 ] && need=$((BB_MAX_COPIES - 1))
+        total=$(bb_test_copies)
+        if [ "$total" -lt "$need" ] && mkdir "$lock" 2>/dev/null; then
+            [ "$(bb_test_copies)" -lt "$need" ] && return 0
+            rmdir "$lock" 2>/dev/null
+        fi
+        # A launcher that died holding it (a launch takes seconds)
+        [ -n "$(find "$lock" -maxdepth 0 -mmin +1 2>/dev/null)" ] && rmdir "$lock" 2>/dev/null
+        [ -z "$said" ] && { echo "  (waiting for room: $total test copies of the game are playing, at most $BB_MAX_COPIES)"; said=yes; }
+        sleep 2
+    done
+}
+
+# bb_open <instance>: starts a copy without waiting for it to load, so two can load side by side. BB_GAME_ARGS go on its
+# command line
 bb_open() {
-    local inst=$1
+    local inst=$1 before i
+    bb_wait_for_room
+    before=$(bb_test_copies)
     rm -f "$BB_CMD_PREFIX-$inst"
     bb_keep_log "$inst"
     # BB_REAL_DISPLAY=1 plays with the player's own display settings, not the test's windowed ones
@@ -518,6 +556,9 @@ bb_open() {
         ${BB_HITCH_MS:+--env BB_HITCH_MS="$BB_HITCH_MS"} ${BB_HITCH_TRACE:+--env BB_HITCH_TRACE=1} ${BB_HITCH_GARBAGE:+--env BB_HITCH_GARBAGE=1} \
         ${BB_LEAK_ROOTS:+--env BB_LEAK_ROOTS="$BB_LEAK_ROOTS"} ${BB_LEAK_SIZES:+--env BB_LEAK_SIZES=1} ${BB_LEAK_WALK:+--env BB_LEAK_WALK=1} \
         --args -skipModManager -logFile "$(bb_log "$inst")" $([ -n "${BB_REAL_DISPLAY:-}" ] || echo "-screen-fullscreen 0 -screen-width ${BB_RES_W:-1400} -screen-height ${BB_RES_H:-880}") ${BB_GAME_ARGS:-}
+    # Until it's up, so the next launcher counts it
+    for ((i = 0; i < 40; i++)); do [ "$(bb_test_copies)" -gt "$before" ] && break; sleep 0.5; done
+    rmdir "$BB_LOCKS/bb-launch-lock" 2>/dev/null
 }
 
 # Whether the player's own Timberborn is running (not one of the test copies)

@@ -16,7 +16,7 @@ Builds BeaverBuddies first (skipped when nothing changed since the last build), 
 
 ### Runs at once
 
-Start as many runs as you like, from one checkout or several, next to each other, next to the AI lab and next to your own game: nothing waits and nothing needs closing. Each run takes the first free name (`BB_RUN`: the first is unnamed, then `2`, `3`...; set it to pick one) and everything it touches is its own:
+Start as many runs as you like, from one checkout or several, next to each other, next to the AI lab and next to your own game: nothing needs closing. At most 4 test copies of the game play at once, every run's, `hold.sh`'s and the lab's together (`BB_MAX_COPIES`): more and they load too slowly to start. A copy past that waits for room, and a run's first copy waits until there's room for its guest too. Each run takes the first free name (`BB_RUN`: the first is unnamed, then `2`, `3`...; set it to pick one) and everything it touches is its own:
 
 | | first run | run `2` |
 |---|---|---|
