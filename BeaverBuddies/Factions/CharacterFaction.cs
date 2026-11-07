@@ -98,8 +98,8 @@ namespace BeaverBuddies.Factions
 
         /**
          * A good belongs to the factions whose good collections list it.
-         * One in the Common collection (logs, planks, a mod's arms)
-         * belongs to the factions whose buildings make it, or to all if
+         * One in a collection no faction lists (Common: logs, planks, a
+         * mod's arms) belongs to the factions whose buildings make it, or to all if
          * nobody's do (logs, berries): a mod's arms only one faction's
          * buildings make stay that faction's.
          */
@@ -146,7 +146,9 @@ namespace BeaverBuddies.Factions
                     foreach (string good in goods) Add(made, good, faction.Id);
                 }
             }
-            foreach (string good in goodCollections.Where(c => c.CollectionId == "Common").SelectMany(c => c.Goods))
+            // Collections no faction lists: the game's Common, and any mod's shared goods
+            var owned = factionService._factionSpecService.Factions.SelectMany(f => f.GoodCollectionIds).ToHashSet();
+            foreach (string good in goodCollections.Where(c => !owned.Contains(c.CollectionId)).SelectMany(c => c.Goods))
             {
                 if (made.TryGetValue(good, out var makers)) Add(GoodFactions, good, makers);
                 else GoodFactions.Remove(good);
