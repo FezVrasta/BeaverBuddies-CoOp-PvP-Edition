@@ -408,6 +408,21 @@ namespace BeaverBuddies.DevTools
                     Plugin.Log($"[Test] friendsbox shown {shown} ticked {Matchmaking.FriendsOnlyPanel.FriendsOnly}");
                     break;
                 }
+                case "clicktext":
+                {
+                    // clicktext Words...: the shown button with that text on the panel on top, for a mod's button with no name
+                    string text = string.Join(" ", a.Skip(1));
+                    var roots = _panelStack._stack.Count > 0
+                        ? new[] { _panelStack._stack.Peek().PanelController.GetPanel() }
+                        : UnityEngine.Object.FindObjectsOfType<UnityEngine.UIElements.UIDocument>().Select(d => d.rootVisualElement).Where(r => r != null).ToArray();
+                    var button = roots.SelectMany(r => UnityEngine.UIElements.UQueryExtensions.Query<UnityEngine.UIElements.Button>(r).ToList())
+                        .FirstOrDefault(b => b.resolvedStyle.display != UnityEngine.UIElements.DisplayStyle.None && b.panel != null && b.text?.Trim() == text)
+                        ?? throw new Exception($"no button \"{text}\"");
+                    using var press = UnityEngine.UIElements.ClickEvent.GetPooled();
+                    press.target = button;
+                    button.SendEvent(press);
+                    break;
+                }
                 case "click":
                 {
                     // A button by name on the panel on top, as a player's click would press it
