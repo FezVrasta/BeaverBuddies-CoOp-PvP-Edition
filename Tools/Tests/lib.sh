@@ -107,7 +107,7 @@ bb_ours() {
 # carry the run's name after an @: Settlement in DevTools/TestHarness.cs)
 _bb_mine() {
     case "$1" in "Test "*|"Harness "*|"Co-op "*) ;; *) return 1 ;; esac
-    if [ -n "${BB_RUN:-}" ]; then [[ "$1" == *" @$BB_RUN "* ]]; else [[ "$1" != *" @"* ]]; fi
+    if [ -n "${BB_RUN:-}" ]; then [[ "$1" == *" (run $BB_RUN) "* ]]; else [[ "$1" != *" (run "* ]]; fi
 }
 
 # bb_newest_save [settlement...]: the newest save this run's copies made, as its path: in a settlement of this run's
@@ -389,6 +389,14 @@ bb_mods_off() {
     BB_MOD_FLAGS=$(echo "$BB_MOD_FLAGS" | sed -E "s/^(ModEnabled\.Local\.($1)\.[a-z]+)=1$/\1=0/")
 }
 
+# bb_mods_on <Folder.Id>...: other local mods on for the copies this scenario launches ("Emberpelts.Emberpelts"). The run
+# puts the player's own flags back as long as the keys are in BB_PREF_KEYS_EXTRA (Timber Empires' run.sh lists Emberpelts)
+bb_mods_on() {
+    local mod
+    for mod in "$@"; do BB_MOD_FLAGS="${BB_MOD_FLAGS:+$BB_MOD_FLAGS
+}ModEnabled.Local.$mod=1"; done
+}
+
 # ---- Running the game until something happens ------------------------------------
 
 # The last tick each copy logged, "<host tick> <client tick>"
@@ -530,14 +538,22 @@ bb_wait_for_room() {
         [ "$(bb_test_copies mine)" -eq 0 ] && need=$((BB_MAX_COPIES - 1))
         total=$(bb_test_copies)
         if [ "$total" -lt "$need" ] && mkdir "$lock" 2>/dev/null; then
-            [ "$(bb_test_copies)" -lt "$need" ] && return 0
+            [ "$(bb_test_copies)" -lt "$need" ] && { rm -f "$BB_TEST_DIR/.waiting-for-room"; return 0; }
             rmdir "$lock" 2>/dev/null
         fi
         # A launcher that died holding it (a launch takes seconds)
         [ -n "$(find "$lock" -maxdepth 0 -mmin +1 2>/dev/null)" ] && rmdir "$lock" 2>/dev/null
         [ -z "$said" ] && { echo "  (waiting for room: $total test copies of the game are playing, at most $BB_MAX_COPIES)"; said=yes; }
+        # The watchdogs count a run waiting here as one with its game up
+        touch "$BB_TEST_DIR/.waiting-for-room"
         sleep 2
     done
+}
+
+# bb_waiting_for_room: whether this run is waiting to start a copy (see bb_wait_for_room)
+bb_waiting_for_room() {
+    local f="$BB_TEST_DIR/.waiting-for-room"
+    [ -f "$f" ] && [ $(( $(date +%s) - $(stat -f %m "$f") )) -lt 10 ]
 }
 
 # bb_open <instance>: starts a copy without waiting for it to load, so two can load side by side. BB_GAME_ARGS go on its
@@ -713,7 +729,12 @@ _record() { printf '%s\t%s\t%s\t%s\n' "$1" "${BB_SCENARIO:-?}" "$2" "$3" >> "$BB
 
 pass() { echo "  ok    $1"; _record PASS "$1" ""; }
 # A mod's own tests can define bb_on_fail <check> to keep more of the copies' state at a failure
-fail() { echo "  FAIL  $1: $2"; _record FAIL "$1" "$2"; declare -F bb_on_fail > /dev/null && bb_on_fail "$1"; return 0; }
+# A failed check ends its scenario at once (BB_FAIL_FAST=0 runs the rest of it): whatever came after it rested on it
+fail() {
+    echo "  FAIL  $1: $2"; _record FAIL "$1" "$2"; declare -F bb_on_fail > /dev/null && bb_on_fail "$1"
+    [ -n "${BB_IN_SCENARIO:-}" ] && [ "${BB_FAIL_FAST:-1}" = 1 ] && exit 1
+    return 0
+}
 
 # expect_eq <name> <actual> <wanted>
 expect_eq() { if [ "$2" == "$3" ]; then pass "$1"; else fail "$1" "got '$2', wanted '$3'"; fi; }

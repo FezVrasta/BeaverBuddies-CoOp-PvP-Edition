@@ -102,10 +102,10 @@ cleanup() {
     bb_close
     # Only this run's: another run's settlements carry its name (Settlement in DevTools/TestHarness.cs)
     if [ -n "${BB_RUN:-}" ]; then
-        find "$HOME/Documents/Timberborn/Saves/" -mindepth 1 -maxdepth 1 -type d \( -name "Test @$BB_RUN *" -o -name "Harness @$BB_RUN *" \) \
+        find "$HOME/Documents/Timberborn/Saves/" -mindepth 1 -maxdepth 1 -type d \( -name "Test (run $BB_RUN) *" -o -name "Harness (run $BB_RUN) *" \) \
             -newer "$RUN_START" -exec rm -rf {} + 2>/dev/null
     else
-        find "$HOME/Documents/Timberborn/Saves/" -mindepth 1 -maxdepth 1 -type d \( -name 'Test *' -o -name 'Harness *' \) ! -name '* @*' \
+        find "$HOME/Documents/Timberborn/Saves/" -mindepth 1 -maxdepth 1 -type d \( -name 'Test *' -o -name 'Harness *' \) ! -name '* (run *' \
             -newer "$RUN_START" -exec rm -rf {} + 2>/dev/null
     fi
     mod_enable_all
@@ -197,6 +197,8 @@ RUN_NAMES=$(for f in $FILES; do basename "$f" .sh; done | paste -sd+ - | cut -c1
 export BB_RUN_DIR="$BB_TEST_DIR/runs/$(date '+%Y%m%d-%H%M%S')-$RUN_NAMES"
 mkdir -p "$BB_RUN_DIR/shots" "$BB_RUN_DIR/logs"
 
+# Commands a stopped run left for its copies aren't this run's
+rm -f "$BB_CMD_PREFIX-host" "$BB_CMD_PREFIX-client" "$BB_CMD_PREFIX-third"
 START=$(date +%s)
 LAST_FILE=$(echo $FILES | awk '{print $NF}')
 for f in $FILES; do
@@ -209,7 +211,7 @@ for f in $FILES; do
     touch "$BB_TEST_DIR/.scenario-start"
     # A log left from an earlier run isn't this scenario's: only one written since the start counts
     (
-        export BB_SCENARIO="$name" BB_SCENARIO_DIR="$(cd "$(dirname "$f")" && pwd)"
+        export BB_SCENARIO="$name" BB_SCENARIO_DIR="$(cd "$(dirname "$f")" && pwd)" BB_IN_SCENARIO=1
         source "$f"
     ) &
     spid=$!
@@ -222,13 +224,13 @@ for f in $FILES; do
         fi
         # No copy of the game left (the player closed it, or it crashed or never opened): nothing
         # will come of waiting on it. Scenarios that restart copies are given time to
-        if [ -n "$(bb_copies)" ]; then gone_since=
+        if [ -n "$(bb_copies)" ] || bb_waiting_for_room; then gone_since=
         else
             [ -n "$gone_since" ] || gone_since=$(date +%s)
-            if [ $(( $(date +%s) - gone_since )) -ge "${BB_GONE_SECONDS:-30}" ]; then
+            if [ $(( $(date +%s) - gone_since )) -ge "${BB_GONE_SECONDS:-90}" ]; then
                 pkill -9 -P $spid 2>/dev/null; kill -9 $spid 2>/dev/null; killed=1
-                BB_SCENARIO="$name" fail "the game stays open" "no test copy of this run has been running for ${BB_GONE_SECONDS:-30} s (closed, crashed or never started)"
-                echo; echo "STOPPED: NO GAME IS RUNNING. $name was cut short: no test copy of Timberborn has been up for ${BB_GONE_SECONDS:-30} s."
+                BB_SCENARIO="$name" fail "the game stays open" "no test copy of this run has been running for ${BB_GONE_SECONDS:-90} s (closed, crashed or never started)"
+                echo; echo "STOPPED: NO GAME IS RUNNING. $name was cut short: no test copy of Timberborn has been up for ${BB_GONE_SECONDS:-90} s."
                 break
             fi
         fi

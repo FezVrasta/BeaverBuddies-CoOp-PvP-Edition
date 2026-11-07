@@ -73,7 +73,8 @@ namespace BeaverBuddies.DevTools
 
         // A settlement this run's games are saved under: the run's name in it, so a run's cleanup takes only its own saves
         private static string Settlement(string kind, string format) =>
-            kind + " " + (TestRun != null ? "@" + TestRun + " " : "") + DateTime.Now.ToString(format, CultureInfo.InvariantCulture);
+            // (run N): the game refuses "@" in a settlement's name and then makes no folder for it
+            kind + " " + (TestRun != null ? "(run " + TestRun + ") " : "") + DateTime.Now.ToString(format, CultureInfo.InvariantCulture);
 
         // Looked up when a command needs them: the map editor has none of the menu's and the game's services
         private GameModeSpecService _gameModeSpecService => _container.GetInstance<GameModeSpecService>();
