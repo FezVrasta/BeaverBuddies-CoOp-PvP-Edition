@@ -40,8 +40,5 @@ namespace BeaverBuddies.Util
                 return "nofiles";
             }
         }
-
-        // The folder a mod's DLL was loaded from
-        public static string FolderOf(Type type) => Path.GetDirectoryName(type.Assembly.Location);
     }
 }
