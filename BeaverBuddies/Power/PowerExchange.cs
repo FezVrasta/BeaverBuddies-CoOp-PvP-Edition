@@ -78,7 +78,7 @@ namespace BeaverBuddies.Power
      * is full the exchange stops, and it never sends more than MaxPower or
      * more than the seller can spare.
      */
-    public class PowerExchange : BaseComponent, IAwakableComponent, IPersistentEntity, IRegisteredComponent, IFinishedStateListener
+    public class PowerExchange : BaseComponent, IAwakableComponent, IPersistentEntity, IRegisteredComponent, IFinishedStateListener, BeaverBuddies.Util.IHoldsInventory
     {
         private static readonly ComponentKey PowerExchangeKey = new ComponentKey("BeaverBuddies.PowerExchange");
         private static readonly PropertyKey<bool> SellingKey = new PropertyKey<bool>("Selling");

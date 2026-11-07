@@ -56,7 +56,7 @@ namespace BeaverBuddies.Ziplines
      *
      * Connected to a network of its own district, it's a plain station.
      */
-    public class TollStation : BaseComponent, IAwakableComponent, IInitializableEntity, IPersistentEntity, IRegisteredComponent, IFinishedStateListener
+    public class TollStation : BaseComponent, IAwakableComponent, IInitializableEntity, IPersistentEntity, IRegisteredComponent, IFinishedStateListener, BeaverBuddies.Util.IHoldsInventory
     {
         private static readonly ComponentKey TollStationKey = new ComponentKey("BeaverBuddies.TollStation");
         private static readonly PropertyKey<string> TollGoodKey = new PropertyKey<string>("TollGood");
@@ -302,34 +302,14 @@ namespace BeaverBuddies.Ziplines
      * The toll storage: any good, a limited amount of each, like the Power
      * Exchange's.
      */
-    public class TollStationInventoryInitializer : IDedicatedDecoratorInitializer<TollStation, Inventory>
+    public class TollStationInventoryInitializer : AnyGoodInventoryInitializer<TollStation>
     {
         public const string InventoryComponentName = "BeaverBuddies.TollStation";
 
-        private readonly IGoodService _goodService;
-        private readonly InventoryNeedBehaviorInitializer _inventoryNeedBehaviorInitializer;
-        private readonly InventoryInitializerFactory _inventoryInitializerFactory;
+        public TollStationInventoryInitializer(IGoodService goodService, InventoryNeedBehaviorInitializer needBehaviors, InventoryInitializerFactory factory)
+            : base(goodService, needBehaviors, factory, InventoryComponentName) { }
 
-        public TollStationInventoryInitializer(IGoodService goodService,
-            InventoryNeedBehaviorInitializer inventoryNeedBehaviorInitializer,
-            InventoryInitializerFactory inventoryInitializerFactory)
-        {
-            _goodService = goodService;
-            _inventoryNeedBehaviorInitializer = inventoryNeedBehaviorInitializer;
-            _inventoryInitializerFactory = inventoryInitializerFactory;
-        }
-
-        public void Initialize(TollStation subject, Inventory decorator)
-        {
-            InventoryInitializer initializer = _inventoryInitializerFactory.CreateWithUnlimitedCapacity(decorator, InventoryComponentName);
-            foreach (string good in _goodService.Goods)
-            {
-                initializer.AddAllowedGood(new StorableGoodAmount(StorableGood.CreateAsTakeable(good), TollStation.Capacity));
-            }
-            initializer.Initialize();
-            subject.InitializeInventory(decorator);
-            _inventoryNeedBehaviorInitializer.AddNeedBehavior(decorator);
-        }
+        protected override int Capacity => TollStation.Capacity;
     }
 
     /**
@@ -468,7 +448,7 @@ namespace BeaverBuddies.Ziplines
      * station's own district doesn't take from it: only the network
      * owner's haulers collect it (see TollPayoutCollectBehavior).
      */
-    public class TollPayout : BaseComponent, IAwakableComponent, IFinishedStateListener
+    public class TollPayout : BaseComponent, IAwakableComponent, IFinishedStateListener, BeaverBuddies.Util.IHoldsInventory
     {
         public const int Capacity = 50;
 
@@ -496,29 +476,14 @@ namespace BeaverBuddies.Ziplines
         }
     }
 
-    public class TollPayoutInventoryInitializer : IDedicatedDecoratorInitializer<TollPayout, Inventory>
+    public class TollPayoutInventoryInitializer : AnyGoodInventoryInitializer<TollPayout>
     {
         public const string InventoryComponentName = "BeaverBuddies.TollPayout";
 
-        private readonly IGoodService _goodService;
-        private readonly InventoryInitializerFactory _inventoryInitializerFactory;
+        public TollPayoutInventoryInitializer(IGoodService goodService, InventoryNeedBehaviorInitializer needBehaviors, InventoryInitializerFactory factory)
+            : base(goodService, needBehaviors, factory, InventoryComponentName, hauled: false) { }
 
-        public TollPayoutInventoryInitializer(IGoodService goodService, InventoryInitializerFactory inventoryInitializerFactory)
-        {
-            _goodService = goodService;
-            _inventoryInitializerFactory = inventoryInitializerFactory;
-        }
-
-        public void Initialize(TollPayout subject, Inventory decorator)
-        {
-            InventoryInitializer initializer = _inventoryInitializerFactory.CreateWithUnlimitedCapacity(decorator, InventoryComponentName);
-            foreach (string good in _goodService.Goods)
-            {
-                initializer.AddAllowedGood(new StorableGoodAmount(StorableGood.CreateAsTakeable(good), TollPayout.Capacity));
-            }
-            initializer.Initialize();
-            subject.InitializeInventory(decorator);
-        }
+        protected override int Capacity => TollPayout.Capacity;
     }
 
     /**

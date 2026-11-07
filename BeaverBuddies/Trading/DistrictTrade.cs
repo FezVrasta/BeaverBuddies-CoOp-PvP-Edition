@@ -40,7 +40,7 @@ namespace BeaverBuddies.Trading
      *
      * Each half's workers keep it stocked with what it sells and carry what it bought to the district's stockpiles.
      */
-    public class DistrictTrade : TickableComponent, IAwakableComponent, IPersistentEntity, IFinishedStateListener, ITradeSite, Timberborn.EntitySystem.IRegisteredComponent
+    public class DistrictTrade : TickableComponent, IAwakableComponent, IPersistentEntity, IFinishedStateListener, ITradeSite, Timberborn.EntitySystem.IRegisteredComponent, BeaverBuddies.Util.IHoldsInventory
     {
         private static readonly ComponentKey DistrictTradeKey = new ComponentKey("BeaverBuddies.DistrictTrade");
         private static readonly ListKey<string> GoodsKey = new ListKey<string>("Goods");
@@ -352,34 +352,15 @@ namespace BeaverBuddies.Trading
     /**
      * Each half's storage: any good, up to the most a post keeps of it.
      */
-    public class DistrictTradeInventoryInitializer : Timberborn.TemplateInstantiation.IDedicatedDecoratorInitializer<DistrictTrade, Inventory>
+    public class DistrictTradeInventoryInitializer : Util.AnyGoodInventoryInitializer<DistrictTrade>
     {
         public const string InventoryComponentName = "BeaverBuddies.TradingPost";
 
-        private readonly IGoodService _goodService;
-        private readonly Timberborn.InventoryNeedSystem.InventoryNeedBehaviorInitializer _inventoryNeedBehaviorInitializer;
-        private readonly InventoryInitializerFactory _inventoryInitializerFactory;
-
         public DistrictTradeInventoryInitializer(IGoodService goodService,
-            Timberborn.InventoryNeedSystem.InventoryNeedBehaviorInitializer inventoryNeedBehaviorInitializer,
-            InventoryInitializerFactory inventoryInitializerFactory)
-        {
-            _goodService = goodService;
-            _inventoryNeedBehaviorInitializer = inventoryNeedBehaviorInitializer;
-            _inventoryInitializerFactory = inventoryInitializerFactory;
-        }
+            Timberborn.InventoryNeedSystem.InventoryNeedBehaviorInitializer needBehaviors, InventoryInitializerFactory factory)
+            : base(goodService, needBehaviors, factory, InventoryComponentName, ownPerHalf: true) { }
 
-        public void Initialize(DistrictTrade subject, Inventory decorator)
-        {
-            InventoryInitializer initializer = _inventoryInitializerFactory.CreateWithUnlimitedCapacity(decorator, InventoryComponentName);
-            foreach (string good in _goodService.Goods)
-            {
-                initializer.AddAllowedGood(new StorableGoodAmount(StorableGood.CreateAsTakeable(good), TradeRule.MostLimit));
-            }
-            initializer.Initialize();
-            subject.InitializeInventory(decorator);
-            _inventoryNeedBehaviorInitializer.AddNeedBehavior(decorator);
-        }
+        protected override int Capacity => TradeRule.MostLimit;
     }
 
     /**

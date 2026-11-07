@@ -23,40 +23,20 @@ namespace BeaverBuddies.Power
      * Gives each half a payment inventory, set up like the District
      * Crossing's: any good, a limited amount of each.
      */
-    public class PowerExchangeInventoryInitializer : IDedicatedDecoratorInitializer<PowerExchange, Inventory>
+    public class PowerExchangeInventoryInitializer : AnyGoodInventoryInitializer<PowerExchange>
     {
         public const string InventoryComponentName = "TimberEmpires.PowerExchange";
 
-        private readonly IGoodService _goodService;
-        private readonly InventoryNeedBehaviorInitializer _inventoryNeedBehaviorInitializer;
-        private readonly InventoryInitializerFactory _inventoryInitializerFactory;
+        public PowerExchangeInventoryInitializer(IGoodService goodService, InventoryNeedBehaviorInitializer needBehaviors, InventoryInitializerFactory factory)
+            : base(goodService, needBehaviors, factory, InventoryComponentName, ownPerHalf: true) { }
 
-        public PowerExchangeInventoryInitializer(IGoodService goodService,
-            InventoryNeedBehaviorInitializer inventoryNeedBehaviorInitializer,
-            InventoryInitializerFactory inventoryInitializerFactory)
-        {
-            _goodService = goodService;
-            _inventoryNeedBehaviorInitializer = inventoryNeedBehaviorInitializer;
-            _inventoryInitializerFactory = inventoryInitializerFactory;
-        }
-
-        public void Initialize(PowerExchange subject, Inventory decorator)
-        {
-            InventoryInitializer initializer = _inventoryInitializerFactory.CreateWithUnlimitedCapacity(decorator, InventoryComponentName);
-            foreach (string good in _goodService.Goods)
-            {
-                initializer.AddAllowedGood(new StorableGoodAmount(StorableGood.CreateAsTakeable(good), PowerExchange.Capacity));
-            }
-            initializer.Initialize();
-            subject.InitializeInventory(decorator);
-            _inventoryNeedBehaviorInitializer.AddNeedBehavior(decorator);
-        }
+        protected override int Capacity => PowerExchange.Capacity;
     }
 
     /**
      * The game mirrors every reservation between the inventories of a linked
      * pair, which is right for construction materials but not for the
-     * exchange: each half's payment inventory is its own, and mirroring
+     * exchange or the Trading Post: each half's inventory is its own, and mirroring
      * fails once the other half is full. A half with no other half yet (or
      * any more) has nothing to mirror to: the game would throw.
      */
@@ -65,10 +45,7 @@ namespace BeaverBuddies.Power
     {
         static bool Prefix(LinkedInventories __instance, object sender)
         {
-            string name = (sender as Inventory)?.ComponentName;
-            return __instance._linked?._inventories != null
-                && name != PowerExchangeInventoryInitializer.InventoryComponentName
-                && name != Trading.DistrictTradeInventoryInitializer.InventoryComponentName;
+            return __instance._linked?._inventories != null && !AnyGoodInventories.IsOwnPerHalf((sender as Inventory)?.ComponentName);
         }
     }
 
@@ -77,8 +54,7 @@ namespace BeaverBuddies.Power
     {
         static bool Prefix(Inventory myInventory)
         {
-            return myInventory.ComponentName != PowerExchangeInventoryInitializer.InventoryComponentName
-                && myInventory.ComponentName != Trading.DistrictTradeInventoryInitializer.InventoryComponentName;
+            return !AnyGoodInventories.IsOwnPerHalf(myInventory.ComponentName);
         }
     }
 
