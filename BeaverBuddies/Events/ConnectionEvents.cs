@@ -72,7 +72,9 @@ namespace BeaverBuddies.Events
         }
 
         // Short, so it fits in the warning and the desync report
-        public static readonly string ModBuild = typeof(Plugin).Assembly.ManifestModule.ModuleVersionId.ToString("N").Substring(0, 8);
+        // (the DLL's build, and its blueprints')
+        public static readonly string ModBuild = typeof(Plugin).Assembly.ManifestModule.ModuleVersionId.ToString("N").Substring(0, 8)
+            + "-" + Util.ContentHash.Of(Util.ContentHash.FolderOf(typeof(Plugin)));
 
         private static string Describe(string addOns) => string.IsNullOrEmpty(addOns) ? "none" : addOns;
 

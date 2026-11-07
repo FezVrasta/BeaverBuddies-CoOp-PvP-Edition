@@ -173,6 +173,10 @@ namespace BeaverBuddies.Modding
         // Every player has to run the mod, at the same version
         public static void AddAddOn(string nameAndVersion) => ReplayHooks.AddOns.Add(nameAndVersion);
 
+        // The same, with a hash of the blueprints and other JSON in the mod's folder, so a change to them counts too
+        public static void AddAddOnFolder(string nameAndVersion, string folder) =>
+            ReplayHooks.AddOns.Add($"{nameAndVersion} {Util.ContentHash.Of(folder)}");
+
         internal static void Play(ModEvent modEvent, IReplayContext context)
         {
             if (modEvent.payload == null || modEvent.mod == null || !Players.TryGetValue(modEvent.mod, out var play))
