@@ -1,0 +1,8 @@
+{
+  "FactionCollectionsSpec": {
+    "FactionId": "Folktails",
+    "Collections": [
+      "BeaverBuddies.Buildings.Folktails"
+    ]
+  }
+}

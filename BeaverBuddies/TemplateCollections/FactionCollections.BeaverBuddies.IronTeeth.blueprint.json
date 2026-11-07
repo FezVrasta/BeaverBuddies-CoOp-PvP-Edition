@@ -1,0 +1,8 @@
+{
+  "FactionCollectionsSpec": {
+    "FactionId": "IronTeeth",
+    "Collections": [
+      "BeaverBuddies.Buildings.IronTeeth"
+    ]
+  }
+}

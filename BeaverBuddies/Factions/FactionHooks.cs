@@ -49,9 +49,9 @@ namespace BeaverBuddies.Factions
             }
         }
 
-        // A faction's own template collections, BeaverBuddies' buildings and every mod's
+        // A faction's own template collections and every mod's, BeaverBuddies' buildings among them
         public static IEnumerable<string> TemplateCollectionIds(FactionSpec faction) =>
-            faction.TemplateCollectionIds.Append(Modding.FactionBuildingsPatcher.Prefix + faction.Id)
+            faction.TemplateCollectionIds
                 .Concat(Added.TryGetValue(faction.Id, out var added) ? added : Enumerable.Empty<string>()).Distinct();
 
         internal static string Stranded(BaseComponent character) =>
