@@ -71,7 +71,8 @@ namespace BeaverBuddies.Factions
         {
             TemplateFactions.Clear();
             var owners = new Dictionary<string, HashSet<string>>();
-            var collections = specService.GetSpecs<TemplateCollectionSpec>().ToList();
+            // Another mod's collection can come without an id or blueprints: nothing to index there
+            var collections = specService.GetSpecs<TemplateCollectionSpec>().Where(c => c.CollectionId != null && !c.Blueprints.IsDefault).ToList();
             foreach (FactionSpec faction in factionService._factionSpecService.Factions)
             {
                 var named = collections.Select(c => c.CollectionId).Where(id => id.EndsWith("." + faction.Id) && EveryFactionLoads(id, faction.Id));

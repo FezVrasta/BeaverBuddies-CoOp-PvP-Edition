@@ -125,8 +125,8 @@ namespace BeaverBuddies.Factions
             _goodsIndexedFor = factionService;
             GoodFactions.Clear();
             var specService = factionService._factionSpecService._specService;
-            var goodCollections = specService.GetSpecs<GoodCollectionSpec>().ToList();
-            var templateCollections = specService.GetSpecs<TemplateCollectionSpec>().ToList();
+            var goodCollections = specService.GetSpecs<GoodCollectionSpec>().Where(c => c.CollectionId != null && !c.Goods.IsDefault).ToList();
+            var templateCollections = specService.GetSpecs<TemplateCollectionSpec>().Where(c => c.CollectionId != null && !c.Blueprints.IsDefault).ToList();
             var products = specService.GetSpecs<RecipeSpec>().GroupBy(r => r.Id)
                 .ToDictionary(g => g.Key, g => g.First().Products.IsDefault ? Enumerable.Empty<string>() : g.First().Products.Select(p => p.Id));
             var made = new Dictionary<string, HashSet<string>>();
