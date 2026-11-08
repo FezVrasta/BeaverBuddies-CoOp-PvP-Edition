@@ -1,6 +1,7 @@
 ﻿using BeaverBuddies.Connect;
 using BeaverBuddies.Events;
 using BeaverBuddies.Matchmaking;
+using BeaverBuddies.Modding;
 using BeaverBuddies.MultiStart;
 using System;
 using System.Collections.Generic;
@@ -103,9 +104,19 @@ namespace BeaverBuddies.DevTools
             if (Current == this) Current = null;
         }
 
+        // A key the "key" command pressed, let go the frame after
+        private UnityEngine.InputSystem.Controls.KeyControl _heldKey;
+        private int _heldFrames;
+
         public void UpdateSingleton()
         {
             Current = this;
+            if (_heldKey != null && ++_heldFrames > 1)
+            {
+                UnityEngine.InputSystem.LowLevel.InputState.Change(UnityEngine.InputSystem.Keyboard.current, new UnityEngine.InputSystem.LowLevel.KeyboardState());
+                _heldKey = null;
+                _heldFrames = 0;
+            }
             if (Active) Chaos.Update();
             if (!Active) return;
             if (_untilProbe != null || _untilTick >= 0) CheckUntil();
@@ -695,9 +706,10 @@ namespace BeaverBuddies.DevTools
                 }
                 case "look":
                 {
-                    // The camera on a tile, closer in if a zoom level is given
+                    // The camera on a tile, closer in if a zoom level is given. On an Archipelago map, where its island is drawn
                     var camera = Get<Timberborn.CameraSystem.CameraService>();
-                    camera.MoveTargetTo(CoordinateSystem.GridToWorldCentered(new Vector3Int(I(a[1]), I(a[2]), I(a[3]))));
+                    Vector3 tile = CoordinateSystem.GridToWorldCentered(new Vector3Int(I(a[1]), I(a[2]), I(a[3])));
+                    camera.MoveTargetTo(ArchipelagoBridge.IsDrawnApart ? ArchipelagoBridge.ToDrawn(tile) : tile);
                     if (a.Length > 4) camera.ZoomLevel = float.Parse(a[4], CultureInfo.InvariantCulture);
                     break;
                 }
@@ -958,6 +970,15 @@ namespace BeaverBuddies.DevTools
                         .WithButton(UnityEngine.InputSystem.LowLevel.MouseButton.Left, a[1] == "down");
                     UnityEngine.InputSystem.LowLevel.InputState.Change(mouse, state);
                     Plugin.Log($"[Test] Mouse button {a[1]}");
+                    break;
+                }
+                case "key":
+                {
+                    // A key pressed and let go a frame later, as a player would (a key name of the Input System, e.g. "r")
+                    var key = UnityEngine.InputSystem.Keyboard.current[a[1]] as UnityEngine.InputSystem.Controls.KeyControl ?? throw new Exception($"no key {a[1]}");
+                    UnityEngine.InputSystem.LowLevel.InputState.Change(UnityEngine.InputSystem.Keyboard.current, new UnityEngine.InputSystem.LowLevel.KeyboardState(key.keyCode));
+                    _heldKey = key;
+                    Plugin.Log($"[Test] Key {a[1]}");
                     break;
                 }
                 case "mouse":
