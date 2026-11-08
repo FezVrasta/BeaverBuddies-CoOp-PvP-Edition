@@ -1,3 +1,7 @@
+v1.1.0-1.12.6
+1.1.0-1.12.6
+* Fixed a crash loading games with some mods installed, like More Tunnels or TImprove.
+
 v1.1.0-1.12.5
 1.1.0-1.12.5
 * Players with different versions of a mod's buildings or goods are told before joining, not only when the mod's code differs.
