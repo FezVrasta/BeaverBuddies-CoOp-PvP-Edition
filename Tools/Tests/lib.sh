@@ -481,7 +481,8 @@ run_until_log() {
 bb_launch() {
     bb_mod_flags
     bb_open "$1"
-    wait_for_watch "$1" "Registering Main Menu Services" 120
+    # BeaverBuddies says when the main menu is up; a scenario with it switched off names another line (BB_MENU_LINE)
+    wait_for_watch "$1" "${BB_MENU_LINE:-Registering Main Menu Services}" 120
 }
 
 # The pid of one of this run's copies
